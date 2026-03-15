@@ -75,6 +75,9 @@ export default function ContactsScreen() {
     <View style={[styles.container, { paddingTop: topPad }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Contacts</Text>
+        <Pressable onPress={() => router.push("/settings")} hitSlop={10}>
+          <Feather name="settings" size={22} color={Colors.text} />
+        </Pressable>
       </View>
 
       <View style={styles.tabs}>
@@ -215,7 +218,7 @@ export default function ContactsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background },
-  header: { paddingHorizontal: Layout.screenPadding, paddingTop: 14, paddingBottom: 6 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Layout.screenPadding, paddingTop: 14, paddingBottom: 6 },
   title: { fontSize: 24, fontFamily: "Lato_700Bold", color: Colors.text },
   tabs: { flexDirection: "row", paddingHorizontal: Layout.screenPadding, gap: 8, marginBottom: 12, marginTop: 10 },
   tab: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, backgroundColor: Colors.surfaceSecondary },

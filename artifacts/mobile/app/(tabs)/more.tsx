@@ -36,10 +36,13 @@ export default function MoreScreen() {
         <View style={styles.headerLogo}>
           <Image source={saIconWhite} style={styles.headerLogoImage} resizeMode="contain" />
         </View>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.title}>More</Text>
           <Text style={styles.subtitle}>Files, communications & settings.</Text>
         </View>
+        <Pressable onPress={() => router.push("/settings")} hitSlop={10}>
+          <Feather name="settings" size={22} color={Colors.text} />
+        </Pressable>
       </View>
 
       <View style={styles.menuCard}>

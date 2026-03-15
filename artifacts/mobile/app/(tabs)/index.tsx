@@ -63,10 +63,13 @@ export default function DashboardScreen() {
         <View style={styles.headerLogo}>
           <Image source={saIconWhite} style={styles.headerLogoImage} resizeMode="contain" />
         </View>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.greeting}>Startup Anthology</Text>
           <Text style={styles.subtitle}>Your week at a glance.</Text>
         </View>
+        <Pressable onPress={() => router.push("/settings")} hitSlop={10}>
+          <Feather name="settings" size={22} color={Colors.text} />
+        </Pressable>
       </View>
 
       <View style={styles.betaCard}>
