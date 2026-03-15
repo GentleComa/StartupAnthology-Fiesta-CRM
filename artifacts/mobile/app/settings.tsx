@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 const STATUSES = ["new", "contacted", "interested", "engaged", "converted"];
 const ACTION_TYPES = ["enroll_sequence", "schedule_followup"];
@@ -23,6 +24,7 @@ const ACTION_TYPES = ["enroll_sequence", "schedule_followup"];
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
+  const { user, logout } = useAuth();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   const { data: settings = {} } = useQuery({ queryKey: ["settings"], queryFn: api.getSettings });
@@ -213,6 +215,38 @@ export default function SettingsScreen() {
           <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{company_name}}"}</Text><Text style={styles.mergeDesc}>Recipient's company</Text></View>
           <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{founder_name}}"}</Text><Text style={styles.mergeDesc}>Your name (set above)</Text></View>
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Account</Text>
+        {user && (
+          <View style={styles.integrationRow}>
+            <View style={[styles.integrationIcon, { backgroundColor: Colors.primary }]}>
+              <Text style={{ color: Colors.accent, fontFamily: "Inter_700Bold", fontSize: 16 }}>
+                {(user.firstName?.[0] || user.email?.[0] || "?").toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.integrationInfo}>
+              <Text style={styles.integrationName}>
+                {[user.firstName, user.lastName].filter(Boolean).join(" ") || "User"}
+              </Text>
+              {user.email && (
+                <Text style={styles.integrationStatus}>{user.email}</Text>
+              )}
+            </View>
+          </View>
+        )}
+        <Pressable
+          style={[styles.addBtn, { backgroundColor: Colors.error, marginTop: 12 }]}
+          onPress={() => {
+            Alert.alert("Log Out", "Are you sure you want to log out?", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Log Out", style: "destructive", onPress: () => logout() },
+            ]);
+          }}
+        >
+          <Text style={styles.addBtnText}>Log Out</Text>
+        </Pressable>
       </View>
 
       <View style={{ height: 40 }} />

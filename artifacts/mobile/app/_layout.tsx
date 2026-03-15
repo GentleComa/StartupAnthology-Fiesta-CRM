@@ -14,11 +14,21 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { LoginScreen } from "@/components/LoginScreen";
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { isLoading, isAuthenticated } = useAuth();
+
+  if (isLoading) return null;
+  if (!isAuthenticated) return <LoginScreen />;
+
+  return <>{children}</>;
+}
 
 function RootLayoutNav() {
   return (
@@ -57,7 +67,11 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView>
             <KeyboardProvider>
-              <RootLayoutNav />
+              <AuthProvider>
+                <AuthGate>
+                  <RootLayoutNav />
+                </AuthGate>
+              </AuthProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>

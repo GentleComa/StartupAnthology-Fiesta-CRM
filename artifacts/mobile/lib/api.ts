@@ -1,16 +1,32 @@
 import { getApiBaseUrl } from "@/constants/api";
+import * as SecureStore from "expo-secure-store";
 
 const BASE = getApiBaseUrl();
+const AUTH_TOKEN_KEY = "auth_session_token";
 
 async function request(path: string, options?: RequestInit) {
   const url = `${BASE}${path}`;
+  const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options?.headers as Record<string, string>),
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(url, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
+    headers,
   });
+
+  if (res.status === 401) {
+    await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+    throw new Error("SESSION_EXPIRED");
+  }
+
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`API error ${res.status}: ${text}`);

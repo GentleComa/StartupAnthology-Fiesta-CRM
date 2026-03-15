@@ -85,9 +85,27 @@ artifacts-monorepo/
 - Trigger rules: auto-actions when lead status changes (enroll in sequence, schedule follow-up)
 - Merge tag reference
 
+## Authentication
+
+- **Replit Auth** via OpenID Connect with PKCE
+- Mobile flow: `expo-auth-session` → OIDC provider → auth code → token exchange via `POST /api/mobile-auth/token-exchange` → session token stored in `expo-secure-store`
+- Auth middleware runs on every request, loads user from session
+- `AuthProvider` wraps the app in `_layout.tsx`, `AuthGate` shows login screen if not authenticated
+- Login screen at `components/LoginScreen.tsx`
+- Logout button in Settings screen with confirmation alert
+- Sessions stored in PostgreSQL (`sessions` table), users in `users` table
+
+### Auth Endpoints
+- `GET /api/auth/user` — current user state
+- `GET /api/login` — browser OIDC login flow
+- `GET /api/callback` — OIDC callback
+- `GET /api/logout` — clear session + OIDC logout
+- `POST /api/mobile-auth/token-exchange` — mobile auth code exchange
+- `POST /api/mobile-auth/logout` — mobile logout
+
 ## Database Schema
 
-Tables: leads (with is_beta), contacts, activities, email_templates, drip_sequences, drip_sequence_steps, drip_enrollments, broadcasts, trigger_rules, app_settings
+Tables: leads (with is_beta), contacts, activities, email_templates, drip_sequences, drip_sequence_steps, drip_enrollments, broadcasts, trigger_rules, app_settings, sessions, users
 
 ## Design
 
