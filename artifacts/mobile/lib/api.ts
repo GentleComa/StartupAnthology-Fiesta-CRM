@@ -129,4 +129,25 @@ export const api = {
 
   sendEmail: (data: { to: string; subject: string; body: string; leadId?: number; contactId?: number }) =>
     request("/email/send", { method: "POST", body: JSON.stringify(data) }),
+
+  getCalendarEvents: (params?: { startDate?: string; endDate?: string; leadId?: number; contactId?: number }) => {
+    const sp = new URLSearchParams();
+    if (params?.startDate) sp.set("startDate", params.startDate);
+    if (params?.endDate) sp.set("endDate", params.endDate);
+    if (params?.leadId) sp.set("leadId", String(params.leadId));
+    if (params?.contactId) sp.set("contactId", String(params.contactId));
+    const qs = sp.toString();
+    return request(`/calendar/events${qs ? `?${qs}` : ""}`);
+  },
+  createCalendarEvent: (data: {
+    title: string;
+    description?: string;
+    startTime: string;
+    endTime: string;
+    leadId?: number;
+    contactId?: number;
+    eventType?: string;
+  }) => request("/calendar/events", { method: "POST", body: JSON.stringify(data) }),
+  deleteCalendarEvent: (id: number) =>
+    request(`/calendar/events/${id}`, { method: "DELETE" }),
 };

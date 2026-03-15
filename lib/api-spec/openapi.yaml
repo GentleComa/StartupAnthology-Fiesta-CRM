@@ -18,6 +18,7 @@ tags:
   - name: settings
   - name: dashboard
   - name: email
+  - name: calendar
   - name: Auth
     description: Browser and mobile authentication endpoints.
 
@@ -782,6 +783,72 @@ paths:
                   messageId:
                     type: string
 
+  /calendar/events:
+    get:
+      operationId: getCalendarEvents
+      tags: [calendar]
+      summary: List calendar events
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: leadId
+          in: query
+          schema:
+            type: integer
+        - name: contactId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Calendar events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CalendarEvent"
+    post:
+      operationId: createCalendarEvent
+      tags: [calendar]
+      summary: Create a calendar event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCalendarEvent"
+      responses:
+        "201":
+          description: Created calendar event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarEvent"
+
+  /calendar/events/{id}:
+    delete:
+      operationId: deleteCalendarEvent
+      tags: [calendar]
+      summary: Delete a calendar event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /auth/user:
     get:
       tags: [Auth]
@@ -1394,6 +1461,67 @@ components:
           type: integer
         contactId:
           type: integer
+        addToCalendar:
+          type: boolean
+
+    CalendarEvent:
+      type: object
+      required: [id, title, eventType, startTime, endTime, createdAt]
+      properties:
+        id:
+          type: integer
+        googleEventId:
+          type: string
+          nullable: true
+        leadId:
+          type: integer
+          nullable: true
+        contactId:
+          type: integer
+          nullable: true
+        eventType:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        leadName:
+          type: string
+          nullable: true
+        contactName:
+          type: string
+          nullable: true
+
+    CreateCalendarEvent:
+      type: object
+      required: [title, startTime, endTime]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        leadId:
+          type: integer
+        contactId:
+          type: integer
+        eventType:
+          type: string
 
     AuthUser:
       type: object

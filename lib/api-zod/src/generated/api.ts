@@ -655,11 +655,60 @@ export const SendEmailBody = zod.object({
   body: zod.string(),
   leadId: zod.number().optional(),
   contactId: zod.number().optional(),
+  addToCalendar: zod.boolean().optional(),
 });
 
 export const SendEmailResponse = zod.object({
   success: zod.boolean().optional(),
   messageId: zod.string().optional(),
+});
+
+/**
+ * @summary List calendar events
+ */
+export const GetCalendarEventsQueryParams = zod.object({
+  startDate: zod.date().optional(),
+  endDate: zod.date().optional(),
+  leadId: zod.coerce.number().optional(),
+  contactId: zod.coerce.number().optional(),
+});
+
+export const GetCalendarEventsResponseItem = zod.object({
+  id: zod.number(),
+  googleEventId: zod.string().nullish(),
+  leadId: zod.number().nullish(),
+  contactId: zod.number().nullish(),
+  eventType: zod.string(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  startTime: zod.date(),
+  endTime: zod.date(),
+  createdAt: zod.date(),
+  leadName: zod.string().nullish(),
+  contactName: zod.string().nullish(),
+});
+export const GetCalendarEventsResponse = zod.array(
+  GetCalendarEventsResponseItem,
+);
+
+/**
+ * @summary Create a calendar event
+ */
+export const CreateCalendarEventBody = zod.object({
+  title: zod.string(),
+  description: zod.string().optional(),
+  startTime: zod.date(),
+  endTime: zod.date(),
+  leadId: zod.number().optional(),
+  contactId: zod.number().optional(),
+  eventType: zod.string().optional(),
+});
+
+/**
+ * @summary Delete a calendar event
+ */
+export const DeleteCalendarEventParams = zod.object({
+  id: zod.coerce.number(),
 });
 
 /**

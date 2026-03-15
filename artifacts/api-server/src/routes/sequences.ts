@@ -1,7 +1,8 @@
 import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { dripSequencesTable, dripSequenceStepsTable, dripEnrollmentsTable } from "@workspace/db";
+import { dripSequencesTable, dripSequenceStepsTable, dripEnrollmentsTable, calendarEventsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
+import { createCalendarEvent } from "../lib/calendar";
 
 const router = Router();
 
@@ -74,14 +75,43 @@ router.post("/sequences/:id/steps", async (req: Request, res: Response) => {
 
 router.post("/sequences/:id/enroll", async (req: Request, res: Response) => {
   try {
+    const seqId = Number(req.params.id);
+    const [sequence] = await db.select().from(dripSequencesTable).where(eq(dripSequencesTable.id, seqId));
     const [enrollment] = await db.insert(dripEnrollmentsTable).values({
-      sequenceId: Number(req.params.id),
+      sequenceId: seqId,
       leadId: req.body.leadId || null,
       contactId: req.body.contactId || null,
       currentStep: 0,
       status: "active",
       nextSendAt: new Date(),
     }).returning();
+
+    if (req.body.addToCalendar && sequence) {
+      const now = new Date();
+      const endTime = new Date(now.getTime() + 15 * 60000);
+      let googleEventId: string | null = null;
+      try {
+        googleEventId = await createCalendarEvent({
+          title: `Drip: ${sequence.name}`,
+          description: `Enrolled in drip sequence "${sequence.name}"`,
+          startTime: now.toISOString(),
+          endTime: endTime.toISOString(),
+        });
+      } catch (err: any) {
+        console.error("Google Calendar sync failed for enrollment:", err.message);
+      }
+      await db.insert(calendarEventsTable).values({
+        googleEventId,
+        title: `Drip: ${sequence.name}`,
+        description: `Enrolled in drip sequence "${sequence.name}"`,
+        startTime: now,
+        endTime: endTime,
+        leadId: req.body.leadId || null,
+        contactId: req.body.contactId || null,
+        eventType: "follow-up",
+      });
+    }
+
     res.status(201).json(enrollment);
   } catch (err: any) {
     res.status(400).json({ error: err.message });

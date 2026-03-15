@@ -12,6 +12,7 @@ import triggersRouter from "./triggers";
 import settingsRouter from "./settings";
 import dashboardRouter from "./dashboard";
 import emailRouter from "./email";
+import calendarRouter from "./calendar";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(triggersRouter);
 router.use(settingsRouter);
 router.use(dashboardRouter);
 router.use(emailRouter);
+router.use(calendarRouter);
 
 export default router;

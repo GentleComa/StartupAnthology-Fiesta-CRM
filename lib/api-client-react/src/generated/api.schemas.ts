@@ -225,6 +225,32 @@ export interface SendEmail {
   body: string;
   leadId?: number;
   contactId?: number;
+  addToCalendar?: boolean;
+}
+
+export interface CalendarEvent {
+  id: number;
+  googleEventId?: string | null;
+  leadId?: number | null;
+  contactId?: number | null;
+  eventType: string;
+  title: string;
+  description?: string | null;
+  startTime: string;
+  endTime: string;
+  createdAt: string;
+  leadName?: string | null;
+  contactName?: string | null;
+}
+
+export interface CreateCalendarEvent {
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  leadId?: number;
+  contactId?: number;
+  eventType?: string;
 }
 
 export interface AuthUser {
@@ -335,6 +361,13 @@ export type UpdateSettings200 = { [key: string]: string };
 export type SendEmail200 = {
   success?: boolean;
   messageId?: string;
+};
+
+export type GetCalendarEventsParams = {
+  startDate?: string;
+  endDate?: string;
+  leadId?: number;
+  contactId?: number;
 };
 
 export type BeginBrowserLoginParams = {

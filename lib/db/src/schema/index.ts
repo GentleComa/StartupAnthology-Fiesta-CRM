@@ -7,3 +7,4 @@ export * from "./broadcasts";
 export * from "./triggerRules";
 export * from "./settings";
 export * from "./auth";
+export * from "./calendarEvents";

@@ -1,8 +1,9 @@
 import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { contactsTable } from "@workspace/db";
+import { contactsTable, calendarEventsTable } from "@workspace/db";
 import { eq, sql, and, lte, isNotNull } from "drizzle-orm";
 import { fireAndForgetContactSync } from "../lib/notionSync";
+import { createCalendarEvent } from "../lib/calendar";
 
 const router = Router();
 
@@ -89,6 +90,31 @@ router.post("/contacts/:id/mark-contacted", async (req: Request, res: Response) 
       .where(eq(contactsTable.id, Number(req.params.id)))
       .returning();
     if (!contact) return res.status(404).json({ error: "Not found" });
+
+    if (req.body.addToCalendar !== false) {
+      const followUpEnd = new Date(followUp.getTime() + 30 * 60000);
+      let googleEventId: string | null = null;
+      try {
+        googleEventId = await createCalendarEvent({
+          title: `Follow-up: ${contact.name}`,
+          description: `Scheduled follow-up with ${contact.name}`,
+          startTime: followUp.toISOString(),
+          endTime: followUpEnd.toISOString(),
+        });
+      } catch (err: any) {
+        console.error("Google Calendar sync failed for follow-up:", err.message);
+      }
+      await db.insert(calendarEventsTable).values({
+        googleEventId,
+        title: `Follow-up: ${contact.name}`,
+        description: `Scheduled follow-up with ${contact.name}`,
+        startTime: followUp,
+        endTime: followUpEnd,
+        contactId: contact.id,
+        eventType: "follow-up",
+      });
+    }
+
     res.json(contact);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

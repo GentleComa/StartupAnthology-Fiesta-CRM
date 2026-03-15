@@ -16,7 +16,7 @@ Mobile-first CRM app for a solo founder/small team. Built with Expo (React Nativ
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **State management**: TanStack React Query
-- **Integrations**: Gmail (via googleapis), Notion (via @replit/connectors-sdk)
+- **Integrations**: Gmail (via googleapis), Notion (via @replit/connectors-sdk), Google Calendar (via googleapis)
 
 ## Structure
 
@@ -24,7 +24,7 @@ Mobile-first CRM app for a solo founder/small team. Built with Expo (React Nativ
 artifacts-monorepo/
 ├── artifacts/
 │   ├── mobile/                # Expo React Native app (iOS-first)
-│   │   ├── app/(tabs)/        # Tab screens: Dashboard, Funnel, Contacts, Comms
+│   │   ├── app/(tabs)/        # Tab screens: Dashboard, Funnel, Contacts, Calendar, Comms
 │   │   ├── app/lead/[id].tsx  # Lead detail screen
 │   │   ├── app/contact/[id].tsx # Contact detail screen
 │   │   ├── app/compose-email.tsx # Email composer with template support
@@ -36,8 +36,9 @@ artifacts-monorepo/
 │   │   ├── constants/api.ts   # API base URL config
 │   │   └── lib/api.ts         # All API client methods
 │   ├── api-server/            # Express API server
-│   │   ├── src/routes/        # leads, contacts, activities, templates, sequences, broadcasts, triggers, settings, dashboard, email
+│   │   ├── src/routes/        # leads, contacts, activities, templates, sequences, broadcasts, triggers, settings, dashboard, email, calendar
 │   │   ├── src/lib/gmail.ts   # Gmail send via googleapis
+│   │   ├── src/lib/calendar.ts # Google Calendar client via googleapis
 │   │   ├── src/lib/notion.ts  # Notion sync via connectors-sdk
 │   │   ├── src/lib/notionSync.ts # Fire-and-forget Notion sync helpers
 │   │   ├── src/lib/dripWorker.ts # Background drip sequence email worker (60s interval)
@@ -48,7 +49,7 @@ artifacts-monorepo/
 │   ├── api-client-react/      # Generated React Query hooks
 │   ├── api-zod/               # Generated Zod schemas
 │   └── db/                    # Drizzle ORM schema + DB
-│       └── src/schema/        # leads, contacts, activities, emailTemplates, dripSequences, broadcasts, triggerRules, settings
+│       └── src/schema/        # leads, contacts, activities, emailTemplates, dripSequences, broadcasts, triggerRules, settings, calendarEvents
 ├── scripts/
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json
@@ -108,7 +109,7 @@ artifacts-monorepo/
 
 ## Database Schema
 
-Tables: leads (with is_beta), contacts, activities, email_templates, drip_sequences, drip_sequence_steps, drip_enrollments, broadcasts, trigger_rules, app_settings, sessions, users
+Tables: leads (with is_beta), contacts, activities, email_templates, drip_sequences, drip_sequence_steps, drip_enrollments, broadcasts, trigger_rules, app_settings, sessions, users, calendar_events
 
 ## Design
 
@@ -117,7 +118,7 @@ Tables: leads (with is_beta), contacts, activities, email_templates, drip_sequen
 - **Brand Voice**: Founder-to-founder, direct, no fluff. Earned empathy, clarity over polish, confidence without arrogance, functional optimism. Peer register (we/you). NOT corporate, NOT startup-bro hype, NOT patronizing. One-liner: "Straight-talking, founder-built confidence — for the people doing the actual work."
 - **Navigation**: NativeTabs with liquid glass on iOS 26+, classic blur tabs fallback
 - **Icons**: SF Symbols on iOS, Feather icons on web/Android
-- **Tab bar**: 4 tabs — Dashboard, Funnel, Contacts, Comms
+- **Tab bar**: 5 tabs — Dashboard, Funnel, Contacts, Calendar, Comms
 
 ## API Endpoints
 
@@ -132,11 +133,19 @@ All mounted at `/api`:
 - `GET/PUT /settings`
 - `GET /dashboard`
 - `POST /email/send`
+- `GET/POST /calendar/events`, `DELETE /calendar/events/:id`
 
 ## Gmail Integration
 
 Connection ID: `conn_google-mail_01KKQYC5ZK0BWADJWDAWCZDHM0`
 Uses `getUncachableGmailClient()` pattern — never cache the OAuth client.
+
+## Google Calendar Integration
+
+Connection ID: `conn_google-calendar_01KKR2MGZF170P7X5CN0DSXS9B`
+Uses dynamic token refresh via Replit Connectors API. Never caches the client — calls `getUncachableGoogleCalendarClient()` each time.
+Calendar events are stored locally in `calendar_events` table and synced to Google Calendar on create/delete.
+Events can be linked to leads or contacts. Email sends can optionally log to calendar.
 
 ## Notion Integration
 

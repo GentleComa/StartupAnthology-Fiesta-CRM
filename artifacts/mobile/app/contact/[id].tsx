@@ -37,6 +37,10 @@ export default function ContactDetailScreen() {
     queryKey: ["activities", "contact", id],
     queryFn: () => api.getActivities({ contactId: Number(id) }),
   });
+  const { data: calendarEvents = [] } = useQuery({
+    queryKey: ["calendarEvents", "contact", id],
+    queryFn: () => api.getCalendarEvents({ contactId: Number(id) }),
+  });
   const { data: sequences = [] } = useQuery({ queryKey: ["sequences"], queryFn: api.getSequences });
 
   const updateMut = useMutation({
@@ -171,6 +175,21 @@ export default function ContactDetailScreen() {
           <Text style={styles.notesText}>{contact.notes || "Nothing here yet."}</Text>
         )}
       </View>
+
+      {calendarEvents.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Scheduled Events</Text>
+          {calendarEvents.map((ev: any) => (
+            <View key={ev.id} style={styles.activityItem}>
+              <View style={[styles.activityDot, { backgroundColor: Colors.accent }]} />
+              <View style={styles.activityContent}>
+                <Text style={styles.activityType}>{ev.title}</Text>
+                <Text style={styles.activityNote}>{ev.eventType} · {new Date(ev.startTime).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Activity</Text>

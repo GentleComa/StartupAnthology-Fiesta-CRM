@@ -6,11 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface SendEmail {
-  to: string;
-  subject: string;
-  body: string;
+export type GetCalendarEventsParams = {
+  startDate?: Date;
+  endDate?: Date;
   leadId?: number;
   contactId?: number;
-  addToCalendar?: boolean;
-}
+};
