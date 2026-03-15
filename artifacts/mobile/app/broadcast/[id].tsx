@@ -27,7 +27,7 @@ export default function BroadcastDetailScreen() {
     queryFn: api.getBroadcasts,
   });
 
-  const broadcast = broadcasts.find((b: any) => String(b.id) === id);
+  const broadcast = broadcasts.find((b: { id: number | string }) => String(b.id) === id);
 
   return (
     <View style={[styles.container, { paddingTop: topPad, backgroundColor: colors.background }]}>
