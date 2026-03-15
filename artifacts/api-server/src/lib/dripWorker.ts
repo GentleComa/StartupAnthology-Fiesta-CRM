@@ -101,7 +101,12 @@ async function processEnrollments() {
         const [template] = await db
           .select()
           .from(emailTemplatesTable)
-          .where(eq(emailTemplatesTable.id, currentStep.templateId));
+          .where(
+            and(
+              eq(emailTemplatesTable.id, currentStep.templateId),
+              eq(emailTemplatesTable.userId, ownerId)
+            )
+          );
 
         if (!template) {
           console.error(
@@ -124,13 +129,23 @@ async function processEnrollments() {
           const [lead] = await db
             .select()
             .from(leadsTable)
-            .where(eq(leadsTable.id, enrollment.leadId));
+            .where(
+              and(
+                eq(leadsTable.id, enrollment.leadId),
+                eq(leadsTable.userId, ownerId)
+              )
+            );
           if (lead) recipient = { name: lead.name, email: lead.email };
         } else if (enrollment.contactId) {
           const [contact] = await db
             .select()
             .from(contactsTable)
-            .where(eq(contactsTable.id, enrollment.contactId));
+            .where(
+              and(
+                eq(contactsTable.id, enrollment.contactId),
+                eq(contactsTable.userId, ownerId)
+              )
+            );
           if (contact && contact.email)
             recipient = {
               name: contact.name,

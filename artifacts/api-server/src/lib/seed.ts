@@ -29,12 +29,11 @@ export async function seedDefaults() {
     if (!user.passwordHash) {
       const tempPassword = crypto.randomBytes(16).toString("hex");
       const passwordHash = await bcrypt.hash(tempPassword, 12);
-      const isFirstUser = users.indexOf(user) === 0 && users.filter(u => u.role === "admin").length === 0;
       await db.update(usersTable).set({
         passwordHash,
-        role: isFirstUser ? "admin" : user.role,
+        role: "admin",
       }).where(eq(usersTable.id, user.id));
-      console.log(`Migrated user ${user.email} — password reset required${isFirstUser ? " (promoted to admin)" : ""}`);
+      console.log(`Migrated user ${user.email} — promoted to admin, password reset required`);
     }
     await seedDefaultSettings(user.id);
   }
