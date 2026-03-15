@@ -85,6 +85,7 @@ router.post("/sequences/:id/steps", async (req: Request, res: Response) => {
       ...req.body,
       sequenceId: seqId,
     }).returning();
+    logAudit("sequence_step", step.id, "create", req.user!.id, null, step as Record<string, unknown>);
     res.status(201).json(step);
   } catch (err: any) {
     res.status(400).json({ error: err.message });

@@ -105,13 +105,14 @@ router.post("/broadcasts", async (req: Request, res: Response) => {
       }
     }
 
-    await db.update(broadcastsTable).set({
+    const [updatedBroadcast] = await db.update(broadcastsTable).set({
       status: "sent",
       sentAt: new Date(),
       recipientCount: sentCount,
-    }).where(eq(broadcastsTable.id, broadcast.id));
+    }).where(eq(broadcastsTable.id, broadcast.id)).returning();
+    logAudit("broadcast", broadcast.id, "update", userId, broadcast as Record<string, unknown>, updatedBroadcast as Record<string, unknown>);
 
-    res.status(201).json({ ...broadcast, status: "sent", recipientCount: sentCount });
+    res.status(201).json(updatedBroadcast);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

@@ -25,6 +25,7 @@ const ENTITY_TABLES: Record<string, any> = {
   calendar_event: calendarEventsTable,
   trigger: triggerRulesTable,
   broadcast: broadcastsTable,
+  setting: settingsTable,
 };
 
 const ENTITY_ID_COLS: Record<string, any> = {
@@ -35,6 +36,7 @@ const ENTITY_ID_COLS: Record<string, any> = {
   calendar_event: calendarEventsTable.id,
   trigger: triggerRulesTable.id,
   broadcast: broadcastsTable.id,
+  setting: settingsTable.id,
 };
 
 const ENTITY_USER_COLS: Record<string, any> = {
@@ -45,7 +47,16 @@ const ENTITY_USER_COLS: Record<string, any> = {
   calendar_event: calendarEventsTable.userId,
   trigger: triggerRulesTable.userId,
   broadcast: broadcastsTable.userId,
+  setting: settingsTable.userId,
 };
+
+const TABLES_WITH_UPDATED_AT = new Set([
+  "lead",
+  "contact",
+  "template",
+  "sequence",
+  "setting",
+]);
 
 router.get("/history/:entityType/:entityId", async (req: Request, res: Response) => {
   try {
@@ -62,8 +73,22 @@ router.get("/history/:entityType/:entityId", async (req: Request, res: Response)
     const idCol = ENTITY_ID_COLS[entityType];
     const userCol = ENTITY_USER_COLS[entityType];
     const [record] = await db.select().from(table).where(and(eq(idCol, Number(entityId)), eq(userCol, userId)));
+
     if (!record) {
-      return res.status(404).json({ error: "Entity not found" });
+      const [anyAudit] = await db
+        .select({ id: auditLogTable.id })
+        .from(auditLogTable)
+        .where(
+          and(
+            eq(auditLogTable.entityType, entityType),
+            eq(auditLogTable.entityId, Number(entityId))
+          )
+        )
+        .limit(1);
+
+      if (!anyAudit) {
+        return res.status(404).json({ error: "Entity not found" });
+      }
     }
 
     const entries = await db
@@ -125,9 +150,6 @@ router.post("/history/:entityType/:entityId/rollback/:revisionId", async (req: R
     const userCol = ENTITY_USER_COLS[entityType];
 
     const [currentRecord] = await db.select().from(table).where(and(eq(idCol, Number(entityId)), eq(userCol, userId)));
-    if (!currentRecord) {
-      return res.status(404).json({ error: "Entity not found" });
-    }
 
     const [auditEntry] = await db
       .select()
@@ -142,6 +164,22 @@ router.post("/history/:entityType/:entityId/rollback/:revisionId", async (req: R
 
     if (!auditEntry) {
       return res.status(404).json({ error: "Revision not found" });
+    }
+
+    if (!currentRecord) {
+      const [ownershipCheck] = await db
+        .select({ userId: auditLogTable.userId })
+        .from(auditLogTable)
+        .where(
+          and(
+            eq(auditLogTable.entityType, entityType),
+            eq(auditLogTable.entityId, Number(entityId))
+          )
+        )
+        .limit(1);
+      if (!ownershipCheck || ownershipCheck.userId !== userId) {
+        return res.status(404).json({ error: "Entity not found" });
+      }
     }
 
     let restoreData: Record<string, unknown> | null = null;
@@ -160,15 +198,42 @@ router.post("/history/:entityType/:entityId/rollback/:revisionId", async (req: R
 
     const { id: _id, createdAt: _ca, updatedAt: _ua, userId: _uid, ...safeData } = restoreData as Record<string, unknown>;
 
-    const [updated] = await db
-      .update(table)
-      .set({ ...safeData, updatedAt: new Date() })
-      .where(and(eq(idCol, Number(entityId)), eq(userCol, userId)))
-      .returning();
+    const setData: Record<string, unknown> = { ...safeData };
+    if (TABLES_WITH_UPDATED_AT.has(entityType)) {
+      setData.updatedAt = new Date();
+    }
 
-    logAudit(entityType, Number(entityId), "rollback", userId, currentRecord as Record<string, unknown>, updated as Record<string, unknown>);
+    let result: Record<string, unknown>;
 
-    res.json(updated);
+    if (currentRecord) {
+      const [updated] = await db
+        .update(table)
+        .set(setData)
+        .where(and(eq(idCol, Number(entityId)), eq(userCol, userId)))
+        .returning();
+      result = updated as Record<string, unknown>;
+    } else {
+      const insertData: Record<string, unknown> = { ...safeData, userId, id: Number(entityId) };
+      if (TABLES_WITH_UPDATED_AT.has(entityType)) {
+        insertData.updatedAt = new Date();
+      }
+      const [inserted] = await db
+        .insert(table)
+        .values(insertData)
+        .returning();
+      result = inserted as Record<string, unknown>;
+    }
+
+    logAudit(
+      entityType,
+      Number(entityId),
+      "rollback",
+      userId,
+      currentRecord ? (currentRecord as Record<string, unknown>) : null,
+      result
+    );
+
+    res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
