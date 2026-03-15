@@ -1,8 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { leadsTable, triggerRulesTable, dripEnrollmentsTable, contactsTable, settingsTable } from "@workspace/db";
+import { leadsTable, triggerRulesTable, dripEnrollmentsTable, contactsTable } from "@workspace/db";
 import { eq, sql, and, lte } from "drizzle-orm";
-import { syncLeadToNotion } from "../lib/notion";
 import { fireAndForgetLeadSync } from "../lib/notionSync";
 
 const router = Router();
@@ -32,14 +31,7 @@ router.post("/leads", async (req: Request, res: Response) => {
   try {
     const [lead] = await db.insert(leadsTable).values(req.body).returning();
 
-    const settingsRows = await db.select().from(settingsTable);
-    const notionDbId = settingsRows.find((s) => s.key === "notion_leads_db")?.value;
-    if (notionDbId) {
-      const pageId = await syncLeadToNotion(lead, notionDbId);
-      if (pageId && !lead.notionPageId) {
-        await db.update(leadsTable).set({ notionPageId: pageId }).where(eq(leadsTable.id, lead.id));
-      }
-    }
+    fireAndForgetLeadSync(lead);
 
     res.status(201).json(lead);
   } catch (err: any) {

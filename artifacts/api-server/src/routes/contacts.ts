@@ -1,8 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { contactsTable, settingsTable } from "@workspace/db";
+import { contactsTable } from "@workspace/db";
 import { eq, sql, and, lte, isNotNull } from "drizzle-orm";
-import { syncContactToNotion } from "../lib/notion";
 import { fireAndForgetContactSync } from "../lib/notionSync";
 
 const router = Router();
@@ -41,14 +40,7 @@ router.post("/contacts", async (req: Request, res: Response) => {
   try {
     const [contact] = await db.insert(contactsTable).values(req.body).returning();
 
-    const settingsRows = await db.select().from(settingsTable);
-    const notionDbId = settingsRows.find((s) => s.key === "notion_contacts_db")?.value;
-    if (notionDbId) {
-      const pageId = await syncContactToNotion(contact, notionDbId);
-      if (pageId && !contact.notionPageId) {
-        await db.update(contactsTable).set({ notionPageId: pageId }).where(eq(contactsTable.id, contact.id));
-      }
-    }
+    fireAndForgetContactSync(contact);
 
     res.status(201).json(contact);
   } catch (err: any) {
