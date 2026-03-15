@@ -94,6 +94,7 @@ router.post("/ai/chat/sync", async (req: Request, res: Response, next: NextFunct
     }
 
     const content = await processChatSync(convId, message, userId);
+    res.setHeader("X-Conversation-Id", String(convId));
     res.json({ content, conversationId: convId });
   } catch (err) {
     next(err);
