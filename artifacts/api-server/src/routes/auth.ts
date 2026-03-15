@@ -62,16 +62,20 @@ async function upsertUser(claims: Record<string, unknown>) {
     profileImageUrl: (claims.profile_image_url || claims.picture) as string | null,
   };
 
-  const [existing] = await db
+  // Check by OIDC sub id first (fast path for returning users)
+  const [existingById] = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.id, userData.id));
 
-  if (existing) {
+  if (existingById) {
     const [user] = await db
       .update(usersTable)
       .set({
-        ...userData,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        profileImageUrl: userData.profileImageUrl,
         updatedAt: new Date(),
       })
       .where(eq(usersTable.id, userData.id))
@@ -79,6 +83,32 @@ async function upsertUser(claims: Record<string, unknown>) {
     return user;
   }
 
+  // Check by email — handles migration from old auth systems where the user
+  // was created with a different ID (e.g. UUID from email/password auth)
+  if (userData.email) {
+    const [existingByEmail] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, userData.email));
+
+    if (existingByEmail) {
+      // Found by email — keep their existing primary key (changing it would
+      // break FK constraints across 14 tables). Just refresh their profile info.
+      const [user] = await db
+        .update(usersTable)
+        .set({
+          firstName: userData.firstName ?? existingByEmail.firstName,
+          lastName: userData.lastName ?? existingByEmail.lastName,
+          profileImageUrl: userData.profileImageUrl ?? existingByEmail.profileImageUrl,
+          updatedAt: new Date(),
+        })
+        .where(eq(usersTable.email, userData.email))
+        .returning();
+      return user;
+    }
+  }
+
+  // Brand new user — insert and seed default settings
   const [user] = await db
     .insert(usersTable)
     .values(userData)
