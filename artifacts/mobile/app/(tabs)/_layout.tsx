@@ -32,12 +32,6 @@ function NativeTabLayout() {
         <Icon sf={{ default: "ellipsis.circle", selected: "ellipsis.circle.fill" }} />
         <Label>More</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="files" hidden>
-        <Label>Files</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="comms" hidden>
-        <Label>Comms</Label>
-      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -137,18 +131,6 @@ function ClassicTabLayout() {
             ) : (
               <Feather name="more-horizontal" size={22} color={color} />
             ),
-        }}
-      />
-      <Tabs.Screen
-        name="files"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="comms"
-        options={{
-          href: null,
         }}
       />
     </Tabs>

@@ -17,8 +17,8 @@ import { useTheme } from "@/lib/theme";
 const saIconWhite = require("@/assets/images/sa-icon-white.png");
 
 const MENU_ITEMS = [
-  { label: "Files", icon: "folder", route: "/(tabs)/files" },
-  { label: "Communications", icon: "mail", route: "/(tabs)/comms" },
+  { label: "Files", icon: "folder", route: "/files" },
+  { label: "Communications", icon: "mail", route: "/comms" },
   { label: "Settings", icon: "settings", route: "/settings" },
 ] as const;
 
