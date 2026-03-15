@@ -6,6 +6,7 @@ import {
   contactsTable,
   emailTemplatesTable,
   dripSequencesTable,
+  dripSequenceStepsTable,
   calendarEventsTable,
   settingsTable,
   triggerRulesTable,
@@ -13,50 +14,102 @@ import {
   usersTable,
 } from "@workspace/db";
 import { eq, and, sql, desc } from "drizzle-orm";
+import type { PgTable } from "drizzle-orm/pg-core";
+import type { PgColumn } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit";
 
 const router = Router();
 
-const ENTITY_TABLES: Record<string, any> = {
-  lead: leadsTable,
-  contact: contactsTable,
-  template: emailTemplatesTable,
-  sequence: dripSequencesTable,
-  calendar_event: calendarEventsTable,
-  trigger: triggerRulesTable,
-  broadcast: broadcastsTable,
-  setting: settingsTable,
+interface EntityDescriptor {
+  table: PgTable;
+  idCol: PgColumn;
+  userCol: PgColumn | null;
+  hasUpdatedAt: boolean;
+}
+
+const ENTITY_MAP: Record<string, EntityDescriptor> = {
+  lead: {
+    table: leadsTable,
+    idCol: leadsTable.id,
+    userCol: leadsTable.userId,
+    hasUpdatedAt: true,
+  },
+  contact: {
+    table: contactsTable,
+    idCol: contactsTable.id,
+    userCol: contactsTable.userId,
+    hasUpdatedAt: true,
+  },
+  template: {
+    table: emailTemplatesTable,
+    idCol: emailTemplatesTable.id,
+    userCol: emailTemplatesTable.userId,
+    hasUpdatedAt: true,
+  },
+  sequence: {
+    table: dripSequencesTable,
+    idCol: dripSequencesTable.id,
+    userCol: dripSequencesTable.userId,
+    hasUpdatedAt: true,
+  },
+  sequence_step: {
+    table: dripSequenceStepsTable,
+    idCol: dripSequenceStepsTable.id,
+    userCol: null,
+    hasUpdatedAt: false,
+  },
+  calendar_event: {
+    table: calendarEventsTable,
+    idCol: calendarEventsTable.id,
+    userCol: calendarEventsTable.userId,
+    hasUpdatedAt: false,
+  },
+  trigger: {
+    table: triggerRulesTable,
+    idCol: triggerRulesTable.id,
+    userCol: triggerRulesTable.userId,
+    hasUpdatedAt: false,
+  },
+  broadcast: {
+    table: broadcastsTable,
+    idCol: broadcastsTable.id,
+    userCol: broadcastsTable.userId,
+    hasUpdatedAt: false,
+  },
+  setting: {
+    table: settingsTable,
+    idCol: settingsTable.id,
+    userCol: settingsTable.userId,
+    hasUpdatedAt: true,
+  },
 };
 
-const ENTITY_ID_COLS: Record<string, any> = {
-  lead: leadsTable.id,
-  contact: contactsTable.id,
-  template: emailTemplatesTable.id,
-  sequence: dripSequencesTable.id,
-  calendar_event: calendarEventsTable.id,
-  trigger: triggerRulesTable.id,
-  broadcast: broadcastsTable.id,
-  setting: settingsTable.id,
-};
+async function verifyOwnership(
+  descriptor: EntityDescriptor,
+  entityType: string,
+  entityId: number,
+  userId: string
+): Promise<boolean> {
+  if (entityType === "sequence_step") {
+    const [step] = await db
+      .select({ sequenceId: dripSequenceStepsTable.sequenceId })
+      .from(dripSequenceStepsTable)
+      .where(eq(dripSequenceStepsTable.id, entityId));
+    if (!step) return false;
+    const [seq] = await db
+      .select({ id: dripSequencesTable.id })
+      .from(dripSequencesTable)
+      .where(and(eq(dripSequencesTable.id, step.sequenceId), eq(dripSequencesTable.userId, userId)));
+    return !!seq;
+  }
 
-const ENTITY_USER_COLS: Record<string, any> = {
-  lead: leadsTable.userId,
-  contact: contactsTable.userId,
-  template: emailTemplatesTable.userId,
-  sequence: dripSequencesTable.userId,
-  calendar_event: calendarEventsTable.userId,
-  trigger: triggerRulesTable.userId,
-  broadcast: broadcastsTable.userId,
-  setting: settingsTable.userId,
-};
-
-const TABLES_WITH_UPDATED_AT = new Set([
-  "lead",
-  "contact",
-  "template",
-  "sequence",
-  "setting",
-]);
+  if (!descriptor.userCol) return false;
+  const [record] = await db
+    .select()
+    .from(descriptor.table)
+    .where(and(eq(descriptor.idCol, entityId), eq(descriptor.userCol, userId)));
+  return !!record;
+}
 
 router.get("/history/:entityType/:entityId", async (req: Request, res: Response) => {
   try {
@@ -65,16 +118,14 @@ router.get("/history/:entityType/:entityId", async (req: Request, res: Response)
     const limit = Math.min(Number(req.query.limit) || 50, 100);
     const offset = Number(req.query.offset) || 0;
 
-    if (!ENTITY_TABLES[entityType]) {
+    const descriptor = ENTITY_MAP[entityType];
+    if (!descriptor) {
       return res.status(400).json({ error: "Invalid entity type" });
     }
 
-    const table = ENTITY_TABLES[entityType];
-    const idCol = ENTITY_ID_COLS[entityType];
-    const userCol = ENTITY_USER_COLS[entityType];
-    const [record] = await db.select().from(table).where(and(eq(idCol, Number(entityId)), eq(userCol, userId)));
+    const owned = await verifyOwnership(descriptor, entityType, Number(entityId), userId);
 
-    if (!record) {
+    if (!owned) {
       const [ownedAudit] = await db
         .select({ id: auditLogTable.id })
         .from(auditLogTable)
@@ -133,8 +184,9 @@ router.get("/history/:entityType/:entityId", async (req: Request, res: Response)
     }));
 
     res.json(results);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    res.status(500).json({ error: message });
   }
 });
 
@@ -143,15 +195,29 @@ router.post("/history/:entityType/:entityId/rollback/:revisionId", async (req: R
     const userId = req.user!.id;
     const { entityType, entityId, revisionId } = req.params;
 
-    if (!ENTITY_TABLES[entityType]) {
+    const descriptor = ENTITY_MAP[entityType];
+    if (!descriptor) {
       return res.status(400).json({ error: "Invalid entity type" });
     }
 
-    const table = ENTITY_TABLES[entityType];
-    const idCol = ENTITY_ID_COLS[entityType];
-    const userCol = ENTITY_USER_COLS[entityType];
+    const owned = await verifyOwnership(descriptor, entityType, Number(entityId), userId);
 
-    const [currentRecord] = await db.select().from(table).where(and(eq(idCol, Number(entityId)), eq(userCol, userId)));
+    if (!owned) {
+      const [ownedAudit] = await db
+        .select({ userId: auditLogTable.userId })
+        .from(auditLogTable)
+        .where(
+          and(
+            eq(auditLogTable.entityType, entityType),
+            eq(auditLogTable.entityId, Number(entityId)),
+            eq(auditLogTable.userId, userId)
+          )
+        )
+        .limit(1);
+      if (!ownedAudit) {
+        return res.status(404).json({ error: "Entity not found" });
+      }
+    }
 
     const [auditEntry] = await db
       .select()
@@ -168,22 +234,6 @@ router.post("/history/:entityType/:entityId/rollback/:revisionId", async (req: R
       return res.status(404).json({ error: "Revision not found" });
     }
 
-    if (!currentRecord) {
-      const [ownershipCheck] = await db
-        .select({ userId: auditLogTable.userId })
-        .from(auditLogTable)
-        .where(
-          and(
-            eq(auditLogTable.entityType, entityType),
-            eq(auditLogTable.entityId, Number(entityId))
-          )
-        )
-        .limit(1);
-      if (!ownershipCheck || ownershipCheck.userId !== userId) {
-        return res.status(404).json({ error: "Entity not found" });
-      }
-    }
-
     let restoreData: Record<string, unknown> | null = null;
 
     if (auditEntry.action === "update" && auditEntry.beforeSnapshot) {
@@ -198,29 +248,39 @@ router.post("/history/:entityType/:entityId/rollback/:revisionId", async (req: R
       return res.status(400).json({ error: "This revision cannot be used for rollback" });
     }
 
-    const { id: _id, createdAt: _ca, updatedAt: _ua, userId: _uid, ...safeData } = restoreData as Record<string, unknown>;
+    const { id: _id, createdAt: _ca, updatedAt: _ua, userId: _uid, ...safeData } = restoreData;
 
     const setData: Record<string, unknown> = { ...safeData };
-    if (TABLES_WITH_UPDATED_AT.has(entityType)) {
+    if (descriptor.hasUpdatedAt) {
       setData.updatedAt = new Date();
     }
 
     let result: Record<string, unknown>;
+    let beforeState: Record<string, unknown> | null = null;
 
-    if (currentRecord) {
+    if (owned) {
+      const [current] = await db
+        .select()
+        .from(descriptor.table)
+        .where(eq(descriptor.idCol, Number(entityId)));
+      beforeState = current as Record<string, unknown>;
+
       const [updated] = await db
-        .update(table)
+        .update(descriptor.table)
         .set(setData)
-        .where(and(eq(idCol, Number(entityId)), eq(userCol, userId)))
+        .where(and(eq(descriptor.idCol, Number(entityId)), ...(descriptor.userCol ? [eq(descriptor.userCol, userId)] : [])))
         .returning();
       result = updated as Record<string, unknown>;
     } else {
-      const insertData: Record<string, unknown> = { ...safeData, userId, id: Number(entityId) };
-      if (TABLES_WITH_UPDATED_AT.has(entityType)) {
+      const insertData: Record<string, unknown> = { ...safeData, id: Number(entityId) };
+      if (descriptor.userCol) {
+        insertData.userId = userId;
+      }
+      if (descriptor.hasUpdatedAt) {
         insertData.updatedAt = new Date();
       }
       const [inserted] = await db
-        .insert(table)
+        .insert(descriptor.table)
         .values(insertData)
         .returning();
       result = inserted as Record<string, unknown>;
@@ -231,13 +291,14 @@ router.post("/history/:entityType/:entityId/rollback/:revisionId", async (req: R
       Number(entityId),
       "rollback",
       userId,
-      currentRecord ? (currentRecord as Record<string, unknown>) : null,
+      beforeState,
       result
     );
 
     res.json(result);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    res.status(500).json({ error: message });
   }
 });
 
