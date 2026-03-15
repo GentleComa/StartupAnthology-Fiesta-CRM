@@ -33,6 +33,7 @@ function sessionUserFromDb(dbUser: typeof usersTable.$inferSelect) {
     lastName: dbUser.lastName,
     profileImageUrl: dbUser.profileImageUrl,
     role: dbUser.role,
+    needsPasswordReset: dbUser.needsPasswordReset,
   };
 }
 
@@ -176,7 +177,7 @@ router.put("/auth/password", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (dbUser.passwordHash) {
+    if (dbUser.passwordHash && !dbUser.needsPasswordReset) {
       if (!currentPassword) {
         return res.status(400).json({ error: "Current password is required" });
       }
@@ -187,7 +188,7 @@ router.put("/auth/password", async (req: Request, res: Response) => {
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
-    await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, req.user!.id));
+    await db.update(usersTable).set({ passwordHash, needsPasswordReset: false }).where(eq(usersTable.id, req.user!.id));
 
     res.json({ success: true });
   } catch (err) {
