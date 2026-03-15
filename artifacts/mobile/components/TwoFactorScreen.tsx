@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import QRCode from "react-native-qrcode-svg";
 import { useAuth, getAuthToken } from "@/lib/auth";
+import { Feather } from "@expo/vector-icons";
 import { type ThemeColors } from "@/constants/colors";
 import { useTheme } from "@/lib/theme";
 
@@ -26,7 +27,7 @@ function getApiBaseUrl(): string {
 export function TwoFactorScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { twoFactorStatus, refreshTwoFactorStatus } = useAuth();
+  const { twoFactorStatus, refreshTwoFactorStatus, logout } = useAuth();
 
   const [mode, setMode] = useState<"choose" | "totp-setup" | "totp-verify" | "email-verify" | null>(null);
   const [totpUri, setTotpUri] = useState<string | null>(null);
@@ -292,6 +293,19 @@ export function TwoFactorScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() => {
+            Alert.alert("Log out?", "You'll need to sign in again.", [
+              { text: "Stay", style: "cancel" },
+              { text: "Log Out", style: "destructive", onPress: () => logout() },
+            ]);
+          }}
+        >
+          <Feather name="log-out" size={16} color={colors.error} />
+          <Text style={styles.logoutText}>Log Out</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -424,5 +438,18 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.accent,
     fontFamily: "SpaceGrotesk_500Medium",
     textAlign: "center",
+  },
+  logoutButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 8,
+    marginTop: 40,
+    paddingVertical: 12,
+  },
+  logoutText: {
+    fontSize: 15,
+    color: colors.error,
+    fontFamily: "SpaceGrotesk_600SemiBold",
   },
 });

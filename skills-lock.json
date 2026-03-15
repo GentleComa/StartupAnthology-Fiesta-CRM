@@ -101,6 +101,11 @@
       "sourceType": "github",
       "computedHash": "f79f957689cc705613a2731f2f35360192fc9a6a28bc3de73484c973621df5ed"
     },
+    "frontend-code-review": {
+      "source": "langgenius/dify",
+      "sourceType": "github",
+      "computedHash": "79fa87cd5460c80dc842153155b26bd4a3cad9858475c2e1ee50cab6dcd1fbbe"
+    },
     "frontend-design": {
       "source": "anthropics/skills",
       "sourceType": "github",
