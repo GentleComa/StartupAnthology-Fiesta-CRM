@@ -464,6 +464,122 @@ export async function processChat(
   }
 }
 
+export async function processChatSync(
+  conversationId: number,
+  userMessage: string,
+  userId: string
+): Promise<string> {
+  try {
+    await persistMessage(conversationId, "user", userMessage, null);
+
+    const history = await getCoachHistory(conversationId);
+    const { route, isOnboarding } = await classifyIntent(userMessage);
+
+    let fullResponse = "";
+    let agentsUsed: AgentName[] = ["coach"];
+    let totalTokens: number | null = null;
+
+    if (isOnboarding || route.includes("coach")) {
+      const onboardingDone = await db.select().from(onboardingProgressTable)
+        .where(eq(onboardingProgressTable.userId, userId));
+      const completedTopics = onboardingDone.map(o => o.topic);
+
+      let additionalContext = "";
+      if (completedTopics.length > 0) {
+        additionalContext = `\n\nThe user has already been onboarded on these topics: ${completedTopics.join(", ")}. Don't repeat those.`;
+      }
+
+      const coachDef = AGENT_DEFINITIONS.coach;
+      const chatMessages: ChatCompletionMessage[] = [
+        { role: "system", content: coachDef.systemPrompt + additionalContext },
+        ...history.slice(-10),
+        { role: "user", content: userMessage },
+      ];
+
+      const response = await openai.chat.completions.create({
+        model: MAIN_MODEL,
+        max_completion_tokens: 8192,
+        messages: chatMessages,
+      });
+
+      fullResponse = response.choices[0]?.message?.content || "I wasn't able to generate a response.";
+      totalTokens = response.usage?.total_tokens ?? null;
+      agentsUsed = ["coach"];
+    } else if (route.length === 1) {
+      const agentName = route[0];
+      const result = await runAgentWithToolsInternal(agentName, userMessage, conversationId, userId);
+
+      const agent = AGENT_DEFINITIONS[agentName];
+      const coachDef = AGENT_DEFINITIONS.coach;
+      const coachFraming = `You are responding as Coach, drawing on ${agent.displayName}'s expertise. Present the findings with Coach's experienced advisory perspective.`;
+
+      const coachMessages: ChatCompletionMessage[] = [
+        { role: "system", content: `${coachDef.systemPrompt}\n\n${coachFraming}` },
+        ...history.slice(-6),
+        { role: "user", content: userMessage },
+        { role: "system", content: `${agent.displayName}'s analysis:\n${result.output}\n\nSynthesize this into a cohesive response with your advisory framing.` },
+      ];
+
+      const coachResponse = await openai.chat.completions.create({
+        model: MAIN_MODEL,
+        max_completion_tokens: 8192,
+        messages: coachMessages,
+      });
+
+      fullResponse = coachResponse.choices[0]?.message?.content || result.output;
+      totalTokens = (result.tokens ?? 0) + (coachResponse.usage?.total_tokens ?? 0);
+      agentsUsed = ["coach", agentName];
+    } else {
+      const [cleoResult, milesResult] = await Promise.all([
+        runAgentWithToolsInternal("cleo", userMessage, conversationId, userId),
+        runAgentWithToolsInternal("miles", userMessage, conversationId, userId),
+      ]);
+
+      const coachDef = AGENT_DEFINITIONS.coach;
+      const synthesisMessages: ChatCompletionMessage[] = [
+        {
+          role: "system",
+          content: `${coachDef.systemPrompt}\n\nYou are synthesizing outputs from both Cleo (Relationship Manager) and Miles (Strategy Advisor) into a cohesive briefing for the user.`,
+        },
+        ...history.slice(-6),
+        { role: "user", content: userMessage },
+        {
+          role: "system",
+          content: `Cleo's analysis:\n${cleoResult.output}\n\nMiles's analysis:\n${milesResult.output}\n\nSynthesize these into a cohesive response.`,
+        },
+      ];
+
+      const synthResponse = await openai.chat.completions.create({
+        model: MAIN_MODEL,
+        max_completion_tokens: 8192,
+        messages: synthesisMessages,
+      });
+
+      fullResponse = synthResponse.choices[0]?.message?.content || "I wasn't able to generate a response.";
+      totalTokens = (cleoResult.tokens ?? 0) + (milesResult.tokens ?? 0) + (synthResponse.usage?.total_tokens ?? 0);
+      agentsUsed = ["coach", "cleo", "miles"];
+    }
+
+    await persistMessage(conversationId, "assistant", fullResponse, "coach", totalTokens);
+
+    await db.update(conversations)
+      .set({
+        agentsInvolved: agentsUsed.join(","),
+        updatedAt: new Date(),
+      })
+      .where(eq(conversations.id, conversationId));
+
+    if (isOnboarding || route.includes("coach")) {
+      detectAndTrackOnboarding(userId, userMessage, fullResponse).catch(() => {});
+    }
+
+    return fullResponse;
+  } catch (err: any) {
+    console.error("processChatSync error:", err?.message || err, err?.stack || "");
+    throw err;
+  }
+}
+
 export async function getOnboardingGreeting(userId: string): Promise<string> {
   const onboardingDone = await db.select().from(onboardingProgressTable)
     .where(eq(onboardingProgressTable.userId, userId));

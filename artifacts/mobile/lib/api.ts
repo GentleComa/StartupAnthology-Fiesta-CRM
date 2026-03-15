@@ -321,6 +321,11 @@ export const api = {
   getOnboardingGreeting: () => request("/ai/onboarding-greeting"),
   saveOnboardingProgress: (topic: string) =>
     request("/ai/onboarding-progress", { method: "POST", body: JSON.stringify({ topic }) }),
+  sendChatSync: (message: string, conversationId?: number | null) =>
+    request("/ai/chat/sync", {
+      method: "POST",
+      body: JSON.stringify({ message, conversationId: conversationId || undefined }),
+    }) as Promise<{ content: string; conversationId: number }>,
   generateAiInsights: () =>
     request("/ai/generate-insights", { method: "POST" }),
   syncFromHorizon: () =>

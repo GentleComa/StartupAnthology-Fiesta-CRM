@@ -13,10 +13,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { type ThemeColors } from "@/constants/colors";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
-import { streamRequest } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
 
 interface ChatMessage {
@@ -112,42 +110,14 @@ export default function AIChatScreen() {
     }, 100);
 
     try {
-      let streamedContent = "";
-      const result = await streamRequest(
-        "/ai/chat",
-        { message: text, conversationId },
-        (data) => {
-          if (data.error) {
-            console.error("AI SSE error:", data.error);
-            setChatMessages(prev =>
-              prev.map(m =>
-                m.id === assistantMsg.id
-                  ? { ...m, content: "Sorry, something went wrong. Please try again.", isStreaming: false }
-                  : m
-              )
-            );
-            return;
-          }
-          if (data.content) {
-            streamedContent += data.content;
-            setChatMessages(prev =>
-              prev.map(m =>
-                m.id === assistantMsg.id
-                  ? { ...m, content: streamedContent }
-                  : m
-              )
-            );
-          }
-          if (data.done) {
-            setChatMessages(prev =>
-              prev.map(m =>
-                m.id === assistantMsg.id
-                  ? { ...m, isStreaming: false }
-                  : m
-              )
-            );
-          }
-        }
+      const result = await api.sendChatSync(text, conversationId);
+
+      setChatMessages(prev =>
+        prev.map(m =>
+          m.id === assistantMsg.id
+            ? { ...m, content: result.content, isStreaming: false }
+            : m
+        )
       );
 
       if (result.conversationId && !conversationId) {

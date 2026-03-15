@@ -2,7 +2,7 @@ import { Router, type Request, type Response, type NextFunction } from "express"
 import { db } from "@workspace/db";
 import { conversations, messages, aiInsightsTable, onboardingProgressTable } from "@workspace/db";
 import { eq, and, desc, or, isNull } from "drizzle-orm";
-import { processChat, getOnboardingGreeting } from "../lib/ai/orchestrator";
+import { processChat, processChatSync, getOnboardingGreeting } from "../lib/ai/orchestrator";
 import { generateInsightsForUser } from "../lib/ai/insightWorker";
 
 const router = Router();
@@ -55,6 +55,48 @@ router.post("/ai/chat", async (req: Request, res: Response, next: NextFunction) 
         res.end();
       } catch {}
     }
+  }
+});
+
+router.post("/ai/chat/sync", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const { message, conversationId } = req.body;
+
+    if (!message || typeof message !== "string") {
+      res.status(400).json({ error: "message is required" });
+      return;
+    }
+
+    let convId = conversationId ? Number(conversationId) : null;
+
+    if (convId !== null && (isNaN(convId) || convId <= 0)) {
+      res.status(400).json({ error: "Invalid conversationId" });
+      return;
+    }
+
+    if (!convId) {
+      const title = message.substring(0, 100);
+      const [conv] = await db.insert(conversations).values({
+        userId,
+        title,
+        agentsInvolved: "coach",
+      }).returning();
+      convId = conv.id;
+    }
+
+    const conv = await db.select().from(conversations)
+      .where(and(eq(conversations.id, convId), eq(conversations.userId, userId)));
+
+    if (conv.length === 0) {
+      res.status(404).json({ error: "Conversation not found" });
+      return;
+    }
+
+    const content = await processChatSync(convId, message, userId);
+    res.json({ content, conversationId: convId });
+  } catch (err) {
+    next(err);
   }
 });
 
