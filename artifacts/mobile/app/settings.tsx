@@ -143,7 +143,7 @@ export default function SettingsScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Trigger Rules</Text>
-        <Text style={styles.sectionSubtitle}>Auto-actions when a lead changes status</Text>
+        <Text style={styles.sectionSubtitle}>Things that happen automatically so you don't have to.</Text>
         {triggers.map((t: any) => (
           <View key={t.id} style={styles.triggerCard}>
             <View style={styles.triggerInfo}>
@@ -209,11 +209,11 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Merge Tags Reference</Text>
+        <Text style={styles.sectionTitle}>Merge Tags</Text>
         <View style={styles.mergeTagCard}>
-          <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{first_name}}"}</Text><Text style={styles.mergeDesc}>Recipient's first name</Text></View>
-          <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{company_name}}"}</Text><Text style={styles.mergeDesc}>Recipient's company</Text></View>
-          <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{founder_name}}"}</Text><Text style={styles.mergeDesc}>Your name (set above)</Text></View>
+          <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{first_name}}"}</Text><Text style={styles.mergeDesc}>Their first name</Text></View>
+          <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{company_name}}"}</Text><Text style={styles.mergeDesc}>Their company</Text></View>
+          <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{founder_name}}"}</Text><Text style={styles.mergeDesc}>Your name</Text></View>
         </View>
       </View>
 

@@ -191,7 +191,7 @@ export default function FunnelScreen() {
                   scrollEnabled={col.length > 0}
                   ListEmptyComponent={
                     <View style={styles.emptyCol}>
-                      <Text style={styles.emptyText}>No leads</Text>
+                      <Text style={styles.emptyText}>None yet</Text>
                     </View>
                   }
                 />
@@ -232,7 +232,7 @@ export default function FunnelScreen() {
             <View style={styles.emptyState}>
               <Feather name="target" size={48} color={Colors.textTertiary} />
               <Text style={styles.emptyTitle}>No leads yet</Text>
-              <Text style={styles.emptySubtitle}>Tap + to add your first lead</Text>
+              <Text style={styles.emptySubtitle}>Add one. You know who it is.</Text>
             </View>
           }
         />

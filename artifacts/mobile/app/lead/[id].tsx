@@ -161,14 +161,14 @@ export default function LeadDetailScreen() {
         {editing ? (
           <TextInput style={styles.notesInput} value={editNotes} onChangeText={setEditNotes} multiline placeholder="Add notes..." placeholderTextColor={Colors.textTertiary} />
         ) : (
-          <Text style={styles.notesText}>{lead.notes || "No notes yet"}</Text>
+          <Text style={styles.notesText}>{lead.notes || "Nothing here yet."}</Text>
         )}
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Activity</Text>
         {activities.length === 0 ? (
-          <Text style={styles.emptyActivity}>No activity yet</Text>
+          <Text style={styles.emptyActivity}>No activity logged yet.</Text>
         ) : (
           activities.map((a: any) => (
             <View key={a.id} style={styles.activityItem}>

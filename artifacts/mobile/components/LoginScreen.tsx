@@ -35,15 +35,15 @@ export function LoginScreen() {
           </View>
           <Text style={styles.title}>Startup Anthology</Text>
           <Text style={styles.subtitle}>
-            Your startup relationships, organized.
+            Your relationships. Your pipeline. One place.
           </Text>
         </View>
 
         <View style={styles.features}>
-          <FeatureItem icon="📊" text="Track leads through your funnel" />
-          <FeatureItem icon="👥" text="Manage business connections" />
-          <FeatureItem icon="📧" text="Send emails & drip sequences" />
-          <FeatureItem icon="🎯" text="Monitor beta slot progress" />
+          <FeatureItem icon="📊" text="See your full pipeline, clearly" />
+          <FeatureItem icon="👥" text="Know who to follow up with and when" />
+          <FeatureItem icon="📧" text="Reach out without the busywork" />
+          <FeatureItem icon="🎯" text="Track what matters to your launch" />
         </View>
 
         <TouchableOpacity
@@ -60,7 +60,7 @@ export function LoginScreen() {
         </TouchableOpacity>
 
         <Text style={styles.footerText}>
-          Sign in to get started
+          Built for founders doing the work.
         </Text>
       </View>
     </SafeAreaView>

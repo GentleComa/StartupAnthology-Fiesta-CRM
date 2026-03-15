@@ -64,7 +64,7 @@ export default function DashboardScreen() {
         </View>
         <View>
           <Text style={styles.greeting}>Startup Anthology</Text>
-          <Text style={styles.subtitle}>Your business at a glance</Text>
+          <Text style={styles.subtitle}>Here's where things stand.</Text>
         </View>
       </View>
 
@@ -92,7 +92,7 @@ export default function DashboardScreen() {
 
       {(d.followUps?.length ?? 0) > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Follow-ups Due Today</Text>
+          <Text style={styles.sectionTitle}>Follow up today</Text>
           {d.followUps.map((contact: any) => (
             <Pressable
               key={contact.id}

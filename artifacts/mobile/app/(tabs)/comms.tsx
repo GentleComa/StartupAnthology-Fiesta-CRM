@@ -96,8 +96,8 @@ export default function CommsScreen() {
               ListEmptyComponent={
                 <View style={styles.emptyState}>
                   <Feather name="file-text" size={48} color={Colors.textTertiary} />
-                  <Text style={styles.emptyTitle}>No templates</Text>
-                  <Text style={styles.emptySubtitle}>Create reusable email templates</Text>
+                  <Text style={styles.emptyTitle}>No templates yet</Text>
+                  <Text style={styles.emptySubtitle}>Write it once, send it whenever.</Text>
                 </View>
               }
             />
@@ -129,8 +129,8 @@ export default function CommsScreen() {
               ListEmptyComponent={
                 <View style={styles.emptyState}>
                   <Feather name="repeat" size={48} color={Colors.textTertiary} />
-                  <Text style={styles.emptyTitle}>No sequences</Text>
-                  <Text style={styles.emptySubtitle}>Build automated email flows</Text>
+                  <Text style={styles.emptyTitle}>No sequences yet</Text>
+                  <Text style={styles.emptySubtitle}>Set up a drip. Let it run.</Text>
                 </View>
               }
             />
@@ -161,8 +161,8 @@ export default function CommsScreen() {
               ListEmptyComponent={
                 <View style={styles.emptyState}>
                   <Feather name="send" size={48} color={Colors.textTertiary} />
-                  <Text style={styles.emptyTitle}>No broadcasts</Text>
-                  <Text style={styles.emptySubtitle}>Send emails to a filtered group</Text>
+                  <Text style={styles.emptyTitle}>No broadcasts yet</Text>
+                  <Text style={styles.emptySubtitle}>One message, many inboxes.</Text>
                 </View>
               }
             />

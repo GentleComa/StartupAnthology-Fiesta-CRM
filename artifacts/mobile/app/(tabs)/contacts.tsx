@@ -138,7 +138,7 @@ export default function ContactsScreen() {
           <View style={styles.emptyState}>
             <Feather name="users" size={48} color={Colors.textTertiary} />
             <Text style={styles.emptyTitle}>{tab === "all" ? "No contacts yet" : "No follow-ups due"}</Text>
-            <Text style={styles.emptySubtitle}>{tab === "all" ? "Tap + to add your first contact" : "You're all caught up"}</Text>
+            <Text style={styles.emptySubtitle}>{tab === "all" ? "Start with the people who matter most." : "Clean slate. Nice work."}</Text>
           </View>
         }
       />
