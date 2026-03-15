@@ -4,13 +4,12 @@ import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
   Linking,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -20,17 +19,14 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import ActivityList from "@/components/ActivityList";
+import HistoryModal from "@/components/HistoryModal";
+import LinkedInLogModal from "@/components/LinkedInLogModal";
+import ProfilePicModal from "@/components/ProfilePicModal";
 import Colors from "@/constants/colors";
+import { REL_TYPES, REL_COLORS, PRIORITIES, PRIORITY_COLORS } from "@/constants/crm";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
-
-const PRIORITY_COLORS: Record<string, string> = { high: Colors.priorityHigh, medium: Colors.priorityMedium, low: Colors.priorityLow };
-const REL_COLORS: Record<string, string> = { investor: "#6366F1", partner: "#3B82F6", advisor: "#10B981", vendor: "#F59E0B", press: "#EF4444", other: "#6B7280" };
-const REL_TYPES = ["investor", "partner", "advisor", "vendor", "press", "other"];
-const PRIORITIES = ["high", "medium", "low"];
-
-const ACTION_LABELS: Record<string, string> = { create: "Created", update: "Updated", delete: "Deleted", rollback: "Rolled back" };
-const ACTION_COLORS: Record<string, string> = { create: Colors.success, update: Colors.info, delete: Colors.error, rollback: Colors.warning };
 
 export default function ContactDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -43,76 +39,83 @@ export default function ContactDetailScreen() {
   const [editingFields, setEditingFields] = useState(false);
   const [editFields, setEditFields] = useState<Record<string, string>>({});
   const [showLinkedInModal, setShowLinkedInModal] = useState(false);
-  const [liSubject, setLiSubject] = useState("");
-  const [liMessage, setLiMessage] = useState("");
   const [showPicModal, setShowPicModal] = useState(false);
-  const [picUrl, setPicUrl] = useState("");
+
+  const contactId = useMemo(() => Number(id), [id]);
 
   const { data: contact, isLoading } = useQuery({
     queryKey: ["contact", id],
-    queryFn: () => api.getContact(Number(id)),
+    queryFn: () => api.getContact(contactId),
   });
   const { data: activities = [] } = useQuery({
     queryKey: ["activities", "contact", id],
-    queryFn: () => api.getActivities({ contactId: Number(id) }),
+    queryFn: () => api.getActivities({ contactId }),
   });
   const { data: calendarEvents = [] } = useQuery({
     queryKey: ["calendarEvents", "contact", id],
-    queryFn: () => api.getCalendarEvents({ contactId: Number(id) }),
+    queryFn: () => api.getCalendarEvents({ contactId }),
   });
   const { data: sequences = [] } = useQuery({ queryKey: ["sequences"], queryFn: api.getSequences });
   const { data: history = [], refetch: refetchHistory } = useQuery({
     queryKey: ["history", "contact", id],
-    queryFn: () => api.getHistory("contact", Number(id)),
+    queryFn: () => api.getHistory("contact", contactId),
     enabled: historyVisible,
   });
   const { data: contactFiles = [] } = useQuery({
     queryKey: ["contactFiles", id],
-    queryFn: () => api.getContactFiles(Number(id)),
+    queryFn: () => api.getContactFiles(contactId),
   });
 
+  const invalidateContact = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ["contact", id] });
+    qc.invalidateQueries({ queryKey: ["contacts"] });
+  }, [qc, id]);
+
   const updateMut = useMutation({
-    mutationFn: (data: any) => api.updateContact(Number(id), data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["contact", id] }); qc.invalidateQueries({ queryKey: ["contacts"] }); },
+    mutationFn: (data: any) => api.updateContact(contactId, data),
+    onSuccess: invalidateContact,
+    onError: (err: Error) => Alert.alert("Update failed", err.message),
   });
   const markMut = useMutation({
-    mutationFn: () => api.markContacted(Number(id)),
+    mutationFn: () => api.markContacted(contactId),
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      qc.invalidateQueries({ queryKey: ["contact", id] });
-      qc.invalidateQueries({ queryKey: ["contacts"] });
+      invalidateContact();
       qc.invalidateQueries({ queryKey: ["followUps"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
+    onError: (err: Error) => Alert.alert("Failed", err.message),
   });
   const deleteMut = useMutation({
-    mutationFn: () => api.deleteContact(Number(id)),
+    mutationFn: () => api.deleteContact(contactId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["contacts"] }); router.back(); },
+    onError: (err: Error) => Alert.alert("Delete failed", err.message),
   });
   const enrollMut = useMutation({
-    mutationFn: (seqId: number) => api.enrollInSequence(seqId, { contactId: Number(id) }),
+    mutationFn: (seqId: number) => api.enrollInSequence(seqId, { contactId }),
     onSuccess: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+    onError: (err: Error) => Alert.alert("Enrollment failed", err.message),
   });
   const logLinkedInMut = useMutation({
     mutationFn: (data: any) => api.createActivity(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["activities", "contact", id] }); setShowLinkedInModal(false); setLiSubject(""); setLiMessage(""); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["activities", "contact", id] }); setShowLinkedInModal(false); },
+    onError: (err: Error) => Alert.alert("Failed to log", err.message),
   });
   const uploadFileMut = useMutation({
     mutationFn: async () => {
       const result = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: true });
       if (result.canceled) throw new Error("CANCELLED");
       const asset = result.assets[0];
-      return api.uploadContactFile(Number(id), asset.uri, asset.name, asset.mimeType || "application/octet-stream");
+      return api.uploadContactFile(contactId, asset.uri, asset.name, asset.mimeType || "application/octet-stream");
     },
     onSuccess: () => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); qc.invalidateQueries({ queryKey: ["contactFiles", id] }); },
     onError: (err: any) => { if (err.message !== "CANCELLED") Alert.alert("Upload failed", err.message); },
   });
   const rollbackMut = useMutation({
-    mutationFn: (revisionId: number) => api.rollback("contact", Number(id), revisionId),
+    mutationFn: (revisionId: number) => api.rollback("contact", contactId, revisionId),
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      qc.invalidateQueries({ queryKey: ["contact", id] });
-      qc.invalidateQueries({ queryKey: ["contacts"] });
+      invalidateContact();
       refetchHistory();
       setSelectedRevision(null);
     },
@@ -121,26 +124,19 @@ export default function ContactDetailScreen() {
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  if (isLoading || !contact) {
-    return <View style={[styles.center, { paddingTop: topPad }]}><ActivityIndicator size="large" color={Colors.primary} /></View>;
-  }
-
-  const relColor = REL_COLORS[contact.relationshipType] || Colors.primary;
-
-  const saveNotes = () => {
+  const saveNotes = useCallback(() => {
+    if (!contact) return;
     const oldNotes = contact.notes || "";
     updateMut.mutate({ notes: editNotes });
     if (editNotes && editNotes !== oldNotes) {
-      api.createActivity({
-        contactId: Number(id),
-        type: "note",
-        note: editNotes,
-      }).then(() => qc.invalidateQueries({ queryKey: ["activities", "contact", id] }));
+      api.createActivity({ contactId, type: "note", note: editNotes })
+        .then(() => qc.invalidateQueries({ queryKey: ["activities", "contact", id] }));
     }
     setEditing(false);
-  };
+  }, [contact, editNotes, contactId, id, qc, updateMut]);
 
-  const saveFields = () => {
+  const saveFields = useCallback(() => {
+    if (!contact) return;
     const updates: Record<string, any> = {};
     const fields = ["name", "email", "company", "phone", "title", "linkedinUrl", "relationshipType", "priority"];
     for (const f of fields) {
@@ -149,9 +145,10 @@ export default function ContactDetailScreen() {
     }
     if (Object.keys(updates).length > 0) updateMut.mutate(updates);
     setEditingFields(false);
-  };
+  }, [contact, editFields, updateMut]);
 
-  const startEditFields = () => {
+  const startEditFields = useCallback(() => {
+    if (!contact) return;
     setEditFields({
       name: contact.name || "",
       email: contact.email || "",
@@ -163,9 +160,9 @@ export default function ContactDetailScreen() {
       priority: contact.priority || "",
     });
     setEditingFields(true);
-  };
+  }, [contact]);
 
-  const handleProfilePicUpload = async () => {
+  const handleProfilePicUpload = useCallback(async () => {
     setShowPicModal(false);
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
     if (result.canceled) return;
@@ -176,16 +173,35 @@ export default function ContactDetailScreen() {
     } catch (err: any) {
       Alert.alert("Upload failed", err.message);
     }
-  };
+  }, [updateMut]);
 
-  const handleProfilePicUrl = () => {
+  const handleProfilePicUrl = useCallback((url: string) => {
     setShowPicModal(false);
-    if (picUrl.trim()) {
-      updateMut.mutate({ profilePictureUrl: picUrl.trim() });
-      setPicUrl("");
-    }
-  };
+    updateMut.mutate({ profilePictureUrl: url });
+  }, [updateMut]);
 
+  const handleLinkedInSubmit = useCallback((subject: string, message: string) => {
+    logLinkedInMut.mutate({
+      contactId,
+      type: "linkedin",
+      direction: "sent",
+      subject: subject || undefined,
+      note: message || "LinkedIn message sent",
+    });
+  }, [contactId, logLinkedInMut]);
+
+  const handleDelete = useCallback(() => {
+    Alert.alert("Delete this contact?", "This can't be undone.", [
+      { text: "Keep", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: () => deleteMut.mutate() },
+    ]);
+  }, [deleteMut]);
+
+  if (isLoading || !contact) {
+    return <View style={[styles.center, { paddingTop: topPad }]}><ActivityIndicator size="large" color={Colors.primary} /></View>;
+  }
+
+  const relColor = REL_COLORS[contact.relationshipType] || Colors.primary;
   const hasProfilePic = !!contact.profilePictureUrl;
 
   return (
@@ -198,7 +214,7 @@ export default function ContactDetailScreen() {
         <Pressable style={styles.historyBtn} onPress={() => setHistoryVisible(true)}>
           <Feather name="clock" size={20} color={Colors.info} />
         </Pressable>
-        <Pressable style={styles.deleteBtn} onPress={() => Alert.alert("Delete this contact?", "This can't be undone.", [{ text: "Keep", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => deleteMut.mutate() }])}>
+        <Pressable style={styles.deleteBtn} onPress={handleDelete}>
           <Feather name="trash-2" size={20} color={Colors.error} />
         </Pressable>
       </View>
@@ -362,7 +378,7 @@ export default function ContactDetailScreen() {
             <View key={f.id} style={styles.fileItem}>
               <Feather name="file" size={16} color={Colors.info} />
               <Text style={styles.fileName} numberOfLines={1}>{f.name}</Text>
-              <Pressable onPress={() => api.removeContactFile(Number(id), f.id).then(() => qc.invalidateQueries({ queryKey: ["contactFiles", id] }))}>
+              <Pressable onPress={() => api.removeContactFile(contactId, f.id).then(() => qc.invalidateQueries({ queryKey: ["contactFiles", id] }))}>
                 <Feather name="x" size={16} color={Colors.textTertiary} />
               </Pressable>
             </View>
@@ -401,168 +417,35 @@ export default function ContactDetailScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Activity</Text>
-        {activities.length === 0 ? (
-          <Text style={styles.emptyActivity}>No activity yet. Every touchpoint counts.</Text>
-        ) : (
-          activities.map((a: any) => (
-            <Pressable key={a.id} style={styles.activityItem} onPress={() => a.gmailLink && Linking.openURL(a.gmailLink)}>
-              <View style={[styles.activityDot, { backgroundColor: a.type === "email" ? Colors.info : a.type === "linkedin" ? "#0A66C2" : a.type === "note" ? Colors.accent : Colors.textTertiary }]} />
-              <View style={styles.activityContent}>
-                <Text style={styles.activityType}>{a.type}{a.direction ? ` (${a.direction})` : ""}</Text>
-                <Text style={styles.activityNote} numberOfLines={2}>{a.subject || a.note || ""}</Text>
-                <Text style={styles.activityDate}>{new Date(a.createdAt).toLocaleDateString()}</Text>
-                {a.gmailLink && <Text style={styles.gmailLink}>Open in Gmail →</Text>}
-              </View>
-            </Pressable>
-          ))
-        )}
+        <ActivityList activities={activities} />
       </View>
 
       <View style={{ height: 40 }} />
 
-      <Modal visible={historyVisible} animationType="slide" presentationStyle="pageSheet">
-        <View style={[styles.modalContainer, { paddingTop: insets.top + 10 }]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.historyModalTitle}>Change History</Text>
-            <Pressable onPress={() => { setHistoryVisible(false); setSelectedRevision(null); }}>
-              <Feather name="x" size={24} color={Colors.text} />
-            </Pressable>
-          </View>
-          <ScrollView style={styles.modalScroll} contentContainerStyle={{ paddingBottom: 40 }}>
-            {history.length === 0 ? (
-              <Text style={styles.emptyActivity}>No changes recorded yet.</Text>
-            ) : (
-              history.map((entry: any) => (
-                <Pressable
-                  key={entry.id}
-                  style={[styles.historyEntry, selectedRevision?.id === entry.id && styles.historyEntrySelected]}
-                  onPress={() => setSelectedRevision(selectedRevision?.id === entry.id ? null : entry)}
-                >
-                  <View style={styles.historyEntryHeader}>
-                    <View style={[styles.actionBadge, { backgroundColor: (ACTION_COLORS[entry.action] || Colors.textTertiary) + "20" }]}>
-                      <Text style={[styles.actionBadgeText, { color: ACTION_COLORS[entry.action] || Colors.textTertiary }]}>
-                        {ACTION_LABELS[entry.action] || entry.action}
-                      </Text>
-                    </View>
-                    <Text style={styles.historyMeta}>
-                      {entry.userName || "Unknown"} · {new Date(entry.createdAt).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                    </Text>
-                  </View>
-                  {selectedRevision?.id === entry.id && (
-                    <View style={styles.snapshotContainer}>
-                      {entry.beforeSnapshot && (
-                        <View style={styles.snapshotBox}>
-                          <Text style={styles.snapshotLabel}>Before</Text>
-                          <Text style={styles.snapshotText}>{JSON.stringify(entry.beforeSnapshot, null, 2)}</Text>
-                        </View>
-                      )}
-                      {entry.afterSnapshot && (
-                        <View style={styles.snapshotBox}>
-                          <Text style={styles.snapshotLabel}>After</Text>
-                          <Text style={styles.snapshotText}>{JSON.stringify(entry.afterSnapshot, null, 2)}</Text>
-                        </View>
-                      )}
-                      {((entry.action === "update" || entry.action === "delete" || entry.action === "rollback") && entry.beforeSnapshot || (entry.action === "create" && entry.afterSnapshot)) && (
-                        <Pressable
-                          style={styles.rollbackBtn}
-                          onPress={() => {
-                            Alert.alert(
-                              "Restore this version?",
-                              "The contact will be reverted to the state before this change.",
-                              [
-                                { text: "Cancel", style: "cancel" },
-                                { text: "Restore", onPress: () => rollbackMut.mutate(entry.id) },
-                              ]
-                            );
-                          }}
-                        >
-                          <Feather name="rotate-ccw" size={16} color="#fff" />
-                          <Text style={styles.rollbackBtnText}>
-                            {rollbackMut.isPending ? "Restoring..." : "Restore this version"}
-                          </Text>
-                        </Pressable>
-                      )}
-                    </View>
-                  )}
-                </Pressable>
-              ))
-            )}
-          </ScrollView>
-        </View>
-      </Modal>
+      <HistoryModal
+        visible={historyVisible}
+        onClose={() => setHistoryVisible(false)}
+        history={history}
+        selectedRevision={selectedRevision}
+        onSelectRevision={setSelectedRevision}
+        onRollback={(revisionId) => rollbackMut.mutate(revisionId)}
+        isRollingBack={rollbackMut.isPending}
+        entityLabel="contact"
+      />
 
-      <Modal visible={showLinkedInModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Log LinkedIn Message</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Subject / Context"
-              placeholderTextColor={Colors.textTertiary}
-              value={liSubject}
-              onChangeText={setLiSubject}
-            />
-            <TextInput
-              style={[styles.modalInput, { minHeight: 80, textAlignVertical: "top" }]}
-              placeholder="Message content"
-              placeholderTextColor={Colors.textTertiary}
-              value={liMessage}
-              onChangeText={setLiMessage}
-              multiline
-            />
-            <View style={styles.modalActions}>
-              <Pressable style={styles.modalCancelBtn} onPress={() => { setShowLinkedInModal(false); setLiSubject(""); setLiMessage(""); }}>
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.modalSaveBtn, (!liSubject && !liMessage) && { opacity: 0.4 }]}
-                disabled={!liSubject && !liMessage}
-                onPress={() => logLinkedInMut.mutate({
-                  contactId: Number(id),
-                  type: "linkedin",
-                  direction: "sent",
-                  subject: liSubject || undefined,
-                  note: liMessage || "LinkedIn message sent",
-                })}
-              >
-                {logLinkedInMut.isPending ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.modalSaveText}>Save</Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <LinkedInLogModal
+        visible={showLinkedInModal}
+        onClose={() => setShowLinkedInModal(false)}
+        onSubmit={handleLinkedInSubmit}
+        isPending={logLinkedInMut.isPending}
+      />
 
-      <Modal visible={showPicModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Set Profile Photo</Text>
-            <Pressable style={styles.picOption} onPress={handleProfilePicUpload}>
-              <Feather name="upload" size={18} color={Colors.info} />
-              <Text style={styles.picOptionText}>Upload Image</Text>
-            </Pressable>
-            <View style={styles.picUrlRow}>
-              <TextInput
-                style={[styles.modalInput, { flex: 1 }]}
-                placeholder="Paste image URL"
-                placeholderTextColor={Colors.textTertiary}
-                value={picUrl}
-                onChangeText={setPicUrl}
-                autoCapitalize="none"
-              />
-              <Pressable style={styles.picUrlBtn} onPress={handleProfilePicUrl}>
-                <Text style={styles.picUrlBtnText}>Set</Text>
-              </Pressable>
-            </View>
-            <Pressable style={styles.modalCancelBtn} onPress={() => { setShowPicModal(false); setPicUrl(""); }}>
-              <Text style={styles.modalCancelText}>Cancel</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
+      <ProfilePicModal
+        visible={showPicModal}
+        onClose={() => setShowPicModal(false)}
+        onUpload={handleProfilePicUpload}
+        onUrlSet={handleProfilePicUrl}
+      />
     </ScrollView>
   );
 }
@@ -611,8 +494,6 @@ const styles = StyleSheet.create({
   activityContent: { flex: 1 },
   activityType: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, textTransform: "capitalize" },
   activityNote: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  activityDate: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, marginTop: 2 },
-  gmailLink: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: Colors.info, marginTop: 2 },
   editFieldsContainer: { backgroundColor: Colors.surface, borderRadius: 14, padding: 14, gap: 8 },
   editFieldRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   editFieldLabel: { width: 70, fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
@@ -621,34 +502,4 @@ const styles = StyleSheet.create({
   chipSmallText: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text, textTransform: "capitalize" },
   fileItem: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: Colors.surface, borderRadius: 10, padding: 10, marginBottom: 6 },
   fileName: { flex: 1, fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
-  modalContainer: { flex: 1, backgroundColor: Colors.background, padding: 20 },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
-  historyModalTitle: { fontSize: 20, fontFamily: "Lato_700Bold", color: Colors.text },
-  modalScroll: { flex: 1 },
-  historyEntry: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginBottom: 10 },
-  historyEntrySelected: { borderWidth: 1, borderColor: Colors.info },
-  historyEntryHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-  actionBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  actionBadgeText: { fontSize: 11, fontFamily: "LeagueSpartan_600SemiBold", textTransform: "uppercase" },
-  historyMeta: { flex: 1, fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
-  snapshotContainer: { marginTop: 12, gap: 10 },
-  snapshotBox: { backgroundColor: Colors.background, borderRadius: 8, padding: 10 },
-  snapshotLabel: { fontSize: 11, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textTertiary, marginBottom: 4, textTransform: "uppercase" },
-  snapshotText: { fontSize: 11, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary },
-  rollbackBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Colors.warning, borderRadius: 10, paddingVertical: 10, marginTop: 4 },
-  rollbackBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 20 },
-  modalContent: { backgroundColor: Colors.background, borderRadius: 16, padding: 20, width: "100%", maxWidth: 400 },
-  modalTitle: { fontSize: 18, fontFamily: "LeagueSpartan_700Bold", color: Colors.text, marginBottom: 16 },
-  modalInput: { backgroundColor: Colors.surface, borderRadius: 10, padding: 12, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, marginBottom: 12 },
-  modalActions: { flexDirection: "row", gap: 10, marginTop: 4 },
-  modalCancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, alignItems: "center" },
-  modalCancelText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
-  modalSaveBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: Colors.info, alignItems: "center" },
-  modalSaveText: { fontSize: 14, fontFamily: "SpaceGrotesk_600SemiBold", color: "#fff" },
-  picOption: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14, backgroundColor: Colors.surface, borderRadius: 12, marginBottom: 12 },
-  picOptionText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  picUrlRow: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
-  picUrlBtn: { paddingVertical: 12, paddingHorizontal: 16, backgroundColor: Colors.info, borderRadius: 10 },
-  picUrlBtnText: { fontSize: 14, fontFamily: "SpaceGrotesk_600SemiBold", color: "#fff" },
 });

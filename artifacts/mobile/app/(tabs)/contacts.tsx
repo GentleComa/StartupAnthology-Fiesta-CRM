@@ -18,13 +18,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import { REL_TYPES, REL_COLORS, PRIORITIES, PRIORITY_COLORS } from "@/constants/crm";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
-
-const REL_TYPES = ["investor", "partner", "advisor", "vendor", "press", "other"];
-const PRIORITIES = ["high", "medium", "low"];
-const PRIORITY_COLORS: Record<string, string> = { high: Colors.priorityHigh, medium: Colors.priorityMedium, low: Colors.priorityLow };
-const REL_COLORS: Record<string, string> = { investor: "#6366F1", partner: "#3B82F6", advisor: "#10B981", vendor: "#F59E0B", press: "#EF4444", other: "#6B7280" };
 
 export default function ContactsScreen() {
   const insets = useSafeAreaInsets();

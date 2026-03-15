@@ -1,9 +1,11 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import { calendarEventsTable, leadsTable, contactsTable } from "@workspace/db";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
 import { createCalendarEvent, deleteCalendarEvent } from "../lib/calendar";
 import { logAudit } from "../lib/audit";
+import { parseIntParam, notFound, badRequest } from "../lib/errors";
+import { validate, createCalendarEventSchema } from "../lib/validation";
 
 const router = Router();
 
@@ -12,29 +14,25 @@ function isValidISODate(str: string): boolean {
   return !isNaN(d.getTime());
 }
 
-router.get("/calendar/events", async (req: Request, res: Response) => {
+router.get("/calendar/events", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
     const { startDate, endDate, leadId, contactId } = req.query;
     const conditions = [eq(calendarEventsTable.userId, userId)];
 
     if (startDate) {
-      if (!isValidISODate(startDate as string)) {
-        return res.status(400).json({ error: "Invalid startDate" });
-      }
+      if (!isValidISODate(startDate as string)) throw badRequest("Invalid startDate");
       conditions.push(gte(calendarEventsTable.startTime, new Date(startDate as string)));
     }
     if (endDate) {
-      if (!isValidISODate(endDate as string)) {
-        return res.status(400).json({ error: "Invalid endDate" });
-      }
+      if (!isValidISODate(endDate as string)) throw badRequest("Invalid endDate");
       conditions.push(lte(calendarEventsTable.startTime, new Date(endDate as string)));
     }
     if (leadId) {
-      conditions.push(eq(calendarEventsTable.leadId, Number(leadId)));
+      conditions.push(eq(calendarEventsTable.leadId, parseIntParam(leadId as string, "leadId")));
     }
     if (contactId) {
-      conditions.push(eq(calendarEventsTable.contactId, Number(contactId)));
+      conditions.push(eq(calendarEventsTable.contactId, parseIntParam(contactId as string, "contactId")));
     }
 
     const rows = await db.select().from(calendarEventsTable).where(and(...conditions)).orderBy(sql`${calendarEventsTable.startTime} asc`);
@@ -46,11 +44,11 @@ router.get("/calendar/events", async (req: Request, res: Response) => {
     const contactNames: Record<number, string> = {};
 
     if (leadIds.length > 0) {
-      const leads = await db.select({ id: leadsTable.id, name: leadsTable.name }).from(leadsTable).where(and(eq(leadsTable.userId, userId), sql`${leadsTable.id} IN (${sql.join(leadIds.map(id => sql`${id}`), sql`, `)})`));
+      const leads = await db.select({ id: leadsTable.id, name: leadsTable.name }).from(leadsTable).where(and(eq(leadsTable.userId, userId), inArray(leadsTable.id, leadIds)));
       for (const l of leads) leadNames[l.id] = l.name;
     }
     if (contactIds.length > 0) {
-      const contacts = await db.select({ id: contactsTable.id, name: contactsTable.name }).from(contactsTable).where(and(eq(contactsTable.userId, userId), sql`${contactsTable.id} IN (${sql.join(contactIds.map(id => sql`${id}`), sql`, `)})`));
+      const contacts = await db.select({ id: contactsTable.id, name: contactsTable.name }).from(contactsTable).where(and(eq(contactsTable.userId, userId), inArray(contactsTable.id, contactIds)));
       for (const c of contacts) contactNames[c.id] = c.name;
     }
 
@@ -61,93 +59,84 @@ router.get("/calendar/events", async (req: Request, res: Response) => {
     }));
 
     res.json(results);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.post("/calendar/events", async (req: Request, res: Response) => {
+router.post("/calendar/events", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const { title, description, startTime, endTime, leadId, contactId, eventType } = req.body;
+    const data = validate(createCalendarEventSchema, req.body);
 
-    if (!title || !startTime || !endTime) {
-      return res.status(400).json({ error: "title, startTime, and endTime are required" });
+    if (!isValidISODate(data.startTime) || !isValidISODate(data.endTime)) {
+      throw badRequest("startTime and endTime must be valid ISO date strings");
     }
-    if (!isValidISODate(startTime) || !isValidISODate(endTime)) {
-      return res.status(400).json({ error: "startTime and endTime must be valid ISO date strings" });
-    }
-    if (new Date(endTime) <= new Date(startTime)) {
-      return res.status(400).json({ error: "endTime must be after startTime" });
+    if (new Date(data.endTime) <= new Date(data.startTime)) {
+      throw badRequest("endTime must be after startTime");
     }
 
-    if (leadId) {
-      const [lead] = await db.select().from(leadsTable).where(and(eq(leadsTable.id, leadId), eq(leadsTable.userId, userId)));
-      if (!lead) return res.status(404).json({ error: "Lead not found" });
+    if (data.leadId) {
+      const [lead] = await db.select().from(leadsTable).where(and(eq(leadsTable.id, data.leadId), eq(leadsTable.userId, userId)));
+      if (!lead) throw notFound("Lead not found");
     }
-    if (contactId) {
-      const [contact] = await db.select().from(contactsTable).where(and(eq(contactsTable.id, contactId), eq(contactsTable.userId, userId)));
-      if (!contact) return res.status(404).json({ error: "Contact not found" });
+    if (data.contactId) {
+      const [contact] = await db.select().from(contactsTable).where(and(eq(contactsTable.id, data.contactId), eq(contactsTable.userId, userId)));
+      if (!contact) throw notFound("Contact not found");
     }
 
     let googleEventId: string | null = null;
     try {
       googleEventId = await createCalendarEvent({
-        title,
-        description,
-        startTime,
-        endTime,
+        title: data.title,
+        description: data.description || undefined,
+        startTime: data.startTime,
+        endTime: data.endTime,
       });
-    } catch (err: any) {
-      console.error("Google Calendar sync failed, saving locally:", err.message);
+    } catch (calErr: any) {
+      console.error("Google Calendar sync failed, saving locally:", calErr.message);
     }
 
     const [event] = await db.insert(calendarEventsTable).values({
       googleEventId,
-      title,
-      description: description || null,
-      startTime: new Date(startTime),
-      endTime: new Date(endTime),
-      leadId: leadId || null,
-      contactId: contactId || null,
-      eventType: eventType || "other",
+      title: data.title,
+      description: data.description || null,
+      startTime: new Date(data.startTime),
+      endTime: new Date(data.endTime),
+      leadId: data.leadId || null,
+      contactId: data.contactId || null,
+      eventType: data.eventType || "other",
       userId,
     }).returning();
 
     logAudit("calendar_event", event.id, "create", userId, null, event as Record<string, unknown>);
     res.status(201).json(event);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.delete("/calendar/events/:id", async (req: Request, res: Response) => {
+router.delete("/calendar/events/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const id = Number(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Invalid event id" });
-    }
+    const id = parseIntParam(req.params.id);
 
     const [event] = await db.select().from(calendarEventsTable).where(and(eq(calendarEventsTable.id, id), eq(calendarEventsTable.userId, userId)));
-
-    if (!event) {
-      return res.status(404).json({ error: "Event not found" });
-    }
+    if (!event) throw notFound("Event not found");
 
     if (event.googleEventId) {
       try {
         await deleteCalendarEvent(event.googleEventId);
-      } catch (err: any) {
-        console.error("Google Calendar delete failed, removing locally:", err.message);
+      } catch (calErr: any) {
+        console.error("Google Calendar delete failed, removing locally:", calErr.message);
       }
     }
 
     await db.delete(calendarEventsTable).where(eq(calendarEventsTable.id, id));
     logAudit("calendar_event", id, "delete", userId, event as Record<string, unknown>, null);
     res.status(204).send();
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 

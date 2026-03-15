@@ -55,6 +55,7 @@ export default function SequenceDetailScreen() {
       qc.invalidateQueries({ queryKey: ["sequences"] });
       router.replace({ pathname: "/sequence/[id]", params: { id: String(data.id) } });
     },
+    onError: (err: Error) => Alert.alert("Create failed", err.message),
   });
   const updateMut = useMutation({
     mutationFn: () => api.updateSequence(Number(id), { name, targetAudience: audience }),
@@ -62,6 +63,7 @@ export default function SequenceDetailScreen() {
       qc.invalidateQueries({ queryKey: ["sequences"] });
       qc.invalidateQueries({ queryKey: ["sequence", id] });
     },
+    onError: (err: Error) => Alert.alert("Update failed", err.message),
   });
   const addStepMut = useMutation({
     mutationFn: () => api.addSequenceStep(Number(id), {
@@ -74,10 +76,12 @@ export default function SequenceDetailScreen() {
       setNewStepDelay("0");
       setNewStepTemplateId(null);
     },
+    onError: (err: Error) => Alert.alert("Failed to add step", err.message),
   });
   const deleteMut = useMutation({
     mutationFn: () => api.deleteSequence(Number(id)),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["sequences"] }); router.back(); },
+    onError: (err: Error) => Alert.alert("Delete failed", err.message),
   });
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;

@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import { activitiesTable, calendarEventsTable, filesTable } from "@workspace/db";
 import { sendGmailEmail, type EmailAttachment } from "../lib/gmail";
@@ -6,23 +6,15 @@ import { fireAndForgetActivitySync } from "../lib/notionSync";
 import { createCalendarEvent } from "../lib/calendar";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { inArray, eq, and } from "drizzle-orm";
+import { validate, sendEmailSchema } from "../lib/validation";
 
 const router = Router();
 const objectStorageService = new ObjectStorageService();
 
-router.post("/email/send", async (req: Request, res: Response) => {
+router.post("/email/send", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const { to, subject, body, leadId, contactId, addToCalendar, attachmentFileIds } = req.body;
-
-    if (!to || !subject || !body) {
-      return res.status(400).json({ error: "to, subject, and body are required" });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(to)) {
-      return res.status(400).json({ error: "Invalid email address" });
-    }
+    const { to, subject, body, leadId, contactId, addToCalendar, attachmentFileIds } = validate(sendEmailSchema, req.body);
 
     let attachments: EmailAttachment[] = [];
     if (attachmentFileIds && attachmentFileIds.length > 0) {
@@ -37,8 +29,8 @@ router.post("/email/send", async (req: Request, res: Response) => {
             mimeType: file.mimeType,
             content: Buffer.from(arrayBuffer),
           });
-        } catch (err: any) {
-          console.error(`Failed to load attachment ${file.name}:`, err.message);
+        } catch (loadErr: any) {
+          console.error(`Failed to load attachment ${file.name}:`, loadErr.message);
         }
       }
     }
@@ -49,7 +41,8 @@ router.post("/email/send", async (req: Request, res: Response) => {
     } catch (gmailErr: any) {
       const msg = gmailErr.message || "";
       if (msg.includes("access") || msg.includes("token") || msg.includes("credentials") || msg.includes("refresh")) {
-        return res.status(503).json({ error: "Gmail is not connected. Please configure Gmail integration in your Replit workspace." });
+        res.status(503).json({ error: "Gmail is not connected. Please configure Gmail integration in your Replit workspace." });
+        return;
       }
       throw gmailErr;
     }
@@ -97,8 +90,8 @@ router.post("/email/send", async (req: Request, res: Response) => {
     }
 
     res.json({ success: true, gmailLink: sendResult.gmailLink });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 

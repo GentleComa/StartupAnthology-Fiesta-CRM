@@ -1,9 +1,10 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import multer from "multer";
 import { db } from "@workspace/db";
 import { filesTable, leadFilesTable, contactFilesTable, leadsTable, contactsTable } from "@workspace/db";
 import { eq, and, inArray } from "drizzle-orm";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { parseIntParam, notFound, badRequest } from "../lib/errors";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
@@ -27,21 +28,21 @@ async function uploadToStorage(file: any): Promise<string> {
   return objectPath;
 }
 
-router.get("/files", async (req: Request, res: Response) => {
+router.get("/files", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
     const results = await db.select().from(filesTable).where(eq(filesTable.userId, userId));
     res.json(results);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.post("/files/upload", upload.single("file"), async (req: Request, res: Response) => {
+router.post("/files/upload", upload.single("file"), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
     const file = (req as any).file;
-    if (!file) return res.status(400).json({ error: "No file provided" });
+    if (!file) throw badRequest("No file provided");
 
     const objectPath = await uploadToStorage(file);
     const [record] = await db.insert(filesTable).values({
@@ -53,54 +54,57 @@ router.post("/files/upload", upload.single("file"), async (req: Request, res: Re
     }).returning();
 
     res.status(201).json(record);
-  } catch (err: any) {
-    console.error("File upload error:", err);
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.delete("/files/:id", async (req: Request, res: Response) => {
+router.delete("/files/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const result = await db.delete(filesTable).where(and(eq(filesTable.id, Number(req.params.id)), eq(filesTable.userId, userId))).returning();
-    if (result.length === 0) return res.status(404).json({ error: "Not found" });
+    const fileId = parseIntParam(req.params.id);
+    const result = await db.delete(filesTable).where(and(eq(filesTable.id, fileId), eq(filesTable.userId, userId))).returning();
+    if (result.length === 0) throw notFound();
     res.status(204).send();
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.get("/leads/:id/files", async (req: Request, res: Response) => {
+router.get("/leads/:id/files", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    if (!(await verifyLeadOwnership(Number(req.params.id), userId))) return res.status(404).json({ error: "Not found" });
+    const leadId = parseIntParam(req.params.id);
+    if (!(await verifyLeadOwnership(leadId, userId))) throw notFound();
 
-    const joins = await db.select().from(leadFilesTable).where(eq(leadFilesTable.leadId, Number(req.params.id)));
-    if (joins.length === 0) return res.json([]);
+    const joins = await db.select().from(leadFilesTable).where(eq(leadFilesTable.leadId, leadId));
+    if (joins.length === 0) { res.json([]); return; }
     const fileIds = joins.map((j) => j.fileId);
     const files = await db.select().from(filesTable).where(inArray(filesTable.id, fileIds));
     res.json(files);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.post("/leads/:id/files", upload.single("file"), async (req: Request, res: Response) => {
+router.post("/leads/:id/files", upload.single("file"), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const leadId = Number(req.params.id);
-    if (!(await verifyLeadOwnership(leadId, userId))) return res.status(404).json({ error: "Not found" });
+    const leadId = parseIntParam(req.params.id);
+    if (!(await verifyLeadOwnership(leadId, userId))) throw notFound();
 
     const { fileId } = req.body;
     if (fileId) {
-      const [owned] = await db.select().from(filesTable).where(and(eq(filesTable.id, Number(fileId)), eq(filesTable.userId, userId)));
-      if (!owned) return res.status(404).json({ error: "File not found" });
-      await db.insert(leadFilesTable).values({ leadId, fileId: Number(fileId) });
-      return res.status(201).json({ success: true });
+      const fid = parseIntParam(String(fileId), "fileId");
+      const [owned] = await db.select().from(filesTable).where(and(eq(filesTable.id, fid), eq(filesTable.userId, userId)));
+      if (!owned) throw notFound("File not found");
+      await db.insert(leadFilesTable).values({ leadId, fileId: fid });
+      res.status(201).json({ success: true });
+      return;
     }
 
     const file = (req as any).file;
-    if (!file) return res.status(400).json({ error: "No file or fileId provided" });
+    if (!file) throw badRequest("No file or fileId provided");
 
     const objectPath = await uploadToStorage(file);
     const [record] = await db.insert(filesTable).values({
@@ -109,58 +113,63 @@ router.post("/leads/:id/files", upload.single("file"), async (req: Request, res:
 
     await db.insert(leadFilesTable).values({ leadId, fileId: record.id });
     res.status(201).json(record);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.delete("/leads/:leadId/files/:fileId", async (req: Request, res: Response) => {
+router.delete("/leads/:leadId/files/:fileId", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    if (!(await verifyLeadOwnership(Number(req.params.leadId), userId))) return res.status(404).json({ error: "Not found" });
+    const leadId = parseIntParam(req.params.leadId, "leadId");
+    const fileId = parseIntParam(req.params.fileId, "fileId");
+    if (!(await verifyLeadOwnership(leadId, userId))) throw notFound();
 
     const result = await db.delete(leadFilesTable).where(and(
-      eq(leadFilesTable.leadId, Number(req.params.leadId)),
-      eq(leadFilesTable.fileId, Number(req.params.fileId))
+      eq(leadFilesTable.leadId, leadId),
+      eq(leadFilesTable.fileId, fileId)
     )).returning();
-    if (result.length === 0) return res.status(404).json({ error: "Not found" });
+    if (result.length === 0) throw notFound();
     res.status(204).send();
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.get("/contacts/:id/files", async (req: Request, res: Response) => {
+router.get("/contacts/:id/files", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    if (!(await verifyContactOwnership(Number(req.params.id), userId))) return res.status(404).json({ error: "Not found" });
+    const contactId = parseIntParam(req.params.id);
+    if (!(await verifyContactOwnership(contactId, userId))) throw notFound();
 
-    const joins = await db.select().from(contactFilesTable).where(eq(contactFilesTable.contactId, Number(req.params.id)));
-    if (joins.length === 0) return res.json([]);
+    const joins = await db.select().from(contactFilesTable).where(eq(contactFilesTable.contactId, contactId));
+    if (joins.length === 0) { res.json([]); return; }
     const fileIds = joins.map((j) => j.fileId);
     const files = await db.select().from(filesTable).where(inArray(filesTable.id, fileIds));
     res.json(files);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.post("/contacts/:id/files", upload.single("file"), async (req: Request, res: Response) => {
+router.post("/contacts/:id/files", upload.single("file"), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const contactId = Number(req.params.id);
-    if (!(await verifyContactOwnership(contactId, userId))) return res.status(404).json({ error: "Not found" });
+    const contactId = parseIntParam(req.params.id);
+    if (!(await verifyContactOwnership(contactId, userId))) throw notFound();
 
     const { fileId } = req.body;
     if (fileId) {
-      const [owned] = await db.select().from(filesTable).where(and(eq(filesTable.id, Number(fileId)), eq(filesTable.userId, userId)));
-      if (!owned) return res.status(404).json({ error: "File not found" });
-      await db.insert(contactFilesTable).values({ contactId, fileId: Number(fileId) });
-      return res.status(201).json({ success: true });
+      const fid = parseIntParam(String(fileId), "fileId");
+      const [owned] = await db.select().from(filesTable).where(and(eq(filesTable.id, fid), eq(filesTable.userId, userId)));
+      if (!owned) throw notFound("File not found");
+      await db.insert(contactFilesTable).values({ contactId, fileId: fid });
+      res.status(201).json({ success: true });
+      return;
     }
 
     const file = (req as any).file;
-    if (!file) return res.status(400).json({ error: "No file or fileId provided" });
+    if (!file) throw badRequest("No file or fileId provided");
 
     const objectPath = await uploadToStorage(file);
     const [record] = await db.insert(filesTable).values({
@@ -169,24 +178,26 @@ router.post("/contacts/:id/files", upload.single("file"), async (req: Request, r
 
     await db.insert(contactFilesTable).values({ contactId, fileId: record.id });
     res.status(201).json(record);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.delete("/contacts/:contactId/files/:fileId", async (req: Request, res: Response) => {
+router.delete("/contacts/:contactId/files/:fileId", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    if (!(await verifyContactOwnership(Number(req.params.contactId), userId))) return res.status(404).json({ error: "Not found" });
+    const contactId = parseIntParam(req.params.contactId, "contactId");
+    const fileId = parseIntParam(req.params.fileId, "fileId");
+    if (!(await verifyContactOwnership(contactId, userId))) throw notFound();
 
     const result = await db.delete(contactFilesTable).where(and(
-      eq(contactFilesTable.contactId, Number(req.params.contactId)),
-      eq(contactFilesTable.fileId, Number(req.params.fileId))
+      eq(contactFilesTable.contactId, contactId),
+      eq(contactFilesTable.fileId, fileId)
     )).returning();
-    if (result.length === 0) return res.status(404).json({ error: "Not found" });
+    if (result.length === 0) throw notFound();
     res.status(204).send();
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 

@@ -1,11 +1,11 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import { leadsTable, contactsTable, activitiesTable, settingsTable } from "@workspace/db";
 import { eq, sql, gte, and } from "drizzle-orm";
 
 const router = Router();
 
-router.get("/dashboard", async (req: Request, res: Response) => {
+router.get("/dashboard", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
     const now = new Date();
@@ -44,8 +44,8 @@ router.get("/dashboard", async (req: Request, res: Response) => {
       betaSlotsTotal: betaSlotsTotal,
       followUps: followUps.slice(0, 5),
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 

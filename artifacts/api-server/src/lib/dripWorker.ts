@@ -9,11 +9,12 @@ import {
   activitiesTable,
   settingsTable,
 } from "@workspace/db";
-import { eq, and, lte } from "drizzle-orm";
+import { eq, and, lte, isNull, sql } from "drizzle-orm";
 import { sendGmailEmail } from "./gmail";
 import { fireAndForgetActivitySync } from "./notionSync";
 
 let isProcessing = false;
+const LOCK_TIMEOUT_MS = 5 * 60 * 1000;
 
 function replaceMergeTags(
   text: string,
@@ -48,6 +49,31 @@ async function getSequenceOwnerId(sequenceId: number): Promise<string | null> {
   return seq?.userId || null;
 }
 
+async function tryLockEnrollment(enrollmentId: number): Promise<boolean> {
+  const now = new Date();
+  const staleThreshold = new Date(now.getTime() - LOCK_TIMEOUT_MS);
+
+  const result = await db
+    .update(dripEnrollmentsTable)
+    .set({ lockedAt: now })
+    .where(
+      and(
+        eq(dripEnrollmentsTable.id, enrollmentId),
+        sql`(${dripEnrollmentsTable.lockedAt} IS NULL OR ${dripEnrollmentsTable.lockedAt} < ${staleThreshold})`
+      )
+    )
+    .returning({ id: dripEnrollmentsTable.id });
+
+  return result.length > 0;
+}
+
+async function unlockEnrollment(enrollmentId: number) {
+  await db
+    .update(dripEnrollmentsTable)
+    .set({ lockedAt: null })
+    .where(eq(dripEnrollmentsTable.id, enrollmentId));
+}
+
 async function processEnrollments() {
   if (isProcessing) return;
   isProcessing = true;
@@ -60,13 +86,17 @@ async function processEnrollments() {
       .where(
         and(
           eq(dripEnrollmentsTable.status, "active"),
-          lte(dripEnrollmentsTable.nextSendAt, now)
+          lte(dripEnrollmentsTable.nextSendAt, now),
+          sql`(${dripEnrollmentsTable.lockedAt} IS NULL OR ${dripEnrollmentsTable.lockedAt} < ${new Date(now.getTime() - LOCK_TIMEOUT_MS)})`
         )
       );
 
     if (dueEnrollments.length === 0) return;
 
     for (const enrollment of dueEnrollments) {
+      const locked = await tryLockEnrollment(enrollment.id);
+      if (!locked) continue;
+
       try {
         const ownerId = await getSequenceOwnerId(enrollment.sequenceId);
         if (!ownerId) {
@@ -75,7 +105,7 @@ async function processEnrollments() {
           );
           await db
             .update(dripEnrollmentsTable)
-            .set({ status: "error" })
+            .set({ status: "error", lockedAt: null })
             .where(eq(dripEnrollmentsTable.id, enrollment.id));
           continue;
         }
@@ -93,7 +123,7 @@ async function processEnrollments() {
         if (!currentStep) {
           await db
             .update(dripEnrollmentsTable)
-            .set({ status: "completed" })
+            .set({ status: "completed", lockedAt: null })
             .where(eq(dripEnrollmentsTable.id, enrollment.id));
           continue;
         }
@@ -114,7 +144,7 @@ async function processEnrollments() {
           );
           await db
             .update(dripEnrollmentsTable)
-            .set({ status: "error" })
+            .set({ status: "error", lockedAt: null })
             .where(eq(dripEnrollmentsTable.id, enrollment.id));
           continue;
         }
@@ -160,7 +190,7 @@ async function processEnrollments() {
           );
           await db
             .update(dripEnrollmentsTable)
-            .set({ status: "error" })
+            .set({ status: "error", lockedAt: null })
             .where(eq(dripEnrollmentsTable.id, enrollment.id));
           continue;
         }
@@ -179,7 +209,7 @@ async function processEnrollments() {
         if (nextStepIndex >= sortedSteps.length) {
           await db
             .update(dripEnrollmentsTable)
-            .set({ currentStep: nextStepIndex, status: "completed" })
+            .set({ currentStep: nextStepIndex, status: "completed", lockedAt: null })
             .where(eq(dripEnrollmentsTable.id, enrollment.id));
         } else {
           const nextStep = sortedSteps[nextStepIndex];
@@ -188,7 +218,7 @@ async function processEnrollments() {
           );
           await db
             .update(dripEnrollmentsTable)
-            .set({ currentStep: nextStepIndex, nextSendAt })
+            .set({ currentStep: nextStepIndex, nextSendAt, lockedAt: null })
             .where(eq(dripEnrollmentsTable.id, enrollment.id));
         }
 
@@ -218,7 +248,7 @@ async function processEnrollments() {
         try {
           await db
             .update(dripEnrollmentsTable)
-            .set({ status: "error" })
+            .set({ status: "error", lockedAt: null })
             .where(eq(dripEnrollmentsTable.id, enrollment.id));
         } catch (dbErr) {
           console.error(`Drip worker: failed to mark enrollment ${enrollment.id} as error:`, dbErr);

@@ -1,12 +1,14 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import { emailTemplatesTable } from "@workspace/db";
 import { eq, sql, and } from "drizzle-orm";
 import { logAudit } from "../lib/audit";
+import { parseIntParam, notFound } from "../lib/errors";
+import { validate, createTemplateSchema, updateTemplateSchema } from "../lib/validation";
 
 const router = Router();
 
-router.get("/templates", async (req: Request, res: Response) => {
+router.get("/templates", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
     const { audience } = req.query;
@@ -15,60 +17,62 @@ router.get("/templates", async (req: Request, res: Response) => {
 
     const results = await db.select().from(emailTemplatesTable).where(and(...conditions)).orderBy(sql`${emailTemplatesTable.createdAt} desc`);
     res.json(results);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.post("/templates", async (req: Request, res: Response) => {
+router.post("/templates", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId: _, ...body } = req.body;
-    const [template] = await db.insert(emailTemplatesTable).values({ ...body, userId: req.user!.id }).returning();
+    const data = validate(createTemplateSchema, req.body);
+    const [template] = await db.insert(emailTemplatesTable).values({ ...data, userId: req.user!.id }).returning();
     logAudit("template", template.id, "create", req.user!.id, null, template as Record<string, unknown>);
     res.status(201).json(template);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.get("/templates/:id", async (req: Request, res: Response) => {
+router.get("/templates/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const [template] = await db.select().from(emailTemplatesTable).where(and(eq(emailTemplatesTable.id, Number(req.params.id)), eq(emailTemplatesTable.userId, req.user!.id)));
-    if (!template) return res.status(404).json({ error: "Not found" });
+    const id = parseIntParam(req.params.id);
+    const [template] = await db.select().from(emailTemplatesTable).where(and(eq(emailTemplatesTable.id, id), eq(emailTemplatesTable.userId, req.user!.id)));
+    if (!template) throw notFound();
     res.json(template);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.put("/templates/:id", async (req: Request, res: Response) => {
+router.put("/templates/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const templateId = Number(req.params.id);
-    const [before] = await db.select().from(emailTemplatesTable).where(and(eq(emailTemplatesTable.id, templateId), eq(emailTemplatesTable.userId, userId)));
-    if (!before) return res.status(404).json({ error: "Not found" });
+    const templateId = parseIntParam(req.params.id);
+    const data = validate(updateTemplateSchema, req.body);
 
-    const { userId: _u, ...body } = req.body;
-    const [template] = await db.update(emailTemplatesTable).set({ ...body, updatedAt: new Date() }).where(and(eq(emailTemplatesTable.id, templateId), eq(emailTemplatesTable.userId, userId))).returning();
+    const [before] = await db.select().from(emailTemplatesTable).where(and(eq(emailTemplatesTable.id, templateId), eq(emailTemplatesTable.userId, userId)));
+    if (!before) throw notFound();
+
+    const [template] = await db.update(emailTemplatesTable).set({ ...data, updatedAt: new Date() }).where(and(eq(emailTemplatesTable.id, templateId), eq(emailTemplatesTable.userId, userId))).returning();
     logAudit("template", templateId, "update", userId, before as Record<string, unknown>, template as Record<string, unknown>);
     res.json(template);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.delete("/templates/:id", async (req: Request, res: Response) => {
+router.delete("/templates/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const templateId = Number(req.params.id);
+    const templateId = parseIntParam(req.params.id);
     const [before] = await db.select().from(emailTemplatesTable).where(and(eq(emailTemplatesTable.id, templateId), eq(emailTemplatesTable.userId, userId)));
-    if (!before) return res.status(404).json({ error: "Not found" });
+    if (!before) throw notFound();
 
     await db.delete(emailTemplatesTable).where(eq(emailTemplatesTable.id, templateId));
     logAudit("template", templateId, "delete", userId, before as Record<string, unknown>, null);
     res.status(204).send();
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 

@@ -13,7 +13,7 @@ Mobile-first CRM app for a solo founder/small team. Built with Expo (React Nativ
 - **Mobile framework**: Expo SDK 54 with React Native
 - **API framework**: Express 5
 - **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
+- **Validation**: Zod, `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **State management**: TanStack React Query
 - **Integrations**: Gmail (via googleapis), Notion (via @replit/connectors-sdk), Google Calendar (via googleapis)
@@ -34,22 +34,35 @@ artifacts-monorepo/
 │   │   ├── app/broadcast/new.tsx # Broadcast wizard (4-step)
 │   │   ├── app/settings.tsx   # Settings + profile + admin user management
 │   │   ├── constants/colors.ts # Brand colors (#000000 primary, #BB935B accent)
+│   │   ├── constants/layout.ts # Layout constants (spacing, radius, elevation)
+│   │   ├── constants/crm.ts   # Shared CRM constants (statuses, priorities, relationship types, colors)
 │   │   ├── constants/api.ts   # API base URL config
+│   │   ├── components/HistoryModal.tsx     # Shared revision history modal
+│   │   ├── components/ActivityList.tsx     # Shared activity timeline component
+│   │   ├── components/LinkedInLogModal.tsx # Shared LinkedIn message log modal
+│   │   ├── components/ProfilePicModal.tsx  # Shared profile picture upload modal
+│   │   ├── components/ErrorBoundary.tsx    # Error boundary wrapper
+│   │   ├── components/ErrorFallback.tsx    # Error fallback UI
+│   │   ├── components/LoginScreen.tsx      # Login/Register screen
 │   │   ├── lib/api.ts         # All API client methods (incl. profile, password, admin)
-│   │   ├── lib/auth.tsx       # Auth provider with login/register/logout/refreshUser
-│   │   └── components/LoginScreen.tsx # Login/Register screen with password
+│   │   └── lib/auth.tsx       # Auth provider with login/register/logout/refreshUser
 │   ├── api-server/            # Express API server
 │   │   ├── src/routes/        # leads, contacts, activities, templates, sequences, broadcasts, triggers, settings, dashboard, email, calendar, auth, admin
 │   │   ├── src/middlewares/authMiddleware.ts  # Session auth + live DB user check
 │   │   ├── src/middlewares/requireAuth.ts     # Auth gate middleware
 │   │   ├── src/middlewares/requireAdmin.ts    # Admin role guard
+│   │   ├── src/lib/errors.ts  # AppError, notFound, badRequest, parseIntParam, errorHandler
+│   │   ├── src/lib/validation.ts # Zod schemas for all entities, validate() helper
+│   │   ├── src/lib/crud.ts    # findOwned() ownership-scoped record lookup
 │   │   ├── src/lib/gmail.ts   # Gmail send via googleapis
 │   │   ├── src/lib/calendar.ts # Google Calendar client via googleapis
 │   │   ├── src/lib/notion.ts  # Notion sync via connectors-sdk
 │   │   ├── src/lib/notionSync.ts # Fire-and-forget Notion sync helpers
-│   │   ├── src/lib/dripWorker.ts # Background drip sequence email worker (60s interval)
+│   │   ├── src/lib/dripWorker.ts # Background drip sequence email worker (60s interval, row-level locking)
+│   │   ├── src/lib/audit.ts   # Fire-and-forget audit trail logger
 │   │   ├── src/lib/seed.ts    # Per-user default settings seeder
-│   │   └── src/lib/auth.ts    # Session management (create/get/delete)
+│   │   ├── src/lib/auth.ts    # Session management (create/get/delete)
+│   │   └── src/app.ts         # Express app with centralized errorHandler middleware
 │   └── mockup-sandbox/        # Component preview server
 ├── lib/
 │   ├── api-spec/              # OpenAPI spec + Orval codegen
@@ -62,6 +75,39 @@ artifacts-monorepo/
 ├── tsconfig.base.json
 └── package.json
 ```
+
+## Key Patterns
+
+### Error Handling (API)
+- `AppError(statusCode, msg)` for operational errors; thrown in routes, caught by centralized `errorHandler` in `app.ts`
+- `ValidationError` from Zod failures via `validate()` helper
+- Real error details logged server-side only; generic "Internal server error" sent to client for 500s
+- `parseIntParam(val, name)` validates numeric URL params; throws 400 on non-integer
+- `findOwned(table, id, userId)` looks up a record scoped by ownership; throws 404 if missing
+
+### Input Validation (API)
+- All mutating endpoints use `validate(schema, body)` with Zod schemas defined in `validation.ts`
+- Schemas: `createLeadSchema`, `updateLeadSchema`, `updateStatusSchema`, `createContactSchema`, `updateContactSchema`, `createActivitySchema`, `createTemplateSchema`, `updateTemplateSchema`, `createSequenceSchema`, `updateSequenceSchema`, `addStepSchema`, `enrollSchema`, `createBroadcastSchema`, `sendEmailSchema`, `createCalendarEventSchema`, `createTriggerSchema`
+
+### Drip Worker (Row-Level Locking)
+- Uses `lockedAt` column on `drip_enrollments` for row-level locking
+- `tryLockEnrollment()` acquires lock; `unlockEnrollment()` releases it
+- Stale lock timeout: 5 minutes (LOCK_TIMEOUT_MS)
+- `isProcessing` flag as secondary guard against concurrent workers
+
+### Mobile Shared Components
+- `HistoryModal` — revision history with snapshot viewer and rollback
+- `ActivityList` — activity timeline with type-based dot colors
+- `LinkedInLogModal` — log LinkedIn messages with subject/message
+- `ProfilePicModal` — upload or paste URL for profile pictures
+- All use `useCallback` for handler memoization
+
+### Mobile Constants (crm.ts)
+- `LEAD_STATUSES`, `STATUS_LABELS`, `STATUS_COLORS` — lead pipeline constants
+- `LEAD_SOURCES` — lead source options
+- `REL_TYPES`, `REL_COLORS` — relationship type constants
+- `PRIORITIES`, `PRIORITY_COLORS` — priority level constants
+- `ACTION_LABELS`, `ACTION_COLORS` — audit action display constants
 
 ## Key Features
 
@@ -152,7 +198,13 @@ All CRM data is scoped by `userId` column:
 
 ## Database Schema
 
-Tables: leads (with is_beta, linkedinUrl, profilePictureUrl, userId), contacts (profilePictureUrl, userId), activities (gmailMessageId, gmailThreadId, gmailLink, userId), email_templates (userId), drip_sequences (userId), drip_sequence_steps, drip_enrollments, broadcasts (userId), trigger_rules (userId), app_settings (key+userId), sessions, users (passwordHash, role, isActive, needsPasswordReset), calendar_events (userId), files (name, mimeType, size, storageKey, userId), lead_files (leadId, fileId), contact_files (contactId, fileId), audit_log
+Tables: leads (with is_beta, linkedinUrl, profilePictureUrl, userId), contacts (profilePictureUrl, userId), activities (gmailMessageId, gmailThreadId, gmailLink, userId), email_templates (userId), drip_sequences (userId), drip_sequence_steps, drip_enrollments (lockedAt for row locking), broadcasts (userId), trigger_rules (userId), app_settings (key+userId unique), sessions, users (passwordHash, role, isActive, needsPasswordReset), calendar_events (userId), files (name, mimeType, size, storageKey, userId), lead_files (leadId+fileId unique), contact_files (contactId+fileId unique), audit_log
+
+### Database Indexes
+- userId indexes on all user-scoped tables
+- FK constraint indexes on join tables
+- Unique constraints: settings (key+userId), lead_files (leadId+fileId), contact_files (contactId+fileId)
+- Audit log indexed on (entityType+entityId), userId, createdAt
 
 ## Design
 
@@ -216,6 +268,16 @@ Notion database IDs configured in Settings: `notion_leads_db`, `notion_contacts_
 
 Background `setInterval` worker (60s) in `dripWorker.ts`.
 Processes active enrollments where `nextSendAt <= now`.
+Uses row-level locking via `lockedAt` column (5-minute stale lock timeout).
 Looks up sequence step → template → recipient, performs merge tag replacement, sends via Gmail, logs activity, advances enrollment.
 Marks enrollment `completed` when all steps done, `error` if recipient/template missing.
 Started automatically on server boot.
+
+## Settings Format
+
+PUT `/api/settings` accepts flat `{ "key": "value" }` object, NOT `{ settings: [{key, value}] }`.
+
+## Test Users
+
+- Admin: `founder@startupanthology.com` / `changeme123`
+- Test: `testuser@debug.com` / `test123`

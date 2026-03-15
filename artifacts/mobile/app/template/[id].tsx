@@ -53,6 +53,7 @@ export default function TemplateDetailScreen() {
       qc.invalidateQueries({ queryKey: ["templates"] });
       router.back();
     },
+    onError: (err: Error) => Alert.alert("Create failed", err.message),
   });
   const updateMut = useMutation({
     mutationFn: () => api.updateTemplate(Number(id), { name, audience, subject, body }),
@@ -61,10 +62,12 @@ export default function TemplateDetailScreen() {
       qc.invalidateQueries({ queryKey: ["template", id] });
       router.back();
     },
+    onError: (err: Error) => Alert.alert("Update failed", err.message),
   });
   const deleteMut = useMutation({
     mutationFn: () => api.deleteTemplate(Number(id)),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["templates"] }); router.back(); },
+    onError: (err: Error) => Alert.alert("Delete failed", err.message),
   });
 
   const save = () => {

@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import {
   auditLogTable,
@@ -13,10 +13,11 @@ import {
   broadcastsTable,
   usersTable,
 } from "@workspace/db";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { logAudit } from "../lib/audit";
+import { parseIntParam, notFound, badRequest } from "../lib/errors";
 
 const router = Router();
 
@@ -84,7 +85,7 @@ function resolveEntityType(raw: string): string | null {
   return null;
 }
 
-async function handleHistory(req: Request, res: Response) {
+async function handleHistory(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.user!.id;
     const rawEntityType = req.params.entityType;
@@ -93,12 +94,11 @@ async function handleHistory(req: Request, res: Response) {
     const offset = Number(req.query.offset) || 0;
 
     const entityType = resolveEntityType(rawEntityType);
-    if (!entityType) {
-      return res.status(400).json({ error: "Invalid entity type" });
-    }
+    if (!entityType) throw badRequest("Invalid entity type");
 
     const descriptor = ENTITY_MAP[entityType];
-    const owned = await verifyOwnership(descriptor, entityType, Number(entityId), userId);
+    const numericId = parseIntParam(String(entityId));
+    const owned = await verifyOwnership(descriptor, entityType, numericId, userId);
 
     if (!owned) {
       const [ownedAudit] = await db
@@ -107,15 +107,13 @@ async function handleHistory(req: Request, res: Response) {
         .where(
           and(
             eq(auditLogTable.entityType, entityType),
-            eq(auditLogTable.entityId, Number(entityId)),
+            eq(auditLogTable.entityId, numericId),
             eq(auditLogTable.userId, userId)
           )
         )
         .limit(1);
 
-      if (!ownedAudit) {
-        return res.status(404).json({ error: "Entity not found" });
-      }
+      if (!ownedAudit) throw notFound("Entity not found");
     }
 
     const entries = await db
@@ -133,7 +131,7 @@ async function handleHistory(req: Request, res: Response) {
       .where(
         and(
           eq(auditLogTable.entityType, entityType),
-          eq(auditLogTable.entityId, Number(entityId)),
+          eq(auditLogTable.entityId, numericId),
           eq(auditLogTable.userId, userId)
         )
       )
@@ -147,7 +145,7 @@ async function handleHistory(req: Request, res: Response) {
       const users = await db
         .select({ id: usersTable.id, firstName: usersTable.firstName, lastName: usersTable.lastName, email: usersTable.email })
         .from(usersTable)
-        .where(sql`${usersTable.id} IN (${sql.join(userIds.map((id) => sql`${id}`), sql`, `)})`);
+        .where(inArray(usersTable.id, userIds));
       for (const u of users) {
         userNames[u.id] = [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email || u.id;
       }
@@ -159,13 +157,12 @@ async function handleHistory(req: Request, res: Response) {
     }));
 
     res.json(results);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    res.status(500).json({ error: message });
+  } catch (err) {
+    next(err);
   }
 }
 
-async function handleRollback(req: Request, res: Response) {
+async function handleRollback(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.user!.id;
     const rawEntityType = req.params.entityType;
@@ -173,12 +170,12 @@ async function handleRollback(req: Request, res: Response) {
     const { revisionId } = req.params;
 
     const entityType = resolveEntityType(rawEntityType);
-    if (!entityType) {
-      return res.status(400).json({ error: "Invalid entity type" });
-    }
+    if (!entityType) throw badRequest("Invalid entity type");
 
     const descriptor = ENTITY_MAP[entityType];
-    const owned = await verifyOwnership(descriptor, entityType, Number(entityId), userId);
+    const numericId = parseIntParam(String(entityId));
+    const numericRevisionId = parseIntParam(revisionId, "revisionId");
+    const owned = await verifyOwnership(descriptor, entityType, numericId, userId);
 
     if (!owned) {
       const [ownedAudit] = await db
@@ -187,14 +184,12 @@ async function handleRollback(req: Request, res: Response) {
         .where(
           and(
             eq(auditLogTable.entityType, entityType),
-            eq(auditLogTable.entityId, Number(entityId)),
+            eq(auditLogTable.entityId, numericId),
             eq(auditLogTable.userId, userId)
           )
         )
         .limit(1);
-      if (!ownedAudit) {
-        return res.status(404).json({ error: "Entity not found" });
-      }
+      if (!ownedAudit) throw notFound("Entity not found");
     }
 
     const [auditEntry] = await db
@@ -202,15 +197,13 @@ async function handleRollback(req: Request, res: Response) {
       .from(auditLogTable)
       .where(
         and(
-          eq(auditLogTable.id, Number(revisionId)),
+          eq(auditLogTable.id, numericRevisionId),
           eq(auditLogTable.entityType, entityType),
-          eq(auditLogTable.entityId, Number(entityId))
+          eq(auditLogTable.entityId, numericId)
         )
       );
 
-    if (!auditEntry) {
-      return res.status(404).json({ error: "Revision not found" });
-    }
+    if (!auditEntry) throw notFound("Revision not found");
 
     let snapshot: Record<string, unknown> | null = null;
     switch (auditEntry.action) {
@@ -227,9 +220,7 @@ async function handleRollback(req: Request, res: Response) {
         snapshot = auditEntry.afterSnapshot as Record<string, unknown> | null;
         break;
     }
-    if (!snapshot) {
-      return res.status(400).json({ error: "This revision cannot be used for rollback" });
-    }
+    if (!snapshot) throw badRequest("This revision cannot be used for rollback");
     const restoreData = snapshot;
 
     const { id: _id, createdAt: _ca, updatedAt: _ua, userId: _uid, ...safeData } = restoreData;
@@ -246,17 +237,17 @@ async function handleRollback(req: Request, res: Response) {
       const [current] = await db
         .select()
         .from(descriptor.table)
-        .where(eq(descriptor.idCol, Number(entityId)));
+        .where(eq(descriptor.idCol, numericId));
       beforeState = current as Record<string, unknown>;
 
       const [updated] = await db
         .update(descriptor.table)
         .set(setData)
-        .where(and(eq(descriptor.idCol, Number(entityId)), ...(descriptor.userCol ? [eq(descriptor.userCol, userId)] : [])))
+        .where(and(eq(descriptor.idCol, numericId), ...(descriptor.userCol ? [eq(descriptor.userCol, userId)] : [])))
         .returning();
       result = updated as Record<string, unknown>;
     } else {
-      const insertData: Record<string, unknown> = { ...safeData, id: Number(entityId) };
+      const insertData: Record<string, unknown> = { ...safeData, id: numericId };
       if (descriptor.userCol) {
         insertData.userId = userId;
       }
@@ -270,12 +261,11 @@ async function handleRollback(req: Request, res: Response) {
       result = inserted as Record<string, unknown>;
     }
 
-    logAudit(entityType, Number(entityId), "rollback", userId, beforeState, result);
+    logAudit(entityType, numericId, "rollback", userId, beforeState, result);
 
     res.json(result);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    res.status(500).json({ error: message });
+  } catch (err) {
+    next(err);
   }
 }
 

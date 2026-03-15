@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import { settingsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
@@ -6,7 +6,7 @@ import { logAudit } from "../lib/audit";
 
 const router = Router();
 
-router.get("/settings", async (req: Request, res: Response) => {
+router.get("/settings", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
     const results = await db.select().from(settingsTable).where(eq(settingsTable.userId, userId));
@@ -15,16 +15,17 @@ router.get("/settings", async (req: Request, res: Response) => {
       settings[r.key] = r.value;
     }
     res.json(settings);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.put("/settings", async (req: Request, res: Response) => {
+router.put("/settings", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
     const entries = Object.entries(req.body) as [string, string][];
     for (const [key, value] of entries) {
+      if (typeof key !== "string" || typeof value !== "string") continue;
       const existing = await db.select().from(settingsTable).where(and(eq(settingsTable.key, key), eq(settingsTable.userId, userId)));
       if (existing.length > 0) {
         const before = { key, value: existing[0].value };
@@ -41,8 +42,8 @@ router.put("/settings", async (req: Request, res: Response) => {
       settings[r.key] = r.value;
     }
     res.json(settings);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 

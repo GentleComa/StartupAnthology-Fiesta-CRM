@@ -1,12 +1,13 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
+import { badRequest, notFound } from "../lib/errors";
 
 const router = Router();
 
-router.get("/admin/users", requireAdmin, async (req: Request, res: Response) => {
+router.get("/admin/users", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await db.select({
       id: usersTable.id,
@@ -20,30 +21,24 @@ router.get("/admin/users", requireAdmin, async (req: Request, res: Response) => 
       updatedAt: usersTable.updatedAt,
     }).from(usersTable).orderBy(sql`${usersTable.createdAt} desc`);
     res.json(users);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.post("/admin/users", requireAdmin, async (req: Request, res: Response) => {
+router.post("/admin/users", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password, firstName, lastName, role } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters" });
-    }
-
-    if (role && !["admin", "user"].includes(role)) {
-      return res.status(400).json({ error: "Role must be 'admin' or 'user'" });
-    }
+    if (!email || !password) throw badRequest("Email and password are required");
+    if (password.length < 6) throw badRequest("Password must be at least 6 characters");
+    if (role && !["admin", "user"].includes(role)) throw badRequest("Role must be 'admin' or 'user'");
 
     const trimmedEmail = email.trim().toLowerCase();
     const [existing] = await db.select().from(usersTable).where(eq(usersTable.email, trimmedEmail));
     if (existing) {
-      return res.status(409).json({ error: "An account with this email already exists" });
+      res.status(409).json({ error: "An account with this email already exists" });
+      return;
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -65,40 +60,31 @@ router.post("/admin/users", requireAdmin, async (req: Request, res: Response) =>
       isActive: user.isActive,
       createdAt: user.createdAt,
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.put("/admin/users/:id", requireAdmin, async (req: Request, res: Response) => {
+router.put("/admin/users/:id", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { role, isActive } = req.body;
-    if (role !== undefined && !["admin", "user"].includes(role)) {
-      return res.status(400).json({ error: "Role must be 'admin' or 'user'" });
-    }
+    if (role !== undefined && !["admin", "user"].includes(role)) throw badRequest("Role must be 'admin' or 'user'");
+
     const updates: Record<string, string | boolean> = {};
     if (role !== undefined) updates.role = role;
     if (isActive !== undefined) updates.isActive = isActive;
 
-    if (Object.keys(updates).length === 0) {
-      return res.status(400).json({ error: "No fields to update" });
-    }
+    if (Object.keys(updates).length === 0) throw badRequest("No fields to update");
 
-    if (req.params.id === req.user!.id && isActive === false) {
-      return res.status(400).json({ error: "You cannot disable your own account" });
-    }
-    if (req.params.id === req.user!.id && role && role !== "admin") {
-      return res.status(400).json({ error: "You cannot remove your own admin role" });
-    }
+    if (req.params.id === req.user!.id && isActive === false) throw badRequest("You cannot disable your own account");
+    if (req.params.id === req.user!.id && role && role !== "admin") throw badRequest("You cannot remove your own admin role");
 
     const [updated] = await db.update(usersTable)
       .set(updates)
       .where(eq(usersTable.id, req.params.id))
       .returning();
 
-    if (!updated) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!updated) throw notFound("User not found");
 
     res.json({
       id: updated.id,
@@ -109,8 +95,8 @@ router.put("/admin/users/:id", requireAdmin, async (req: Request, res: Response)
       isActive: updated.isActive,
       createdAt: updated.createdAt,
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 

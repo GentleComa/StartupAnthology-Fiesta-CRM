@@ -21,25 +21,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import { LEAD_STATUSES, STATUS_LABELS, STATUS_COLORS, LEAD_SOURCES } from "@/constants/crm";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
-
-const STATUSES = ["new", "contacted", "interested", "engaged", "converted"];
-const STATUS_LABELS: Record<string, string> = {
-  new: "New",
-  contacted: "Contacted",
-  interested: "Interested",
-  engaged: "Engaged",
-  converted: "Converted",
-};
-const STATUS_COLORS: Record<string, string> = {
-  new: Colors.statusNew,
-  contacted: Colors.statusContacted,
-  interested: Colors.statusInterested,
-  engaged: Colors.statusEngaged,
-  converted: Colors.statusConverted,
-};
-const SOURCES = ["twitter", "linkedin", "referral", "cold_outreach", "other"];
 
 function LeadCard({ lead, onSwipeLeft, onSwipeRight }: { lead: any; onSwipeLeft: () => void; onSwipeRight: () => void }) {
   const pan = useRef(new Animated.Value(0)).current;
@@ -128,15 +112,15 @@ export default function FunnelScreen() {
   });
 
   const advanceStatus = (lead: any) => {
-    const idx = STATUSES.indexOf(lead.status);
-    if (idx < STATUSES.length - 1) {
-      statusMut.mutate({ id: lead.id, status: STATUSES[idx + 1] });
+    const idx = LEAD_STATUSES.indexOf(lead.status);
+    if (idx < LEAD_STATUSES.length - 1) {
+      statusMut.mutate({ id: lead.id, status: LEAD_STATUSES[idx + 1] });
     }
   };
   const retreatStatus = (lead: any) => {
-    const idx = STATUSES.indexOf(lead.status);
+    const idx = LEAD_STATUSES.indexOf(lead.status);
     if (idx > 0) {
-      statusMut.mutate({ id: lead.id, status: STATUSES[idx - 1] });
+      statusMut.mutate({ id: lead.id, status: LEAD_STATUSES[idx - 1] });
     }
   };
 
@@ -195,7 +179,7 @@ export default function FunnelScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.kanbanContainer}
         >
-          {STATUSES.map((status) => {
+          {LEAD_STATUSES.map((status) => {
             const col = leads.filter((l: any) => l.status === status);
             return (
               <View key={status} style={styles.kanbanColumn}>
@@ -329,7 +313,7 @@ export default function FunnelScreen() {
           <View style={styles.formGroup}>
             <Text style={styles.formLabel}>Source</Text>
             <View style={styles.sourcePicker}>
-              {SOURCES.map((s) => (
+              {LEAD_SOURCES.map((s) => (
                 <Pressable
                   key={s}
                   style={[styles.sourceChip, newSource === s && styles.sourceChipActive]}

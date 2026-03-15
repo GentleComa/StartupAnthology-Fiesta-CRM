@@ -1,23 +1,24 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import { broadcastsTable, leadsTable, contactsTable, emailTemplatesTable, activitiesTable, settingsTable } from "@workspace/db";
 import { eq, sql, and } from "drizzle-orm";
 import { sendGmailEmail } from "../lib/gmail";
 import { fireAndForgetActivitySync } from "../lib/notionSync";
 import { logAudit } from "../lib/audit";
+import { validate, createBroadcastSchema } from "../lib/validation";
 
 const router = Router();
 
-router.get("/broadcasts", async (req: Request, res: Response) => {
+router.get("/broadcasts", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const results = await db.select().from(broadcastsTable).where(eq(broadcastsTable.userId, req.user!.id)).orderBy(sql`${broadcastsTable.createdAt} desc`);
     res.json(results);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.get("/broadcast-preview", async (req: Request, res: Response) => {
+router.get("/broadcast-preview", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
     const { segmentType, segmentValue } = req.query;
@@ -32,15 +33,15 @@ router.get("/broadcast-preview", async (req: Request, res: Response) => {
     }
 
     res.json({ count: recipients.length, recipients });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.post("/broadcasts", async (req: Request, res: Response) => {
+router.post("/broadcasts", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const { subject, templateId, segmentType, segmentValue } = req.body;
+    const { subject, templateId, segmentType, segmentValue } = validate(createBroadcastSchema, req.body);
 
     let recipients: { name: string; email: string; id: number; isLead: boolean; company?: string | null }[] = [];
     if (segmentType === "lead_status") {
@@ -100,8 +101,8 @@ router.post("/broadcasts", async (req: Request, res: Response) => {
         }).returning();
 
         fireAndForgetActivitySync(activity);
-      } catch (err) {
-        console.error(`Failed to send to ${recipient.email}:`, err);
+      } catch (sendErr) {
+        console.error(`Failed to send to ${recipient.email}:`, sendErr);
       }
     }
 
@@ -113,8 +114,8 @@ router.post("/broadcasts", async (req: Request, res: Response) => {
     logAudit("broadcast", broadcast.id, "update", userId, broadcast as Record<string, unknown>, updatedBroadcast as Record<string, unknown>);
 
     res.status(201).json(updatedBroadcast);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 

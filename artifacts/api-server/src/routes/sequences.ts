@@ -1,69 +1,72 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import { dripSequencesTable, dripSequenceStepsTable, dripEnrollmentsTable, calendarEventsTable, leadsTable, contactsTable } from "@workspace/db";
 import { eq, sql, and } from "drizzle-orm";
 import { createCalendarEvent } from "../lib/calendar";
 import { logAudit } from "../lib/audit";
+import { parseIntParam, notFound } from "../lib/errors";
+import { validate, createSequenceSchema, updateSequenceSchema, createStepSchema } from "../lib/validation";
 
 const router = Router();
 
-router.get("/sequences", async (req: Request, res: Response) => {
+router.get("/sequences", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const results = await db.select().from(dripSequencesTable).where(eq(dripSequencesTable.userId, req.user!.id)).orderBy(sql`${dripSequencesTable.createdAt} desc`);
     res.json(results);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.post("/sequences", async (req: Request, res: Response) => {
+router.post("/sequences", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId: _, ...body } = req.body;
-    const [sequence] = await db.insert(dripSequencesTable).values({ ...body, userId: req.user!.id }).returning();
+    const data = validate(createSequenceSchema, req.body);
+    const [sequence] = await db.insert(dripSequencesTable).values({ ...data, userId: req.user!.id }).returning();
     logAudit("sequence", sequence.id, "create", req.user!.id, null, sequence as Record<string, unknown>);
     res.status(201).json(sequence);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.get("/sequences/:id", async (req: Request, res: Response) => {
+router.get("/sequences/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const id = Number(req.params.id);
+    const id = parseIntParam(req.params.id);
     const [sequence] = await db.select().from(dripSequencesTable).where(and(eq(dripSequencesTable.id, id), eq(dripSequencesTable.userId, req.user!.id)));
-    if (!sequence) return res.status(404).json({ error: "Not found" });
+    if (!sequence) throw notFound();
 
     const steps = await db.select().from(dripSequenceStepsTable).where(eq(dripSequenceStepsTable.sequenceId, id)).orderBy(sql`${dripSequenceStepsTable.stepOrder} asc`);
     const enrollments = await db.select().from(dripEnrollmentsTable).where(eq(dripEnrollmentsTable.sequenceId, id));
 
     res.json({ ...sequence, steps, enrollments });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.put("/sequences/:id", async (req: Request, res: Response) => {
+router.put("/sequences/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const seqId = Number(req.params.id);
-    const [before] = await db.select().from(dripSequencesTable).where(and(eq(dripSequencesTable.id, seqId), eq(dripSequencesTable.userId, userId)));
-    if (!before) return res.status(404).json({ error: "Not found" });
+    const seqId = parseIntParam(req.params.id);
+    const data = validate(updateSequenceSchema, req.body);
 
-    const { userId: _u, ...body } = req.body;
-    const [sequence] = await db.update(dripSequencesTable).set({ ...body, updatedAt: new Date() }).where(and(eq(dripSequencesTable.id, seqId), eq(dripSequencesTable.userId, userId))).returning();
+    const [before] = await db.select().from(dripSequencesTable).where(and(eq(dripSequencesTable.id, seqId), eq(dripSequencesTable.userId, userId)));
+    if (!before) throw notFound();
+
+    const [sequence] = await db.update(dripSequencesTable).set({ ...data, updatedAt: new Date() }).where(and(eq(dripSequencesTable.id, seqId), eq(dripSequencesTable.userId, userId))).returning();
     logAudit("sequence", seqId, "update", userId, before as Record<string, unknown>, sequence as Record<string, unknown>);
     res.json(sequence);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.delete("/sequences/:id", async (req: Request, res: Response) => {
+router.delete("/sequences/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const id = Number(req.params.id);
+    const id = parseIntParam(req.params.id);
     const [before] = await db.select().from(dripSequencesTable).where(and(eq(dripSequencesTable.id, id), eq(dripSequencesTable.userId, userId)));
-    if (!before) return res.status(404).json({ error: "Not found" });
+    if (!before) throw notFound();
 
     const steps = await db.select().from(dripSequenceStepsTable).where(eq(dripSequenceStepsTable.sequenceId, id));
     for (const step of steps) {
@@ -74,42 +77,45 @@ router.delete("/sequences/:id", async (req: Request, res: Response) => {
     await db.delete(dripSequencesTable).where(eq(dripSequencesTable.id, id));
     logAudit("sequence", id, "delete", userId, before as Record<string, unknown>, null);
     res.status(204).send();
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.post("/sequences/:id/steps", async (req: Request, res: Response) => {
+router.post("/sequences/:id/steps", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const seqId = Number(req.params.id);
+    const seqId = parseIntParam(req.params.id);
     const [sequence] = await db.select().from(dripSequencesTable).where(and(eq(dripSequencesTable.id, seqId), eq(dripSequencesTable.userId, req.user!.id)));
-    if (!sequence) return res.status(404).json({ error: "Sequence not found" });
+    if (!sequence) throw notFound("Sequence not found");
 
+    const data = validate(createStepSchema, req.body);
     const [step] = await db.insert(dripSequenceStepsTable).values({
-      ...req.body,
+      ...data,
       sequenceId: seqId,
     }).returning();
     logAudit("sequence_step", step.id, "create", req.user!.id, null, step as Record<string, unknown>);
     res.status(201).json(step);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
-router.post("/sequences/:id/enroll", async (req: Request, res: Response) => {
+router.post("/sequences/:id/enroll", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const seqId = Number(req.params.id);
+    const seqId = parseIntParam(req.params.id);
     const [sequence] = await db.select().from(dripSequencesTable).where(and(eq(dripSequencesTable.id, seqId), eq(dripSequencesTable.userId, userId)));
-    if (!sequence) return res.status(404).json({ error: "Sequence not found" });
+    if (!sequence) throw notFound("Sequence not found");
 
     if (req.body.leadId) {
-      const [lead] = await db.select().from(leadsTable).where(and(eq(leadsTable.id, req.body.leadId), eq(leadsTable.userId, userId)));
-      if (!lead) return res.status(404).json({ error: "Lead not found" });
+      const leadId = parseIntParam(String(req.body.leadId), "leadId");
+      const [lead] = await db.select().from(leadsTable).where(and(eq(leadsTable.id, leadId), eq(leadsTable.userId, userId)));
+      if (!lead) throw notFound("Lead not found");
     }
     if (req.body.contactId) {
-      const [contact] = await db.select().from(contactsTable).where(and(eq(contactsTable.id, req.body.contactId), eq(contactsTable.userId, userId)));
-      if (!contact) return res.status(404).json({ error: "Contact not found" });
+      const contactId = parseIntParam(String(req.body.contactId), "contactId");
+      const [contact] = await db.select().from(contactsTable).where(and(eq(contactsTable.id, contactId), eq(contactsTable.userId, userId)));
+      if (!contact) throw notFound("Contact not found");
     }
 
     const [enrollment] = await db.insert(dripEnrollmentsTable).values({
@@ -132,8 +138,8 @@ router.post("/sequences/:id/enroll", async (req: Request, res: Response) => {
           startTime: now.toISOString(),
           endTime: endTime.toISOString(),
         });
-      } catch (err: any) {
-        console.error("Google Calendar sync failed for enrollment:", err.message);
+      } catch (calErr: any) {
+        console.error("Google Calendar sync failed for enrollment:", calErr.message);
       }
       const [calEvent] = await db.insert(calendarEventsTable).values({
         googleEventId,
@@ -150,8 +156,8 @@ router.post("/sequences/:id/enroll", async (req: Request, res: Response) => {
     }
 
     res.status(201).json(enrollment);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message });
+  } catch (err) {
+    next(err);
   }
 });
 
