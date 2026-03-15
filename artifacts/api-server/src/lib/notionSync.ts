@@ -1,15 +1,21 @@
 import { db } from "@workspace/db";
 import { settingsTable, leadsTable, contactsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { syncLeadToNotion, syncContactToNotion, syncActivityToNotion } from "./notion";
 
-async function getNotionDbId(key: string): Promise<string | null> {
-  const rows = await db.select().from(settingsTable);
-  return rows.find((s) => s.key === key)?.value || null;
+async function getNotionDbIdForUser(key: string, userId: string | null): Promise<string | null> {
+  if (!userId) return null;
+  const rows = await db
+    .select()
+    .from(settingsTable)
+    .where(and(eq(settingsTable.key, key), eq(settingsTable.userId, userId)));
+  return rows[0]?.value || null;
 }
 
 export function fireAndForgetLeadSync(lead: any) {
-  getNotionDbId("notion_leads_db").then(async (dbId) => {
+  const userId = lead.userId;
+  if (!userId) return;
+  getNotionDbIdForUser("notion_leads_db", userId).then(async (dbId) => {
     if (!dbId) return;
     try {
       const pageId = await syncLeadToNotion(lead, dbId);
@@ -23,7 +29,9 @@ export function fireAndForgetLeadSync(lead: any) {
 }
 
 export function fireAndForgetContactSync(contact: any) {
-  getNotionDbId("notion_contacts_db").then(async (dbId) => {
+  const userId = contact.userId;
+  if (!userId) return;
+  getNotionDbIdForUser("notion_contacts_db", userId).then(async (dbId) => {
     if (!dbId) return;
     try {
       const pageId = await syncContactToNotion(contact, dbId);
@@ -37,7 +45,9 @@ export function fireAndForgetContactSync(contact: any) {
 }
 
 export function fireAndForgetActivitySync(activity: any) {
-  getNotionDbId("notion_activities_db").then(async (dbId) => {
+  const userId = activity.userId;
+  if (!userId) return;
+  getNotionDbIdForUser("notion_activities_db", userId).then(async (dbId) => {
     if (!dbId) return;
     try {
       await syncActivityToNotion(activity, dbId);

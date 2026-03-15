@@ -1,6 +1,7 @@
 import { pgTable, serial, integer, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./auth";
 
 export const calendarEventsTable = pgTable("calendar_events", {
   id: serial("id").primaryKey(),
@@ -12,7 +13,7 @@ export const calendarEventsTable = pgTable("calendar_events", {
   description: text("description"),
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
-  userId: varchar("user_id"),
+  userId: varchar("user_id").references(() => usersTable.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

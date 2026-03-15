@@ -1,6 +1,7 @@
 import { db } from "@workspace/db";
 import {
   dripEnrollmentsTable,
+  dripSequencesTable,
   dripSequenceStepsTable,
   emailTemplatesTable,
   leadsTable,
@@ -26,6 +27,27 @@ function replaceMergeTags(
     .replace(/\{\{founder_name\}\}/g, founderName);
 }
 
+async function getFounderNameForUser(userId: string): Promise<string> {
+  const rows = await db
+    .select()
+    .from(settingsTable)
+    .where(
+      and(
+        eq(settingsTable.key, "founder_name"),
+        eq(settingsTable.userId, userId)
+      )
+    );
+  return rows[0]?.value || "";
+}
+
+async function getSequenceOwnerId(sequenceId: number): Promise<string | null> {
+  const [seq] = await db
+    .select({ userId: dripSequencesTable.userId })
+    .from(dripSequencesTable)
+    .where(eq(dripSequencesTable.id, sequenceId));
+  return seq?.userId || null;
+}
+
 async function processEnrollments() {
   if (isProcessing) return;
   isProcessing = true;
@@ -44,12 +66,22 @@ async function processEnrollments() {
 
     if (dueEnrollments.length === 0) return;
 
-    const settingsRows = await db.select().from(settingsTable);
-    const founderName =
-      settingsRows.find((s) => s.key === "founder_name")?.value || "";
-
     for (const enrollment of dueEnrollments) {
       try {
+        const ownerId = await getSequenceOwnerId(enrollment.sequenceId);
+        if (!ownerId) {
+          console.error(
+            `Drip worker: sequence ${enrollment.sequenceId} has no owner for enrollment ${enrollment.id}`
+          );
+          await db
+            .update(dripEnrollmentsTable)
+            .set({ status: "error" })
+            .where(eq(dripEnrollmentsTable.id, enrollment.id));
+          continue;
+        }
+
+        const founderName = await getFounderNameForUser(ownerId);
+
         const steps = await db
           .select()
           .from(dripSequenceStepsTable)
@@ -154,6 +186,7 @@ async function processEnrollments() {
             direction: "sent",
             subject,
             body,
+            userId: ownerId,
           })
           .returning();
 

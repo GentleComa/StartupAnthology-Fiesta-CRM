@@ -1,6 +1,7 @@
 import { pgTable, serial, integer, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./auth";
 
 export const activitiesTable = pgTable("activities", {
   id: serial("id").primaryKey(),
@@ -12,7 +13,7 @@ export const activitiesTable = pgTable("activities", {
   body: text("body"),
   note: text("note"),
   notionPageId: text("notion_page_id"),
-  userId: varchar("user_id"),
+  userId: varchar("user_id").references(() => usersTable.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

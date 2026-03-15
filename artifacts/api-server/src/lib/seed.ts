@@ -1,7 +1,8 @@
 import { db } from "@workspace/db";
 import { settingsTable, usersTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 const DEFAULT_SETTINGS: Record<string, string> = {
   beta_slots_total: "100",
@@ -25,6 +26,16 @@ export async function seedDefaults() {
   const users = await db.select().from(usersTable);
 
   for (const user of users) {
+    if (!user.passwordHash) {
+      const tempPassword = crypto.randomBytes(16).toString("hex");
+      const passwordHash = await bcrypt.hash(tempPassword, 12);
+      const isFirstUser = users.indexOf(user) === 0 && users.filter(u => u.role === "admin").length === 0;
+      await db.update(usersTable).set({
+        passwordHash,
+        role: isFirstUser ? "admin" : user.role,
+      }).where(eq(usersTable.id, user.id));
+      console.log(`Migrated user ${user.email} (temp password: ${tempPassword})${isFirstUser ? " as admin" : ""}`);
+    }
     await seedDefaultSettings(user.id);
   }
 

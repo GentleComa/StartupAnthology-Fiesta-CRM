@@ -1,12 +1,13 @@
 import { pgTable, serial, integer, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./auth";
 
 export const dripSequencesTable = pgTable("drip_sequences", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   targetAudience: text("target_audience").notNull().default("general"),
-  userId: varchar("user_id"),
+  userId: varchar("user_id").references(() => usersTable.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

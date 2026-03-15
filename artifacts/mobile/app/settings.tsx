@@ -53,6 +53,7 @@ export default function SettingsScreen() {
 
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
+  const [editProfileImage, setEditProfileImage] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -79,6 +80,7 @@ export default function SettingsScreen() {
     if (user) {
       setEditFirstName(user.firstName || "");
       setEditLastName(user.lastName || "");
+      setEditProfileImage(user.profileImageUrl || "");
     }
   }, [user]);
 
@@ -174,6 +176,7 @@ export default function SettingsScreen() {
     updateProfileMut.mutate({
       firstName: editFirstName.trim() || undefined,
       lastName: editLastName.trim() || undefined,
+      profileImageUrl: editProfileImage.trim() || undefined,
     });
   };
 
@@ -226,6 +229,19 @@ export default function SettingsScreen() {
             onChangeText={setEditLastName}
             placeholder="Last name"
             placeholderTextColor={Colors.textTertiary}
+          />
+        </View>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>Avatar URL</Text>
+          <TextInput
+            style={[styles.settingInput, { flex: 1, marginLeft: 8 }]}
+            value={editProfileImage}
+            onChangeText={setEditProfileImage}
+            placeholder="https://..."
+            placeholderTextColor={Colors.textTertiary}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
           />
         </View>
         {user?.email && (
