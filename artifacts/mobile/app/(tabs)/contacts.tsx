@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
 
 const REL_TYPES = ["investor", "partner", "advisor", "vendor", "press", "other"];
@@ -138,7 +139,7 @@ export default function ContactsScreen() {
           <View style={styles.emptyState}>
             <Feather name="users" size={48} color={Colors.textTertiary} />
             <Text style={styles.emptyTitle}>{tab === "all" ? "No contacts yet" : "No follow-ups due"}</Text>
-            <Text style={styles.emptySubtitle}>{tab === "all" ? "Start with the people who matter most." : "Clean slate. Nice work."}</Text>
+            <Text style={styles.emptySubtitle}>{tab === "all" ? "Start with the people who matter most." : "All caught up. That's how you stay ahead."}</Text>
             {tab === "all" && (
               <Pressable
                 style={styles.emptyBtn}
@@ -218,17 +219,17 @@ export default function ContactsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background },
-  header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
+  header: { paddingHorizontal: Layout.screenPadding, paddingTop: 14, paddingBottom: 6 },
   title: { fontSize: 24, fontFamily: "Lato_700Bold", color: Colors.text },
-  tabs: { flexDirection: "row", paddingHorizontal: 20, gap: 8, marginBottom: 8, marginTop: 8 },
-  tab: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.surfaceSecondary },
+  tabs: { flexDirection: "row", paddingHorizontal: Layout.screenPadding, gap: 8, marginBottom: 12, marginTop: 10 },
+  tab: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, backgroundColor: Colors.surfaceSecondary },
   tabActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   tabText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
   tabTextActive: { color: "#FFFFFF" },
   badge: { backgroundColor: Colors.error, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1, minWidth: 20, alignItems: "center" },
   badgeText: { fontSize: 11, fontFamily: "Lato_700Bold", color: "#fff" },
-  listContent: { padding: 16, paddingBottom: 100 },
-  contactCard: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderRadius: 14, padding: 14, marginBottom: 8 },
+  listContent: { padding: Layout.screenPadding, paddingBottom: 100 },
+  contactCard: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.cardGap },
   pressed: { opacity: 0.7 },
   avatar: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center", marginRight: 12 },
   avatarText: { fontSize: 18, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
@@ -241,24 +242,24 @@ const styles = StyleSheet.create({
   contactRight: { alignItems: "center", gap: 8 },
   priorityIndicator: { width: 8, height: 8, borderRadius: 4 },
   markBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.success + "15", justifyContent: "center", alignItems: "center" },
-  emptyState: { alignItems: "center", paddingTop: 80, gap: 8 },
+  emptyState: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyTitle: { fontSize: 18, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary },
-  emptySubtitle: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
-  fab: { position: "absolute", bottom: 100, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
-  modalContent: { flex: 1, backgroundColor: Colors.background, padding: 20 },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 },
+  emptySubtitle: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, textAlign: "center", paddingHorizontal: 32 },
+  fab: { position: "absolute", bottom: 100, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: Layout.fabElevation },
+  modalContent: { flex: 1, backgroundColor: Colors.background, padding: Layout.screenPadding },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Layout.sectionSpacing },
   modalTitle: { fontSize: 17, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
   cancelBtn: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.info },
   saveBtn: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info },
   saveBtnDisabled: { opacity: 0.4 },
-  formGroup: { marginBottom: 20 },
-  formLabel: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary, marginBottom: 6, textTransform: "uppercase" },
-  input: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
+  formGroup: { marginBottom: 22 },
+  formLabel: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary, marginBottom: 8, textTransform: "uppercase" },
+  input: { backgroundColor: Colors.surface, borderRadius: Layout.inputRadius, padding: Layout.cardPadding, fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
   chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   chipText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text, textTransform: "capitalize" },
   chipTextActive: { color: "#fff" },
-  emptyBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 20, marginTop: 16 },
+  emptyBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: Colors.primary, borderRadius: Layout.inputRadius, paddingVertical: 12, paddingHorizontal: 20, marginTop: 16 },
   emptyBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
 });

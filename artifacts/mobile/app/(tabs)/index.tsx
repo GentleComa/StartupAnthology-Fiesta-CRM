@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
 
 const saIconWhite = require("@/assets/images/sa-icon-white.png");
@@ -64,7 +65,7 @@ export default function DashboardScreen() {
         </View>
         <View>
           <Text style={styles.greeting}>Startup Anthology</Text>
-          <Text style={styles.subtitle}>Here's where things stand.</Text>
+          <Text style={styles.subtitle}>Your week at a glance.</Text>
         </View>
       </View>
 
@@ -115,7 +116,7 @@ export default function DashboardScreen() {
       {(d.followUps?.length ?? 0) === 0 && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Follow up today</Text>
-          <Text style={styles.allClear}>Nothing due. You're ahead of the game.</Text>
+          <Text style={styles.allClear}>All caught up. Keep the momentum going.</Text>
         </View>
       )}
 
@@ -126,40 +127,40 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 20 },
+  content: { padding: Layout.screenPadding },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background },
-  headerRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 20 },
-  headerLogo: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center" },
+  headerRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: Layout.sectionSpacing },
+  headerLogo: { width: 44, height: 44, borderRadius: Layout.cardRadius, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center" },
   headerLogoImage: { width: 28, height: 28 },
   greeting: { fontSize: 24, fontFamily: "Lato_700Bold", color: Colors.text },
   subtitle: { fontSize: 14, fontFamily: "Montserrat_500Medium", color: Colors.textSecondary, marginTop: 2 },
-  betaCard: { backgroundColor: Colors.primary, borderRadius: 16, padding: 16, marginBottom: 20 },
+  betaCard: { backgroundColor: Colors.primary, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.sectionSpacing },
   betaHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
   betaTitle: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff", flex: 1 },
   betaCount: { fontSize: 16, fontFamily: "Lato_700Bold", color: Colors.accent },
   progressBg: { height: 6, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 3 },
   progressFill: { height: 6, backgroundColor: Colors.accent, borderRadius: 3 },
-  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 24 },
+  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 14, marginBottom: Layout.sectionSpacing },
   statCard: {
     width: "47%" as any,
     flexGrow: 1,
     backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: Layout.cardRadius,
+    padding: Layout.cardPadding,
     minWidth: 140,
   },
   statIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: "center", alignItems: "center", marginBottom: 10 },
   statValue: { fontSize: 24, fontFamily: "Lato_700Bold", color: Colors.text },
   statLabel: { fontSize: 12, fontFamily: "Montserrat_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  section: { marginBottom: 20 },
-  sectionTitle: { fontSize: 18, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 12 },
+  section: { marginBottom: Layout.sectionSpacing },
+  sectionTitle: { fontSize: 18, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 14 },
   followUpCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
+    borderRadius: Layout.cardRadius,
+    padding: Layout.cardPadding,
+    marginBottom: Layout.cardGap,
   },
   pressed: { opacity: 0.7 },
   followUpAvatar: {

@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
 
 const STATUSES = ["new", "contacted", "interested", "engaged", "converted"];
@@ -190,7 +191,7 @@ export default function LeadDetailScreen() {
         {editing ? (
           <TextInput style={styles.notesInput} value={editNotes} onChangeText={setEditNotes} multiline placeholder="Add notes..." placeholderTextColor={Colors.textTertiary} />
         ) : (
-          <Text style={styles.notesText}>{lead.notes || "Nothing here yet."}</Text>
+          <Text style={styles.notesText}>{lead.notes || "No notes yet. Add context that matters."}</Text>
         )}
       </View>
 
@@ -212,7 +213,7 @@ export default function LeadDetailScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Activity</Text>
         {activities.length === 0 ? (
-          <Text style={styles.emptyActivity}>No activity logged yet.</Text>
+          <Text style={styles.emptyActivity}>No activity yet. Every touchpoint counts.</Text>
         ) : (
           activities.map((a: any) => (
             <View key={a.id} style={styles.activityItem}>
@@ -305,39 +306,39 @@ export default function LeadDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 20 },
+  content: { padding: Layout.screenPadding },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background },
-  topBar: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
+  topBar: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
   backBtn: { padding: 10, marginLeft: -10 },
   historyBtn: { padding: 10 },
   deleteBtn: { padding: 10, marginRight: -10 },
-  profileSection: { alignItems: "center", marginBottom: 24 },
-  avatar: { width: 64, height: 64, borderRadius: 32, justifyContent: "center", alignItems: "center", marginBottom: 12 },
+  profileSection: { alignItems: "center", marginBottom: Layout.sectionSpacing },
+  avatar: { width: 64, height: 64, borderRadius: 32, justifyContent: "center", alignItems: "center", marginBottom: 14 },
   avatarText: { fontSize: 26, fontFamily: "Lato_700Bold", color: "#fff" },
   name: { fontSize: 22, fontFamily: "Lato_700Bold", color: Colors.text },
   email: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  badgeRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  badgeRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 },
+  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: Layout.badgeRadius },
   statusText: { fontSize: 12, fontFamily: "LeagueSpartan_600SemiBold", textTransform: "uppercase" },
   betaBadge: { backgroundColor: Colors.accent + "20", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   betaText: { fontSize: 11, fontFamily: "Lato_700Bold", color: Colors.accent },
   sourceLabel: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, textTransform: "capitalize" },
-  section: { marginBottom: 24 },
+  section: { marginBottom: Layout.sectionSpacing },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  sectionTitle: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 8 },
+  sectionTitle: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 10 },
   statusRow: { gap: 8 },
-  statusChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
+  statusChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
   statusChipText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  actionRow: { flexDirection: "row", gap: 12, marginBottom: 24 },
-  actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: Colors.surface, borderRadius: 12, paddingVertical: 12 },
+  actionRow: { flexDirection: "row", gap: 12, marginBottom: Layout.sectionSpacing },
+  actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, paddingVertical: 14 },
   actionText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  seqCard: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: Colors.surface, borderRadius: 12, padding: 12, marginBottom: 6 },
+  seqCard: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: 8 },
   seqName: { flex: 1, fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
   editBtn: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info },
-  notesInput: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, minHeight: 80, textAlignVertical: "top" },
+  notesInput: { backgroundColor: Colors.surface, borderRadius: Layout.inputRadius, padding: Layout.cardPadding, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, minHeight: 80, textAlignVertical: "top" },
   notesText: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, lineHeight: 22 },
   emptyActivity: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
-  activityItem: { flexDirection: "row", gap: 10, marginBottom: 12 },
+  activityItem: { flexDirection: "row", gap: 10, marginBottom: 14 },
   activityDot: { width: 8, height: 8, borderRadius: 4, marginTop: 6 },
   activityContent: { flex: 1 },
   activityType: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, textTransform: "capitalize" },

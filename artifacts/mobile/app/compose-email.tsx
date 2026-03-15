@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
 
 export default function ComposeEmailScreen() {
@@ -45,7 +46,7 @@ export default function ComposeEmailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       qc.invalidateQueries({ queryKey: ["activities"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      Alert.alert("Done", "Email sent.", [{ text: "OK", onPress: () => router.back() }]);
+      Alert.alert("Sent", "Your email is on its way.", [{ text: "OK", onPress: () => router.back() }]);
     },
     onError: (err: any) => Alert.alert("Couldn't send", err.message || "Something went wrong. Try again."),
   });
@@ -142,23 +143,23 @@ export default function ComposeEmailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: Layout.screenPadding, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border },
   cancelText: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.info },
   title: { fontSize: 17, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
   sendText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info },
-  form: { flex: 1, padding: 20 },
-  fieldRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  form: { flex: 1, padding: Layout.screenPadding },
+  fieldRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
   fieldLabel: { width: 60, fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
   fieldValue: { flex: 1, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
-  toValue: { flex: 1, backgroundColor: Colors.surfaceSecondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+  toValue: { flex: 1, backgroundColor: Colors.surfaceSecondary, borderRadius: Layout.badgeRadius, paddingHorizontal: 10, paddingVertical: 6 },
   toText: { fontSize: 15, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
   subjectInput: { flex: 1, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
-  templateBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  templateBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
   templateBtnText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.info },
-  templateList: { backgroundColor: Colors.surface, borderRadius: 12, marginBottom: 12 },
-  templateItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 12, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  templateList: { backgroundColor: Colors.surface, borderRadius: Layout.inputRadius, marginBottom: 14 },
+  templateItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: Layout.cardPadding, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
   templateName: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
   templateAudience: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, textTransform: "capitalize" },
-  noTemplates: { padding: 12, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
-  bodyInput: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, minHeight: 200, paddingTop: 16, lineHeight: 24 },
+  noTemplates: { padding: Layout.cardPadding, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
+  bodyInput: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, minHeight: 200, paddingTop: 18, lineHeight: 24 },
 });

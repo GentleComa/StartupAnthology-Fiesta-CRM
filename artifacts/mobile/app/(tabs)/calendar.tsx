@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
 
 const EVENT_TYPE_COLORS: Record<string, string> = {
@@ -135,7 +136,7 @@ export default function CalendarScreen() {
                   {isToday && <Text style={styles.todayBadge}>Today</Text>}
                 </View>
                 {day.events.length === 0 ? (
-                  <Text style={styles.noEvents}>No events</Text>
+                  <Text style={styles.noEvents}>Nothing scheduled</Text>
                 ) : (
                   day.events.map((ev: any) => (
                     <View key={ev.id} style={styles.eventCard}>
@@ -329,29 +330,29 @@ function CreateEventModal({ visible, onClose, onCreated }: { visible: boolean; o
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 16 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: Layout.screenPadding, paddingVertical: 16 },
   title: { fontSize: 28, fontFamily: "Lato_700Bold", color: Colors.text },
-  weekNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 12 },
+  weekNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Layout.screenPadding, paddingBottom: 16 },
   weekLabel: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   scrollArea: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20 },
-  dayGroup: { marginBottom: 20 },
-  dayHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 },
+  scrollContent: { paddingHorizontal: Layout.screenPadding },
+  dayGroup: { marginBottom: Layout.sectionSpacing },
+  dayHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
   dayDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.border },
   dayDotToday: { backgroundColor: Colors.primary },
   dayLabel: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary },
   dayLabelToday: { color: Colors.text },
   todayBadge: { fontSize: 11, fontFamily: "Lato_700Bold", color: "#fff", backgroundColor: Colors.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   noEvents: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, paddingLeft: 16 },
-  eventCard: { flexDirection: "row", backgroundColor: Colors.surface, borderRadius: 12, marginBottom: 8, overflow: "hidden" },
+  eventCard: { flexDirection: "row", backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, marginBottom: Layout.cardGap, overflow: "hidden" },
   eventStripe: { width: 4 },
-  eventBody: { flex: 1, padding: 12 },
+  eventBody: { flex: 1, padding: Layout.cardPadding },
   eventTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   eventTitle: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, flex: 1, marginRight: 8 },
   eventTime: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
   eventDesc: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 4 },
-  eventMeta: { flexDirection: "row", gap: 8, marginTop: 6, flexWrap: "wrap" },
+  eventMeta: { flexDirection: "row", gap: 8, marginTop: 8, flexWrap: "wrap" },
   typeBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   typeText: { fontSize: 11, fontFamily: "LeagueSpartan_600SemiBold", textTransform: "capitalize" },
   linkBadge: { flexDirection: "row", alignItems: "center", gap: 4 },
@@ -370,25 +371,25 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 6,
+    elevation: Layout.fabElevation,
   },
 });
 
 const modalStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: Layout.cardPadding, borderBottomWidth: 1, borderBottomColor: Colors.border },
   cancelText: { fontSize: 16, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
   headerTitle: { fontSize: 17, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
   saveText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.primary },
   form: { flex: 1 },
-  formContent: { padding: 20, gap: 4 },
-  label: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary, marginTop: 12, marginBottom: 6 },
-  input: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
+  formContent: { padding: Layout.screenPadding, gap: 4 },
+  label: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary, marginTop: 14, marginBottom: 8 },
+  input: { backgroundColor: Colors.surface, borderRadius: Layout.inputRadius, padding: Layout.cardPadding, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
   typeRow: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
-  typeChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
+  typeChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface },
   typeChipText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text, textTransform: "capitalize" },
-  pickerList: { maxHeight: 200, backgroundColor: Colors.surface, borderRadius: 12, marginTop: 8 },
-  pickerItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  pickerList: { maxHeight: 200, backgroundColor: Colors.surface, borderRadius: Layout.inputRadius, marginTop: 8 },
+  pickerItem: { padding: Layout.cardPadding, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
   pickerItemSelected: { backgroundColor: Colors.primary + "10" },
   pickerName: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
   pickerSub: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },

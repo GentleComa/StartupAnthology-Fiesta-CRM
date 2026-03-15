@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -373,7 +374,7 @@ export default function SettingsScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Notion Sync</Text>
-        <Text style={styles.sectionSubtitle}>Paste your Notion database IDs to sync data automatically.</Text>
+        <Text style={styles.sectionSubtitle}>Paste your Notion database IDs to sync automatically.</Text>
         <View style={styles.notionDbRow}>
           <Text style={styles.notionDbLabel}>Leads DB</Text>
           <TextInput
@@ -417,7 +418,7 @@ export default function SettingsScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Trigger Rules</Text>
-        <Text style={styles.sectionSubtitle}>Things that happen automatically so you don't have to.</Text>
+        <Text style={styles.sectionSubtitle}>Automate the busywork. Set it and forget it.</Text>
         {triggers.map((t: any) => (
           <View key={t.id} style={styles.triggerCard}>
             <View style={styles.triggerInfo}>
@@ -568,7 +569,7 @@ export default function SettingsScreen() {
 
       <View style={styles.section}>
         <Pressable
-          style={[styles.addBtn, { backgroundColor: Colors.error }]}
+          style={[styles.addBtn, { backgroundColor: Colors.error, marginTop: 14 }]}
           onPress={() => {
             Alert.alert("Log out?", "You'll need to sign in again.", [
               { text: "Stay", style: "cancel" },
@@ -662,38 +663,39 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 20 },
-  topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
+  content: { padding: Layout.screenPadding },
+  topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Layout.sectionSpacing },
   title: { fontSize: 20, fontFamily: "Lato_700Bold", color: Colors.text },
-  section: { marginBottom: 28 },
-  sectionTitle: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 4 },
-  sectionSubtitle: { fontSize: 13, fontFamily: "Montserrat_400Regular", color: Colors.textTertiary, marginBottom: 12 },
-  settingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginTop: 8 },
+  section: { marginBottom: Layout.sectionSpacing },
+  sectionTitle: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 6 },
+  sectionSubtitle: { fontSize: 13, fontFamily: "Montserrat_400Regular", color: Colors.textTertiary, marginBottom: 14 },
+  settingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
   settingLabel: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  settingInput: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, backgroundColor: Colors.surfaceSecondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, minWidth: 120 },
-  integrationRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginTop: 8 },
+  settingInput: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, backgroundColor: Colors.surfaceSecondary, borderRadius: Layout.badgeRadius, paddingHorizontal: 10, paddingVertical: 6, minWidth: 120 },
+  integrationRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
   integrationIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surfaceSecondary, justifyContent: "center", alignItems: "center" },
   integrationInfo: { flex: 1 },
   integrationName: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
   integrationStatus: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.success },
   connectedDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.success },
-  triggerCard: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginTop: 8 },
+  triggerCard: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
   triggerInfo: { flex: 1 },
   triggerText: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
   triggerAction: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  addTrigger: { backgroundColor: Colors.surfaceSecondary, borderRadius: 14, padding: 16, marginTop: 12 },
-  addTriggerTitle: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 12 },
-  formGroup: { marginBottom: 14 },
-  label: { fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: Colors.textSecondary, marginBottom: 6, textTransform: "uppercase" },
+  addTrigger: { backgroundColor: Colors.surfaceSecondary, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: 14 },
+  addTriggerTitle: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 14 },
+  formGroup: { marginBottom: 16 },
+  label: { fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: Colors.textSecondary, marginBottom: 8, textTransform: "uppercase" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
   chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   chipText: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text, textTransform: "capitalize" },
   chipTextActive: { color: "#fff" },
-  seqOption: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, backgroundColor: Colors.surface, marginBottom: 6 },
+  seqOption: { paddingHorizontal: 14, paddingVertical: 12, borderRadius: Layout.cardRadius, backgroundColor: Colors.surface, marginBottom: 8 },
   seqOptionText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  addBtn: { backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 12, alignItems: "center" },
+  addBtn: { backgroundColor: Colors.primary, borderRadius: Layout.inputRadius, paddingVertical: 12, alignItems: "center" },
   addBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
+<<<<<<< HEAD
   saveBtn: { backgroundColor: Colors.accent, borderRadius: 12, paddingVertical: 12, alignItems: "center", marginTop: 12 },
   saveBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
   mergeTagCard: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginTop: 8, gap: 8 },
@@ -732,4 +734,13 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontFamily: "Lato_700Bold", color: Colors.text },
   modalInput: { backgroundColor: Colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, marginBottom: 12 },
   modalNameRow: { flexDirection: "row", gap: 10 },
+=======
+  mergeTagCard: { backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap, gap: 10 },
+  mergeRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  mergeTag: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info, backgroundColor: Colors.info + "10", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
+  mergeDesc: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary },
+  notionDbRow: { backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
+  notionDbLabel: { fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: Colors.textSecondary, marginBottom: 8, textTransform: "uppercase" },
+  notionDbInput: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, backgroundColor: Colors.surfaceSecondary, borderRadius: Layout.badgeRadius, paddingHorizontal: 10, paddingVertical: 8 },
+>>>>>>> f9a9b5d (Align CRM copy and visual design with Horizon's brand voice)
 });

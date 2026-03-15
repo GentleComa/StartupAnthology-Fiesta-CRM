@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
 
 type TabKey = "templates" | "sequences" | "broadcasts";
@@ -97,7 +98,7 @@ export default function CommsScreen() {
                 <View style={styles.emptyState}>
                   <Feather name="file-text" size={48} color={Colors.textTertiary} />
                   <Text style={styles.emptyTitle}>No templates yet</Text>
-                  <Text style={styles.emptySubtitle}>Write it once, send it whenever.</Text>
+                  <Text style={styles.emptySubtitle}>Write once. Send whenever you need it.</Text>
                   <Pressable style={styles.emptyBtn} onPress={() => router.push("/template/new")}>
                     <Feather name="plus" size={16} color="#fff" />
                     <Text style={styles.emptyBtnText}>Create Template</Text>
@@ -134,7 +135,7 @@ export default function CommsScreen() {
                 <View style={styles.emptyState}>
                   <Feather name="repeat" size={48} color={Colors.textTertiary} />
                   <Text style={styles.emptyTitle}>No sequences yet</Text>
-                  <Text style={styles.emptySubtitle}>Set up a drip. Let it run.</Text>
+                  <Text style={styles.emptySubtitle}>Build a drip. Let it work while you don't.</Text>
                   <Pressable style={styles.emptyBtn} onPress={() => router.push("/sequence/new")}>
                     <Feather name="plus" size={16} color="#fff" />
                     <Text style={styles.emptyBtnText}>Create Sequence</Text>
@@ -170,7 +171,7 @@ export default function CommsScreen() {
                 <View style={styles.emptyState}>
                   <Feather name="send" size={48} color={Colors.textTertiary} />
                   <Text style={styles.emptyTitle}>No broadcasts yet</Text>
-                  <Text style={styles.emptySubtitle}>One message, many inboxes.</Text>
+                  <Text style={styles.emptySubtitle}>One message. Every inbox that matters.</Text>
                   <Pressable style={styles.emptyBtn} onPress={() => router.push("/broadcast/new")}>
                     <Feather name="plus" size={16} color="#fff" />
                     <Text style={styles.emptyBtnText}>New Broadcast</Text>
@@ -199,28 +200,28 @@ export default function CommsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: Layout.screenPadding, paddingTop: 14, paddingBottom: 6 },
   title: { fontSize: 24, fontFamily: "Lato_700Bold", color: Colors.text },
-  settingsBtn: { padding: 8, borderRadius: 8, backgroundColor: Colors.surfaceSecondary },
-  tabs: { flexDirection: "row", paddingHorizontal: 20, gap: 8, marginTop: 8, marginBottom: 8 },
-  tab: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.surfaceSecondary },
+  settingsBtn: { padding: 8, borderRadius: Layout.badgeRadius, backgroundColor: Colors.surfaceSecondary },
+  tabs: { flexDirection: "row", paddingHorizontal: Layout.screenPadding, gap: 8, marginTop: 10, marginBottom: 12 },
+  tab: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, backgroundColor: Colors.surfaceSecondary },
   tabActive: { backgroundColor: Colors.primary },
   tabText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
   tabTextActive: { color: "#FFFFFF" },
-  listContent: { padding: 16, paddingBottom: 100 },
-  card: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderRadius: 14, padding: 14, marginBottom: 8 },
+  listContent: { padding: Layout.screenPadding, paddingBottom: 100 },
+  card: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.cardGap },
   pressed: { opacity: 0.7 },
-  cardIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.primary + "15", justifyContent: "center", alignItems: "center", marginRight: 12 },
+  cardIcon: { width: 40, height: 40, borderRadius: Layout.inputRadius, backgroundColor: Colors.primary + "15", justifyContent: "center", alignItems: "center", marginRight: 12 },
   cardContent: { flex: 1 },
   cardTitle: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
   cardSubtitle: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },
   cardDate: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, marginTop: 2 },
   audienceBadge: { backgroundColor: Colors.surfaceSecondary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, alignSelf: "flex-start", marginTop: 4 },
   audienceText: { fontSize: 11, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary, textTransform: "capitalize" },
-  emptyState: { alignItems: "center", paddingTop: 80, gap: 8 },
+  emptyState: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyTitle: { fontSize: 18, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary },
-  emptySubtitle: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
-  fab: { position: "absolute", bottom: 100, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
-  emptyBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 20, marginTop: 16 },
+  emptySubtitle: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, textAlign: "center", paddingHorizontal: 32 },
+  fab: { position: "absolute", bottom: 100, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: Layout.fabElevation },
+  emptyBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: Colors.primary, borderRadius: Layout.inputRadius, paddingVertical: 12, paddingHorizontal: 20, marginTop: 16 },
   emptyBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
 });

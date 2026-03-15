@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
+import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
 
 const SEGMENTS = [
@@ -53,7 +54,7 @@ export default function BroadcastNewScreen() {
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       qc.invalidateQueries({ queryKey: ["broadcasts"] });
-      Alert.alert("Done", "Broadcast sent.", [{ text: "OK", onPress: () => router.back() }]);
+      Alert.alert("Sent", "Your broadcast is on its way.", [{ text: "OK", onPress: () => router.back() }]);
     },
     onError: (err: any) => Alert.alert("Couldn't send", err.message || "Something went wrong. Try again."),
   });
@@ -108,14 +109,14 @@ export default function BroadcastNewScreen() {
 
       {step === 1 && (
         <View>
-          <Text style={styles.stepTitle}>What are you sending?</Text>
+          <Text style={styles.stepTitle}>Pick a template</Text>
           {templates.map((t: any) => (
             <Pressable key={t.id} style={[styles.templateCard, templateId === t.id && styles.templateCardActive]} onPress={() => setTemplateId(t.id)}>
               <Text style={[styles.templateName, templateId === t.id && { color: "#fff" }]}>{t.name}</Text>
               <Text style={[styles.templateSubject, templateId === t.id && { color: "rgba(255,255,255,0.8)" }]}>{t.subject}</Text>
             </Pressable>
           ))}
-          {templates.length === 0 && <Text style={styles.noTemplates}>You'll need a template first.</Text>}
+          {templates.length === 0 && <Text style={styles.noTemplates}>Create a template first. You'll need one to send.</Text>}
           <Pressable
             style={[styles.nextBtn, !templateId && { opacity: 0.4 }]}
             onPress={() => templateId && setStep(2)}
@@ -128,7 +129,7 @@ export default function BroadcastNewScreen() {
 
       {step === 2 && (
         <View>
-          <Text style={styles.stepTitle}>Who's on the list</Text>
+          <Text style={styles.stepTitle}>Review your list</Text>
           <View style={styles.previewInfo}>
             <Text style={styles.previewLabel}>Segment: {segmentType.replace("_", " ")} = {segmentValue}</Text>
             <Text style={styles.previewLabel}>Template: {selectedTemplate?.name}</Text>
@@ -194,37 +195,37 @@ export default function BroadcastNewScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 20 },
-  topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
+  content: { padding: Layout.screenPadding },
+  topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   backText: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.info },
   title: { fontSize: 17, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
-  stepIndicator: { flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 24 },
+  stepIndicator: { flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: Layout.sectionSpacing },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.border },
   dotActive: { backgroundColor: Colors.primary, width: 20 },
-  stepTitle: { fontSize: 20, fontFamily: "Lato_700Bold", color: Colors.text, marginBottom: 16 },
-  segLabel: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary, marginBottom: 8, marginTop: 12, textTransform: "uppercase" },
+  stepTitle: { fontSize: 20, fontFamily: "Lato_700Bold", color: Colors.text, marginBottom: 20 },
+  segLabel: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary, marginBottom: 8, marginTop: 14, textTransform: "uppercase" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
   chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   chipText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text, textTransform: "capitalize" },
   chipTextActive: { color: "#fff" },
-  nextBtn: { backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 14, alignItems: "center", marginTop: 24 },
+  nextBtn: { backgroundColor: Colors.primary, borderRadius: Layout.inputRadius, paddingVertical: 14, alignItems: "center", marginTop: Layout.sectionSpacing },
   nextBtnText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
-  templateCard: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginBottom: 8 },
+  templateCard: { backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.cardGap },
   templateCardActive: { backgroundColor: Colors.primary },
   templateName: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
   templateSubject: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  noTemplates: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, textAlign: "center", paddingVertical: 20 },
-  previewInfo: { backgroundColor: Colors.surfaceSecondary, borderRadius: 12, padding: 14, marginBottom: 12, gap: 4 },
+  noTemplates: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, textAlign: "center", paddingVertical: 24 },
+  previewInfo: { backgroundColor: Colors.surfaceSecondary, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: 14, gap: 4 },
   previewLabel: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary, textTransform: "capitalize" },
-  recipientCount: { fontSize: 16, fontFamily: "Lato_700Bold", color: Colors.text, marginBottom: 12 },
-  recipientRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  recipientCount: { fontSize: 16, fontFamily: "Lato_700Bold", color: Colors.text, marginBottom: 14 },
+  recipientRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
   recipientName: { flex: 1, fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
   recipientEmail: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary },
-  summaryCard: { backgroundColor: Colors.surface, borderRadius: 14, padding: 16, marginBottom: 24, gap: 12 },
+  summaryCard: { backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.sectionSpacing, gap: 14 },
   summaryRow: { flexDirection: "row", justifyContent: "space-between" },
   summaryLabel: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
   summaryValue: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, textTransform: "capitalize" },
-  sendBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Colors.success, borderRadius: 12, paddingVertical: 16 },
+  sendBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Colors.success, borderRadius: Layout.inputRadius, paddingVertical: 16 },
   sendBtnText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
 });
