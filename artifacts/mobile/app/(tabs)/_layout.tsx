@@ -28,12 +28,14 @@ function NativeTabLayout() {
         <Icon sf={{ default: "calendar", selected: "calendar" }} />
         <Label>Calendar</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="files">
-        <Icon sf={{ default: "folder", selected: "folder.fill" }} />
+      <NativeTabs.Trigger name="more">
+        <Icon sf={{ default: "ellipsis.circle", selected: "ellipsis.circle.fill" }} />
+        <Label>More</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="files" hidden>
         <Label>Files</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="comms">
-        <Icon sf={{ default: "envelope", selected: "envelope.fill" }} />
+      <NativeTabs.Trigger name="comms" hidden>
         <Label>Comms</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
@@ -127,27 +129,27 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
-        name="files"
+        name="more"
         options={{
-          title: "Files",
+          title: "More",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="folder" tintColor={color} size={22} />
+              <SymbolView name="ellipsis.circle" tintColor={color} size={22} />
             ) : (
-              <Feather name="folder" size={22} color={color} />
+              <Feather name="more-horizontal" size={22} color={color} />
             ),
+        }}
+      />
+      <Tabs.Screen
+        name="files"
+        options={{
+          href: null,
         }}
       />
       <Tabs.Screen
         name="comms"
         options={{
-          title: "Comms",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="envelope" tintColor={color} size={22} />
-            ) : (
-              <Feather name="mail" size={22} color={color} />
-            ),
+          href: null,
         }}
       />
     </Tabs>
