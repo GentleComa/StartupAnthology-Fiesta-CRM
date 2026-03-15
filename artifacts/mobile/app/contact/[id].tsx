@@ -278,7 +278,7 @@ export default function ContactDetailScreen() {
                           <Text style={styles.snapshotText}>{JSON.stringify(entry.afterSnapshot, null, 2)}</Text>
                         </View>
                       )}
-                      {(entry.action === "update" || entry.action === "rollback") && entry.beforeSnapshot && (
+                      {((entry.action === "update" || entry.action === "delete" || entry.action === "rollback") && entry.beforeSnapshot || (entry.action === "create" && entry.afterSnapshot)) && (
                         <Pressable
                           style={styles.rollbackBtn}
                           onPress={() => {
