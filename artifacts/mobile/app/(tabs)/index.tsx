@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
+  Image,
   Platform,
   Pressable,
   RefreshControl,
@@ -15,6 +16,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 import { api } from "@/lib/api";
+
+const saIconWhite = require("@/assets/images/sa-icon-white.png");
 
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: string; color: string }) {
   return (
@@ -55,8 +58,15 @@ export default function DashboardScreen() {
       contentInsetAdjustmentBehavior="automatic"
       refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={Colors.primary} />}
     >
-      <Text style={styles.greeting}>Anthology CRM</Text>
-      <Text style={styles.subtitle}>Your business at a glance</Text>
+      <View style={styles.headerRow}>
+        <View style={styles.headerLogo}>
+          <Image source={saIconWhite} style={styles.headerLogoImage} resizeMode="contain" />
+        </View>
+        <View>
+          <Text style={styles.greeting}>Startup Anthology</Text>
+          <Text style={styles.subtitle}>Your business at a glance</Text>
+        </View>
+      </View>
 
       <View style={styles.betaCard}>
         <View style={styles.betaHeader}>
@@ -111,8 +121,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 20 },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background },
-  greeting: { fontSize: 28, fontFamily: "Inter_700Bold", color: Colors.text, marginBottom: 4 },
-  subtitle: { fontSize: 15, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginBottom: 20 },
+  headerRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 20 },
+  headerLogo: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center" },
+  headerLogoImage: { width: 28, height: 28 },
+  greeting: { fontSize: 24, fontFamily: "Inter_700Bold", color: Colors.text },
+  subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 2 },
   betaCard: { backgroundColor: Colors.primary, borderRadius: 16, padding: 16, marginBottom: 20 },
   betaHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
   betaTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#fff", flex: 1 },

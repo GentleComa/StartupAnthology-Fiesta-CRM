@@ -5,10 +5,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth";
 import colors from "@/constants/colors";
+
+const saIconWhite = require("@/assets/images/sa-icon-white.png");
 
 export function LoginScreen() {
   const { login, isLoading } = useAuth();
@@ -28,9 +31,9 @@ export function LoginScreen() {
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>A</Text>
+            <Image source={saIconWhite} style={styles.logoImage} resizeMode="contain" />
           </View>
-          <Text style={styles.title}>Anthology CRM</Text>
+          <Text style={styles.title}>Startup Anthology</Text>
           <Text style={styles.subtitle}>
             Your startup relationships, organized.
           </Text>
@@ -89,19 +92,17 @@ const styles = StyleSheet.create({
     marginBottom: 48,
   },
   logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: colors.primary,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 20,
   },
-  logoText: {
-    fontSize: 36,
-    fontWeight: "700",
-    color: colors.accent,
-    fontFamily: "Inter_700Bold",
+  logoImage: {
+    width: 64,
+    height: 64,
   },
   title: {
     fontSize: 28,
