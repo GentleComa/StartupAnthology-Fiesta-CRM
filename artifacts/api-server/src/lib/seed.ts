@@ -34,7 +34,7 @@ export async function seedDefaults() {
         passwordHash,
         role: isFirstUser ? "admin" : user.role,
       }).where(eq(usersTable.id, user.id));
-      console.log(`Migrated user ${user.email} (temp password: ${tempPassword})${isFirstUser ? " as admin" : ""}`);
+      console.log(`Migrated user ${user.email} — password reset required${isFirstUser ? " (promoted to admin)" : ""}`);
     }
     await seedDefaultSettings(user.id);
   }

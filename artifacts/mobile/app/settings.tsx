@@ -94,7 +94,7 @@ export default function SettingsScreen() {
   });
 
   const updateProfileMut = useMutation({
-    mutationFn: (data: { firstName?: string; lastName?: string }) => api.updateProfile(data),
+    mutationFn: (data: { firstName?: string; lastName?: string; profileImageUrl?: string }) => api.updateProfile(data),
     onSuccess: async (result) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (result?.token) {

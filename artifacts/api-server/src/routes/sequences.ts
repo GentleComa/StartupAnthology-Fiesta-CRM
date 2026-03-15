@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { dripSequencesTable, dripSequenceStepsTable, dripEnrollmentsTable, calendarEventsTable } from "@workspace/db";
+import { dripSequencesTable, dripSequenceStepsTable, dripEnrollmentsTable, calendarEventsTable, leadsTable, contactsTable } from "@workspace/db";
 import { eq, sql, and } from "drizzle-orm";
 import { createCalendarEvent } from "../lib/calendar";
 
@@ -88,6 +88,15 @@ router.post("/sequences/:id/enroll", async (req: Request, res: Response) => {
     const seqId = Number(req.params.id);
     const [sequence] = await db.select().from(dripSequencesTable).where(and(eq(dripSequencesTable.id, seqId), eq(dripSequencesTable.userId, userId)));
     if (!sequence) return res.status(404).json({ error: "Sequence not found" });
+
+    if (req.body.leadId) {
+      const [lead] = await db.select().from(leadsTable).where(and(eq(leadsTable.id, req.body.leadId), eq(leadsTable.userId, userId)));
+      if (!lead) return res.status(404).json({ error: "Lead not found" });
+    }
+    if (req.body.contactId) {
+      const [contact] = await db.select().from(contactsTable).where(and(eq(contactsTable.id, req.body.contactId), eq(contactsTable.userId, userId)));
+      if (!contact) return res.status(404).json({ error: "Contact not found" });
+    }
 
     const [enrollment] = await db.insert(dripEnrollmentsTable).values({
       sequenceId: seqId,

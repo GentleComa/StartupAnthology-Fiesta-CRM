@@ -45,11 +45,11 @@ router.get("/calendar/events", async (req: Request, res: Response) => {
     const contactNames: Record<number, string> = {};
 
     if (leadIds.length > 0) {
-      const leads = await db.select({ id: leadsTable.id, name: leadsTable.name }).from(leadsTable).where(sql`${leadsTable.id} IN (${sql.join(leadIds.map(id => sql`${id}`), sql`, `)})`);
+      const leads = await db.select({ id: leadsTable.id, name: leadsTable.name }).from(leadsTable).where(and(eq(leadsTable.userId, userId), sql`${leadsTable.id} IN (${sql.join(leadIds.map(id => sql`${id}`), sql`, `)})`));
       for (const l of leads) leadNames[l.id] = l.name;
     }
     if (contactIds.length > 0) {
-      const contacts = await db.select({ id: contactsTable.id, name: contactsTable.name }).from(contactsTable).where(sql`${contactsTable.id} IN (${sql.join(contactIds.map(id => sql`${id}`), sql`, `)})`);
+      const contacts = await db.select({ id: contactsTable.id, name: contactsTable.name }).from(contactsTable).where(and(eq(contactsTable.userId, userId), sql`${contactsTable.id} IN (${sql.join(contactIds.map(id => sql`${id}`), sql`, `)})`));
       for (const c of contacts) contactNames[c.id] = c.name;
     }
 
@@ -78,6 +78,15 @@ router.post("/calendar/events", async (req: Request, res: Response) => {
     }
     if (new Date(endTime) <= new Date(startTime)) {
       return res.status(400).json({ error: "endTime must be after startTime" });
+    }
+
+    if (leadId) {
+      const [lead] = await db.select().from(leadsTable).where(and(eq(leadsTable.id, leadId), eq(leadsTable.userId, userId)));
+      if (!lead) return res.status(404).json({ error: "Lead not found" });
+    }
+    if (contactId) {
+      const [contact] = await db.select().from(contactsTable).where(and(eq(contactsTable.id, contactId), eq(contactsTable.userId, userId)));
+      if (!contact) return res.status(404).json({ error: "Contact not found" });
     }
 
     let googleEventId: string | null = null;
