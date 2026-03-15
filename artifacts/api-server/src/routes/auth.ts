@@ -52,6 +52,14 @@ function getSafeReturnTo(value: unknown): string {
   return value;
 }
 
+const MOBILE_REDIRECT_SCHEMES = ["exp://", "fiestacrm://"];
+
+function getMobileSafeRedirect(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  if (MOBILE_REDIRECT_SCHEMES.some((s) => value.startsWith(s))) return value;
+  return null;
+}
+
 async function upsertUser(claims: Record<string, unknown>) {
   const userData = {
     id: claims.sub as string,
@@ -137,6 +145,7 @@ router.get("/login", async (req: Request, res: Response) => {
   const callbackUrl = `${getOrigin(req)}/api/callback`;
 
   const returnTo = getSafeReturnTo(req.query.returnTo);
+  const mobileRedirect = getMobileSafeRedirect(req.query.mobileRedirect);
 
   const state = oidc.randomState();
   const nonce = oidc.randomNonce();
@@ -157,6 +166,9 @@ router.get("/login", async (req: Request, res: Response) => {
   setOidcCookie(res, "nonce", nonce);
   setOidcCookie(res, "state", state);
   setOidcCookie(res, "return_to", returnTo);
+  if (mobileRedirect) {
+    setOidcCookie(res, "mobile_redirect", mobileRedirect);
+  }
 
   res.redirect(redirectTo.href);
 });
@@ -192,11 +204,13 @@ router.get("/callback", async (req: Request, res: Response) => {
   }
 
   const returnTo = getSafeReturnTo(req.cookies?.return_to);
+  const mobileRedirect = getMobileSafeRedirect(req.cookies?.mobile_redirect);
 
   res.clearCookie("code_verifier", { path: "/" });
   res.clearCookie("nonce", { path: "/" });
   res.clearCookie("state", { path: "/" });
   res.clearCookie("return_to", { path: "/" });
+  res.clearCookie("mobile_redirect", { path: "/" });
 
   const claims = tokens.claims();
   if (!claims) {
@@ -215,6 +229,14 @@ router.get("/callback", async (req: Request, res: Response) => {
   };
 
   const sid = await createSession(sessionData);
+
+  if (mobileRedirect) {
+    const deepLink = new URL(mobileRedirect);
+    deepLink.searchParams.set("token", sid);
+    res.redirect(deepLink.toString());
+    return;
+  }
+
   setSessionCookie(res, sid);
   res.redirect(returnTo);
 });

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, typ
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -135,6 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, refreshTwoFactorStatus]);
 
   useEffect(() => {
+    if (Platform.OS !== "web") return;
     if (response?.type !== "success" || !request?.codeVerifier) return;
 
     const { code, state, iss } = response.params;
@@ -185,12 +187,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [response, request, fetchUser]);
 
   const login = useCallback(async () => {
+    if (Platform.OS === "web") {
+      try {
+        await promptAsync();
+      } catch (err) {
+        console.error("Login error:", err);
+      }
+      return;
+    }
+
+    const apiBase = getApiBaseUrl();
+    if (!apiBase) {
+      console.error("API base URL is not configured.");
+      return;
+    }
+
+    const mobileRedirectUri = AuthSession.makeRedirectUri();
+    const loginUrl = `${apiBase}/api/login?mobileRedirect=${encodeURIComponent(mobileRedirectUri)}`;
+
+    setIsLoading(true);
     try {
-      await promptAsync();
+      const result = await WebBrowser.openAuthSessionAsync(loginUrl, mobileRedirectUri);
+      if (result.type === "success" && result.url) {
+        const redirected = new URL(result.url);
+        const token = redirected.searchParams.get("token");
+        if (token) {
+          await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
+          await fetchUser();
+          return;
+        }
+      }
     } catch (err) {
       console.error("Login error:", err);
+    } finally {
+      setIsLoading(false);
     }
-  }, [promptAsync]);
+  }, [promptAsync, fetchUser]);
 
   const logout = useCallback(async () => {
     try {
