@@ -26,7 +26,7 @@ router.get("/broadcast-preview", async (req: Request, res: Response, next: NextF
     const leadStatuses = leadStatusesRaw ? leadStatusesRaw.split(",").filter(Boolean) : [];
     const contactTypes = contactTypesRaw ? contactTypesRaw.split(",").filter(Boolean) : [];
 
-    let recipients: { name: string; email: string }[] = [];
+    const recipients: { name: string; email: string }[] = [];
 
     if (leadStatuses.length > 0) {
       const leads = await db.select().from(leadsTable).where(and(inArray(leadsTable.status, leadStatuses), eq(leadsTable.userId, userId)));

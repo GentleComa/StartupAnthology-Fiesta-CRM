@@ -16,7 +16,7 @@ router.post("/email/send", async (req: Request, res: Response, next: NextFunctio
     const userId = req.user!.id;
     const { to, subject, body, leadId, contactId, addToCalendar, attachmentFileIds } = validate(sendEmailSchema, req.body);
 
-    let attachments: EmailAttachment[] = [];
+    const attachments: EmailAttachment[] = [];
     if (attachmentFileIds && attachmentFileIds.length > 0) {
       const files = await db.select().from(filesTable).where(and(inArray(filesTable.id, attachmentFileIds), eq(filesTable.userId, userId)));
       for (const file of files) {
