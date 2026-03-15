@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -64,9 +65,13 @@ export default function ComposeEmailScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   return (
-    <View style={[styles.container, { paddingTop: topPad }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingTop: topPad }]}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+    >
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()}>
+        <Pressable onPress={() => router.back()} hitSlop={8}>
           <Text style={styles.cancelText}>Cancel</Text>
         </Pressable>
         <Text style={styles.title}>Compose</Text>
@@ -75,6 +80,7 @@ export default function ComposeEmailScreen() {
             if (subject && body) sendMut.mutate();
           }}
           disabled={!subject || !body || sendMut.isPending}
+          hitSlop={8}
         >
           {sendMut.isPending ? (
             <ActivityIndicator size="small" color={Colors.info} />
@@ -84,10 +90,12 @@ export default function ComposeEmailScreen() {
         </Pressable>
       </View>
 
-      <ScrollView style={styles.form} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.form} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         <View style={styles.fieldRow}>
           <Text style={styles.fieldLabel}>To</Text>
-          <Text style={styles.fieldValue}>{to || "None"}</Text>
+          <View style={styles.toValue}>
+            <Text style={styles.toText}>{to || "No recipient"}</Text>
+          </View>
         </View>
 
         <Pressable style={styles.templateBtn} onPress={() => setShowTemplates(!showTemplates)}>
@@ -128,7 +136,7 @@ export default function ComposeEmailScreen() {
           textAlignVertical="top"
         />
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -142,6 +150,8 @@ const styles = StyleSheet.create({
   fieldRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
   fieldLabel: { width: 60, fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
   fieldValue: { flex: 1, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
+  toValue: { flex: 1, backgroundColor: Colors.surfaceSecondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+  toText: { fontSize: 15, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
   subjectInput: { flex: 1, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
   templateBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
   templateBtnText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.info },

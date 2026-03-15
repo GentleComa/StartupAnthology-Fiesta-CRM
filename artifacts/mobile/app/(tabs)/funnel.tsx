@@ -63,7 +63,10 @@ function LeadCard({ lead, onSwipeLeft, onSwipeRight }: { lead: any; onSwipeLeft:
 
   return (
     <Animated.View style={[styles.leadCard, { transform: [{ translateX: pan }] }]} {...panResponder.panHandlers}>
-      <Pressable onPress={() => router.push({ pathname: "/lead/[id]", params: { id: String(lead.id) } })}>
+      <Pressable
+        onPress={() => router.push({ pathname: "/lead/[id]", params: { id: String(lead.id) } })}
+        style={({ pressed }) => pressed && styles.pressed}
+      >
         <View style={styles.leadCardHeader}>
           <Text style={styles.leadName} numberOfLines={1}>{lead.name}</Text>
           {lead.isBeta && (
@@ -78,6 +81,11 @@ function LeadCard({ lead, onSwipeLeft, onSwipeRight }: { lead: any; onSwipeLeft:
             <Text style={[styles.statusText, { color: statusColor }]}>{STATUS_LABELS[lead.status]}</Text>
           </View>
           <Text style={styles.sourceText}>{lead.source}</Text>
+        </View>
+        <View style={styles.swipeHint}>
+          <Feather name="chevrons-left" size={10} color={Colors.textTertiary} />
+          <Text style={styles.swipeHintText}>swipe to move</Text>
+          <Feather name="chevrons-right" size={10} color={Colors.textTertiary} />
         </View>
       </Pressable>
     </Animated.View>
@@ -155,6 +163,7 @@ export default function FunnelScreen() {
           <Pressable
             onPress={() => setViewMode(viewMode === "kanban" ? "list" : "kanban")}
             style={styles.viewToggle}
+            hitSlop={8}
           >
             <Feather name={viewMode === "kanban" ? "list" : "columns"} size={20} color={Colors.primary} />
           </Pressable>
@@ -162,6 +171,23 @@ export default function FunnelScreen() {
       </View>
 
       {viewMode === "kanban" ? (
+        leads.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Feather name="target" size={48} color={Colors.textTertiary} />
+            <Text style={styles.emptyTitle}>No leads yet</Text>
+            <Text style={styles.emptySubtitle}>Add one. You know who it is.</Text>
+            <Pressable
+              style={styles.emptyBtn}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setShowAdd(true);
+              }}
+            >
+              <Feather name="plus" size={16} color="#fff" />
+              <Text style={styles.emptyBtnText}>Add Lead</Text>
+            </Pressable>
+          </View>
+        ) : (
         <ScrollView
           horizontal
           pagingEnabled={false}
@@ -199,6 +225,7 @@ export default function FunnelScreen() {
             );
           })}
         </ScrollView>
+        )
       ) : (
         <FlatList
           data={leads}
@@ -233,6 +260,16 @@ export default function FunnelScreen() {
               <Feather name="target" size={48} color={Colors.textTertiary} />
               <Text style={styles.emptyTitle}>No leads yet</Text>
               <Text style={styles.emptySubtitle}>Add one. You know who it is.</Text>
+              <Pressable
+                style={styles.emptyBtn}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setShowAdd(true);
+                }}
+              >
+                <Feather name="plus" size={16} color="#fff" />
+                <Text style={styles.emptyBtnText}>Add Lead</Text>
+              </Pressable>
             </View>
           }
         />
@@ -384,4 +421,8 @@ const styles = StyleSheet.create({
   sourceChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   sourceChipText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text, textTransform: "capitalize" },
   sourceChipTextActive: { color: "#fff" },
+  swipeHint: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, marginTop: 8, opacity: 0.5 },
+  swipeHintText: { fontSize: 10, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
+  emptyBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 20, marginTop: 16 },
+  emptyBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
 });

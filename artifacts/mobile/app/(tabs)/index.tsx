@@ -112,6 +112,13 @@ export default function DashboardScreen() {
         </View>
       )}
 
+      {(d.followUps?.length ?? 0) === 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Follow up today</Text>
+          <Text style={styles.allClear}>Nothing due. You're ahead of the game.</Text>
+        </View>
+      )}
+
       <View style={{ height: 100 }} />
     </ScrollView>
   );
@@ -169,4 +176,5 @@ const styles = StyleSheet.create({
   followUpName: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
   followUpCompany: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary },
   priorityDot: { width: 10, height: 10, borderRadius: 5 },
+  allClear: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, paddingVertical: 12 },
 });

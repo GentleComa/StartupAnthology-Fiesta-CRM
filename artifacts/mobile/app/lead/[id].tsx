@@ -75,7 +75,7 @@ export default function LeadDetailScreen() {
           <Feather name="arrow-left" size={22} color={Colors.text} />
         </Pressable>
         <View style={{ flex: 1 }} />
-        <Pressable onPress={() => { Alert.alert("Delete this lead?", "This can't be undone.", [{ text: "Keep", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => deleteMut.mutate() }]); }}>
+        <Pressable style={styles.deleteBtn} onPress={() => { Alert.alert("Delete this lead?", "This can't be undone.", [{ text: "Keep", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => deleteMut.mutate() }]); }}>
           <Feather name="trash-2" size={20} color={Colors.error} />
         </Pressable>
       </View>
@@ -193,7 +193,8 @@ const styles = StyleSheet.create({
   content: { padding: 20 },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background },
   topBar: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
-  backBtn: { padding: 4 },
+  backBtn: { padding: 10, marginLeft: -10 },
+  deleteBtn: { padding: 10, marginRight: -10 },
   profileSection: { alignItems: "center", marginBottom: 24 },
   avatar: { width: 64, height: 64, borderRadius: 32, justifyContent: "center", alignItems: "center", marginBottom: 12 },
   avatarText: { fontSize: 26, fontFamily: "Lato_700Bold", color: "#fff" },

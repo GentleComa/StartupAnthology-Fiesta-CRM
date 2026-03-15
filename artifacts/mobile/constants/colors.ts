@@ -7,8 +7,8 @@ const colors = {
   surface: "#F8F8F8",
   surfaceSecondary: "#F0F0F0",
   text: "#000000",
-  textSecondary: "#999999",
-  textTertiary: "#BBBBBB",
+  textSecondary: "#666666",
+  textTertiary: "#767676",
   border: "#E5E5E5",
   borderLight: "#F0F0F0",
   success: "#10B981",
@@ -24,13 +24,13 @@ const colors = {
 
   priorityHigh: "#EF4444",
   priorityMedium: "#F59E0B",
-  priorityLow: "#999999",
+  priorityLow: "#767676",
 
   light: {
     text: "#000000",
     background: "#FFFFFF",
     tint: "#000000",
-    tabIconDefault: "#999999",
+    tabIconDefault: "#767676",
     tabIconSelected: "#000000",
   },
 };

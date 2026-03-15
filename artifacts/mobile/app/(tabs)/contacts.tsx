@@ -85,7 +85,7 @@ export default function ContactsScreen() {
           <Text style={[styles.tabText, tab === "all" && styles.tabTextActive]}>All</Text>
         </Pressable>
         <Pressable style={[styles.tab, tab === "followups" && styles.tabActive]} onPress={() => setTab("followups")}>
-          <Feather name="clock" size={14} color={tab === "followups" ? Colors.primary : Colors.textSecondary} />
+          <Feather name="clock" size={14} color={tab === "followups" ? "#FFFFFF" : Colors.textSecondary} />
           <Text style={[styles.tabText, tab === "followups" && styles.tabTextActive]}>Follow-ups</Text>
           {followUps.length > 0 && (
             <View style={styles.badge}><Text style={styles.badgeText}>{followUps.length}</Text></View>
@@ -139,6 +139,18 @@ export default function ContactsScreen() {
             <Feather name="users" size={48} color={Colors.textTertiary} />
             <Text style={styles.emptyTitle}>{tab === "all" ? "No contacts yet" : "No follow-ups due"}</Text>
             <Text style={styles.emptySubtitle}>{tab === "all" ? "Start with the people who matter most." : "Clean slate. Nice work."}</Text>
+            {tab === "all" && (
+              <Pressable
+                style={styles.emptyBtn}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setShowAdd(true);
+                }}
+              >
+                <Feather name="plus" size={16} color="#fff" />
+                <Text style={styles.emptyBtnText}>Add Contact</Text>
+              </Pressable>
+            )}
           </View>
         }
       />
@@ -210,9 +222,9 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontFamily: "Lato_700Bold", color: Colors.text },
   tabs: { flexDirection: "row", paddingHorizontal: 20, gap: 8, marginBottom: 8, marginTop: 8 },
   tab: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.surfaceSecondary },
-  tabActive: { backgroundColor: Colors.primary + "10" },
+  tabActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   tabText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
-  tabTextActive: { color: Colors.primary },
+  tabTextActive: { color: "#FFFFFF" },
   badge: { backgroundColor: Colors.error, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1, minWidth: 20, alignItems: "center" },
   badgeText: { fontSize: 11, fontFamily: "Lato_700Bold", color: "#fff" },
   listContent: { padding: 16, paddingBottom: 100 },
@@ -247,4 +259,6 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   chipText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text, textTransform: "capitalize" },
   chipTextActive: { color: "#fff" },
+  emptyBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 20, marginTop: 16 },
+  emptyBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
 });

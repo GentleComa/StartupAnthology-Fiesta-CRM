@@ -109,7 +109,7 @@ Tables: leads (with is_beta), contacts, activities, email_templates, drip_sequen
 
 ## Design
 
-- **Colors**: Black primary (#000000), SA Gold accent (#BB935B), White background (#FFFFFF), Grey (#999999)
+- **Colors**: Black primary (#000000), SA Gold accent (#BB935B), White background (#FFFFFF), textSecondary (#666666), textTertiary (#767676) — all WCAG AA compliant
 - **Typography**: Multi-font brand system — Lato (titles), League Spartan (headings/buttons), Montserrat (subtitles/captions), Space Grotesk (body text)
 - **Brand Voice**: Founder-to-founder, direct, no fluff. Earned empathy, clarity over polish, confidence without arrogance, functional optimism. Peer register (we/you). NOT corporate, NOT startup-bro hype, NOT patronizing. One-liner: "Straight-talking, founder-built confidence — for the people doing the actual work."
 - **Navigation**: NativeTabs with liquid glass on iOS 26+, classic blur tabs fallback
