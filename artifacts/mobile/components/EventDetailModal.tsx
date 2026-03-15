@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -11,7 +11,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import FriendlyDateTimePicker from "@/components/FriendlyDateTimePicker";
-import Colors from "@/constants/colors";
+import { type ThemeColors } from "@/constants/colors";
+import { useTheme } from "@/lib/theme";
 
 interface CalendarEvent {
   id: number;
@@ -35,14 +36,6 @@ interface EventDetailModalProps {
 
 const EVENT_TYPES = ["meeting", "call", "follow-up", "demo", "other"];
 
-const EVENT_COLORS: Record<string, string> = {
-  meeting: "#AF52DE",
-  call: "#34C759",
-  "follow-up": Colors.accent,
-  demo: Colors.info,
-  other: Colors.textTertiary,
-};
-
 export default function EventDetailModal({
   visible,
   event,
@@ -50,6 +43,15 @@ export default function EventDetailModal({
   onSave,
   isSaving,
 }: EventDetailModalProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const EVENT_COLORS: Record<string, string> = useMemo(() => ({
+    meeting: "#AF52DE",
+    call: "#34C759",
+    "follow-up": colors.accent,
+    demo: colors.info,
+    other: colors.textTertiary,
+  }), [colors]);
   const insets = useSafeAreaInsets();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
@@ -97,7 +99,7 @@ export default function EventDetailModal({
 
   if (!event) return null;
 
-  const typeColor = EVENT_COLORS[event.eventType] || Colors.textTertiary;
+  const typeColor = EVENT_COLORS[event.eventType] || colors.textTertiary;
   const canSave = title.trim() && !isSaving;
 
   const formatDateTime = (dateStr: string) =>
@@ -126,11 +128,11 @@ export default function EventDetailModal({
           <View style={styles.headerActions}>
             {!editing && (
               <Pressable onPress={() => setEditing(true)} hitSlop={10}>
-                <Feather name="edit-2" size={20} color={Colors.text} />
+                <Feather name="edit-2" size={20} color={colors.text} />
               </Pressable>
             )}
             <Pressable onPress={handleClose} hitSlop={10}>
-              <Feather name="x" size={24} color={Colors.text} />
+              <Feather name="x" size={24} color={colors.text} />
             </Pressable>
           </View>
         </View>
@@ -144,7 +146,7 @@ export default function EventDetailModal({
                 value={title}
                 onChangeText={setTitle}
                 placeholder="Event title"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={colors.textTertiary}
               />
 
               <Text style={styles.label}>Type</Text>
@@ -169,7 +171,7 @@ export default function EventDetailModal({
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Event description or agenda"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={colors.textTertiary}
                 multiline
                 textAlignVertical="top"
               />
@@ -183,7 +185,7 @@ export default function EventDetailModal({
                   onPress={handleSave}
                   disabled={!canSave}
                 >
-                  <Feather name="check" size={16} color="#fff" />
+                  <Feather name="check" size={16} color={colors.onPrimary} />
                   <Text style={styles.saveBtnText}>{isSaving ? "Saving..." : "Save"}</Text>
                 </Pressable>
               </View>
@@ -200,7 +202,7 @@ export default function EventDetailModal({
 
               <View style={styles.timeCard}>
                 <View style={styles.timeRow}>
-                  <Feather name="clock" size={16} color={Colors.accent} />
+                  <Feather name="clock" size={16} color={colors.accent} />
                   <View>
                     <Text style={styles.timeLabel}>Start</Text>
                     <Text style={styles.timeValue}>{formatDateTime(event.startTime)}</Text>
@@ -208,7 +210,7 @@ export default function EventDetailModal({
                 </View>
                 <View style={styles.timeDivider} />
                 <View style={styles.timeRow}>
-                  <Feather name="clock" size={16} color={Colors.textTertiary} />
+                  <Feather name="clock" size={16} color={colors.textTertiary} />
                   <View>
                     <Text style={styles.timeLabel}>End</Text>
                     <Text style={styles.timeValue}>{formatDateTime(event.endTime)}</Text>
@@ -224,13 +226,13 @@ export default function EventDetailModal({
                   <Text style={styles.detailLabel}>Linked To</Text>
                   {event.leadName && (
                     <View style={styles.linkRow}>
-                      <Feather name="target" size={14} color={Colors.accent} />
+                      <Feather name="target" size={14} color={colors.accent} />
                       <Text style={styles.linkText}>{event.leadName}</Text>
                     </View>
                   )}
                   {event.contactName && (
                     <View style={styles.linkRow}>
-                      <Feather name="user" size={14} color={Colors.info} />
+                      <Feather name="user" size={14} color={colors.info} />
                       <Text style={styles.linkText}>{event.contactName}</Text>
                     </View>
                   )}
@@ -251,8 +253,8 @@ export default function EventDetailModal({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, padding: 20 },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, padding: 20 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -260,7 +262,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   headerActions: { flexDirection: "row", alignItems: "center", gap: 16 },
-  headerTitle: { fontSize: 20, fontFamily: "Lato_700Bold", color: Colors.text },
+  headerTitle: { fontSize: 20, fontFamily: "Lato_700Bold", color: colors.text },
   scroll: { flex: 1 },
   titleRow: {
     flexDirection: "row",
@@ -269,29 +271,29 @@ const styles = StyleSheet.create({
   },
   typeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   typeBadgeText: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", textTransform: "capitalize" },
-  eventTitle: { fontSize: 22, fontFamily: "Lato_700Bold", color: Colors.text, marginBottom: 20 },
+  eventTitle: { fontSize: 22, fontFamily: "Lato_700Bold", color: colors.text, marginBottom: 20 },
   timeCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
   },
   timeRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  timeLabel: { fontSize: 11, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textTertiary, textTransform: "uppercase" },
-  timeValue: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
-  timeDivider: { height: 1, backgroundColor: Colors.border, marginVertical: 12 },
+  timeLabel: { fontSize: 11, fontFamily: "LeagueSpartan_600SemiBold", color: colors.textTertiary, textTransform: "uppercase" },
+  timeValue: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.text },
+  timeDivider: { height: 1, backgroundColor: colors.border, marginVertical: 12 },
   durationBadge: {
     alignSelf: "flex-start",
-    backgroundColor: Colors.accent + "20",
+    backgroundColor: colors.accent + "20",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
     marginTop: 10,
   },
-  durationText: { fontSize: 12, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.accent },
+  durationText: { fontSize: 12, fontFamily: "LeagueSpartan_600SemiBold", color: colors.accent },
   details: { gap: 0 },
   detailSection: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
@@ -299,23 +301,23 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 11,
     fontFamily: "LeagueSpartan_600SemiBold",
-    color: Colors.textTertiary,
+    color: colors.textTertiary,
     textTransform: "uppercase",
     marginBottom: 8,
   },
   detailValue: {
     fontSize: 14,
     fontFamily: "SpaceGrotesk_400Regular",
-    color: Colors.text,
+    color: colors.text,
     lineHeight: 20,
   },
   linkRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
-  linkText: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
+  linkText: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.text },
   form: { gap: 12 },
   label: {
     fontSize: 12,
     fontFamily: "LeagueSpartan_600SemiBold",
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     textTransform: "uppercase",
     marginTop: 4,
   },
@@ -324,18 +326,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
   },
-  typeChipActive: { backgroundColor: Colors.primary },
-  typeChipText: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, textTransform: "capitalize" },
-  typeChipTextActive: { color: "#fff" },
+  typeChipActive: { backgroundColor: colors.primary },
+  typeChipText: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: colors.textSecondary, textTransform: "capitalize" },
+  typeChipTextActive: { color: colors.onPrimary },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
     fontSize: 14,
     fontFamily: "SpaceGrotesk_400Regular",
-    color: Colors.text,
+    color: colors.text,
   },
   textArea: { minHeight: 100 },
   formActions: { flexDirection: "row", gap: 12, marginTop: 8 },
@@ -344,9 +346,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
   },
-  cancelBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary },
+  cancelBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.textSecondary },
   saveBtn: {
     flex: 1,
     flexDirection: "row",
@@ -355,7 +357,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
   },
-  saveBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
+  saveBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.onPrimary },
 });

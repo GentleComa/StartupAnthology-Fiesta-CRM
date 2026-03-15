@@ -1,7 +1,8 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Colors from "@/constants/colors";
+import { type ThemeColors } from "@/constants/colors";
+import { useTheme } from "@/lib/theme";
 
 interface FriendlyDateTimePickerProps {
   value: Date;
@@ -18,6 +19,8 @@ function getDaysInMonth(year: number, month: number) {
 }
 
 export default function FriendlyDateTimePicker({ value, onChange, label }: FriendlyDateTimePickerProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(false);
 
   const year = value.getFullYear();
@@ -59,9 +62,9 @@ export default function FriendlyDateTimePicker({ value, onChange, label }: Frien
     <View>
       {label && <Text style={styles.label}>{label}</Text>}
       <Pressable style={styles.displayBtn} onPress={() => setExpanded(!expanded)}>
-        <Feather name="calendar" size={16} color={Colors.accent} />
+        <Feather name="calendar" size={16} color={colors.accent} />
         <Text style={styles.displayText}>{formatted}</Text>
-        <Feather name={expanded ? "chevron-up" : "chevron-down"} size={16} color={Colors.textTertiary} />
+        <Feather name={expanded ? "chevron-up" : "chevron-down"} size={16} color={colors.textTertiary} />
       </Pressable>
 
       {expanded && (
@@ -140,11 +143,11 @@ export default function FriendlyDateTimePicker({ value, onChange, label }: Frien
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   label: {
     fontSize: 12,
     fontFamily: "LeagueSpartan_600SemiBold",
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     textTransform: "uppercase",
     marginBottom: 6,
     marginTop: 4,
@@ -153,7 +156,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 14,
@@ -162,10 +165,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontFamily: "SpaceGrotesk_500Medium",
-    color: Colors.text,
+    color: colors.text,
   },
   pickerContainer: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 12,
     marginTop: 8,
@@ -175,7 +178,7 @@ const styles = StyleSheet.create({
   pickerLabel: {
     fontSize: 11,
     fontFamily: "LeagueSpartan_600SemiBold",
-    color: Colors.textTertiary,
+    color: colors.textTertiary,
     textTransform: "uppercase",
     marginBottom: 6,
   },
@@ -188,31 +191,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
   },
   chipActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
   },
   chipText: {
     fontSize: 13,
     fontFamily: "SpaceGrotesk_500Medium",
-    color: Colors.text,
+    color: colors.text,
   },
   chipTextActive: {
-    color: "#fff",
+    color: colors.onPrimary,
   },
   chipSmall: {
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 6,
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
     minWidth: 32,
     alignItems: "center",
   },
   chipSmallText: {
     fontSize: 13,
     fontFamily: "SpaceGrotesk_500Medium",
-    color: Colors.text,
+    color: colors.text,
   },
   timeSectionRow: {
     gap: 14,

@@ -1,5 +1,3 @@
-import Colors from "./colors";
-
 export const LEAD_STATUSES = ["new", "contacted", "interested", "engaged", "converted"] as const;
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
@@ -12,11 +10,11 @@ export const STATUS_LABELS: Record<string, string> = {
 };
 
 export const STATUS_COLORS: Record<string, string> = {
-  new: Colors.statusNew,
-  contacted: Colors.statusContacted,
-  interested: Colors.statusInterested,
-  engaged: Colors.statusEngaged,
-  converted: Colors.statusConverted,
+  new: "#6366F1",
+  contacted: "#3B82F6",
+  interested: "#F59E0B",
+  engaged: "#F97316",
+  converted: "#10B981",
 };
 
 export const LEAD_SOURCES = ["twitter", "linkedin", "referral", "cold_outreach", "other"] as const;
@@ -37,9 +35,9 @@ export const PRIORITIES = ["high", "medium", "low"] as const;
 export type Priority = (typeof PRIORITIES)[number];
 
 export const PRIORITY_COLORS: Record<string, string> = {
-  high: Colors.priorityHigh,
-  medium: Colors.priorityMedium,
-  low: Colors.priorityLow,
+  high: "#EF4444",
+  medium: "#F59E0B",
+  low: "#767676",
 };
 
 export const ACTION_LABELS: Record<string, string> = {
@@ -50,8 +48,8 @@ export const ACTION_LABELS: Record<string, string> = {
 };
 
 export const ACTION_COLORS: Record<string, string> = {
-  create: Colors.success,
-  update: Colors.info,
-  delete: Colors.error,
-  rollback: Colors.warning,
+  create: "#10B981",
+  update: "#3B82F6",
+  delete: "#EF4444",
+  rollback: "#F59E0B",
 };

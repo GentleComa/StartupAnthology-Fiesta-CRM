@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import {
   Alert,
   Linking,
@@ -12,7 +12,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Colors from "@/constants/colors";
+import { type ThemeColors } from "@/constants/colors";
+import { useTheme } from "@/lib/theme";
 
 interface Activity {
   id: number;
@@ -35,16 +36,6 @@ interface ActivityDetailModalProps {
 
 const TYPE_OPTIONS = ["email", "linkedin", "note", "call", "meeting", "status_change", "other"];
 
-const TYPE_COLORS: Record<string, string> = {
-  email: Colors.info,
-  linkedin: "#0A66C2",
-  note: Colors.accent,
-  call: "#34C759",
-  meeting: "#AF52DE",
-  status_change: "#FF9500",
-  other: Colors.textTertiary,
-};
-
 const TYPE_LABELS: Record<string, string> = {
   status_change: "Status Change",
 };
@@ -60,6 +51,17 @@ export default function ActivityDetailModal({
   onSave,
   isSaving,
 }: ActivityDetailModalProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const TYPE_COLORS: Record<string, string> = useMemo(() => ({
+    email: colors.info,
+    linkedin: "#0A66C2",
+    note: colors.accent,
+    call: "#34C759",
+    meeting: "#AF52DE",
+    status_change: "#FF9500",
+    other: colors.textTertiary,
+  }), [colors]);
   const insets = useSafeAreaInsets();
   const [editing, setEditing] = useState(false);
   const [type, setType] = useState("");
@@ -94,7 +96,7 @@ export default function ActivityDetailModal({
 
   if (!activity) return null;
 
-  const typeColor = TYPE_COLORS[activity.type] || Colors.textTertiary;
+  const typeColor = TYPE_COLORS[activity.type] || colors.textTertiary;
   const formattedDate = new Date(activity.createdAt).toLocaleString([], {
     weekday: "short",
     month: "short",
@@ -112,11 +114,11 @@ export default function ActivityDetailModal({
           <View style={styles.headerActions}>
             {!editing && (
               <Pressable onPress={() => setEditing(true)} hitSlop={10}>
-                <Feather name="edit-2" size={20} color={Colors.text} />
+                <Feather name="edit-2" size={20} color={colors.text} />
               </Pressable>
             )}
             <Pressable onPress={handleClose} hitSlop={10}>
-              <Feather name="x" size={24} color={Colors.text} />
+              <Feather name="x" size={24} color={colors.text} />
             </Pressable>
           </View>
         </View>
@@ -153,7 +155,7 @@ export default function ActivityDetailModal({
                 value={subject}
                 onChangeText={setSubject}
                 placeholder="Subject line or topic"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={colors.textTertiary}
               />
 
               <Text style={styles.label}>Body / Content</Text>
@@ -162,7 +164,7 @@ export default function ActivityDetailModal({
                 value={body}
                 onChangeText={setBody}
                 placeholder="Full content of the activity"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={colors.textTertiary}
                 multiline
                 textAlignVertical="top"
               />
@@ -173,7 +175,7 @@ export default function ActivityDetailModal({
                 value={note}
                 onChangeText={setNote}
                 placeholder="Internal notes about this activity"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={colors.textTertiary}
                 multiline
                 textAlignVertical="top"
               />
@@ -189,7 +191,7 @@ export default function ActivityDetailModal({
                   <Text style={styles.cancelBtnText}>Cancel</Text>
                 </Pressable>
                 <Pressable style={[styles.saveBtn, isSaving && { opacity: 0.6 }]} onPress={handleSave} disabled={isSaving}>
-                  <Feather name="check" size={16} color="#fff" />
+                  <Feather name="check" size={16} color={colors.onPrimary} />
                   <Text style={styles.saveBtnText}>{isSaving ? "Saving..." : "Save"}</Text>
                 </Pressable>
               </View>
@@ -223,7 +225,7 @@ export default function ActivityDetailModal({
 
               {activity.gmailLink && (
                 <Pressable style={styles.gmailBtn} onPress={() => Linking.openURL(activity.gmailLink!)}>
-                  <Feather name="mail" size={16} color={Colors.info} />
+                  <Feather name="mail" size={16} color={colors.info} />
                   <Text style={styles.gmailBtnText}>Open in Gmail</Text>
                 </Pressable>
               )}
@@ -235,8 +237,8 @@ export default function ActivityDetailModal({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, padding: 20 },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, padding: 20 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -244,7 +246,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   headerActions: { flexDirection: "row", alignItems: "center", gap: 16 },
-  title: { fontSize: 20, fontFamily: "Lato_700Bold", color: Colors.text },
+  title: { fontSize: 20, fontFamily: "Lato_700Bold", color: colors.text },
   scroll: { flex: 1 },
   metaRow: {
     flexDirection: "row",
@@ -254,43 +256,43 @@ const styles = StyleSheet.create({
   },
   typeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   typeBadgeText: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", textTransform: "capitalize" },
-  date: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
+  date: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: colors.textTertiary },
   details: { gap: 16 },
   detailSection: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
   },
   detailLabel: {
     fontSize: 11,
     fontFamily: "LeagueSpartan_600SemiBold",
-    color: Colors.textTertiary,
+    color: colors.textTertiary,
     textTransform: "uppercase",
     marginBottom: 6,
   },
   detailValue: {
     fontSize: 14,
     fontFamily: "SpaceGrotesk_400Regular",
-    color: Colors.text,
+    color: colors.text,
     lineHeight: 20,
   },
-  empty: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, marginTop: 10 },
+  empty: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.textTertiary, marginTop: 10 },
   gmailBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: Colors.info + "15",
+    backgroundColor: colors.info + "15",
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginTop: 4,
   },
-  gmailBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info },
+  gmailBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.info },
   form: { gap: 12 },
   label: {
     fontSize: 12,
     fontFamily: "LeagueSpartan_600SemiBold",
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     textTransform: "uppercase",
     marginTop: 4,
   },
@@ -299,18 +301,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
   },
-  typeChipActive: { backgroundColor: Colors.primary },
-  typeChipText: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, textTransform: "capitalize" },
-  typeChipTextActive: { color: "#fff" },
+  typeChipActive: { backgroundColor: colors.primary },
+  typeChipText: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: colors.textSecondary, textTransform: "capitalize" },
+  typeChipTextActive: { color: colors.onPrimary },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
     fontSize: 14,
     fontFamily: "SpaceGrotesk_400Regular",
-    color: Colors.text,
+    color: colors.text,
   },
   textArea: { minHeight: 100 },
   formActions: { flexDirection: "row", gap: 12, marginTop: 8 },
@@ -319,9 +321,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
   },
-  cancelBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary },
+  cancelBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.textSecondary },
   saveBtn: {
     flex: 1,
     flexDirection: "row",
@@ -330,7 +332,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
   },
-  saveBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
+  saveBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.onPrimary },
 });

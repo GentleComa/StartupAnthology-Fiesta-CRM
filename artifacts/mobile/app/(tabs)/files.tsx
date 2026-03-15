@@ -14,8 +14,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Colors from "@/constants/colors";
 import { api } from "@/lib/api";
+import { useTheme } from "@/lib/theme";
 
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -34,6 +34,7 @@ function getFileIcon(mimeType: string): string {
 
 export default function FilesScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const qc = useQueryClient();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -65,13 +66,13 @@ export default function FilesScreen() {
   });
 
   const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.fileCard}>
-      <View style={styles.fileIconWrap}>
-        <Feather name={getFileIcon(item.mimeType) as any} size={20} color={Colors.info} />
+    <View style={[styles.fileCard, { backgroundColor: colors.surface }]}>
+      <View style={[styles.fileIconWrap, { backgroundColor: colors.info + "15" }]}>
+        <Feather name={getFileIcon(item.mimeType) as any} size={20} color={colors.info} />
       </View>
       <View style={styles.fileInfo}>
-        <Text style={styles.fileName} numberOfLines={1}>{item.name}</Text>
-        <Text style={styles.fileMeta}>{formatSize(item.size)} · {new Date(item.createdAt).toLocaleDateString()}</Text>
+        <Text style={[styles.fileName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
+        <Text style={[styles.fileMeta, { color: colors.textTertiary }]}>{formatSize(item.size)} · {new Date(item.createdAt).toLocaleDateString()}</Text>
       </View>
       <Pressable
         onPress={() => Alert.alert("Delete file?", item.name, [
@@ -80,34 +81,34 @@ export default function FilesScreen() {
         ])}
         hitSlop={8}
       >
-        <Feather name="trash-2" size={18} color={Colors.error} />
+        <Feather name="trash-2" size={18} color={colors.error} />
       </Pressable>
     </View>
   );
 
   return (
-    <View style={[styles.container, { paddingTop: topPad }]}>
-      <View style={styles.header}>
-        <Text style={styles.title}>File Library</Text>
-        <Pressable style={styles.uploadBtn} onPress={() => uploadMut.mutate()} disabled={uploadMut.isPending}>
+    <View style={[styles.container, { paddingTop: topPad, backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>File Library</Text>
+        <Pressable style={[styles.uploadBtn, { backgroundColor: colors.primary }]} onPress={() => uploadMut.mutate()} disabled={uploadMut.isPending}>
           {uploadMut.isPending ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={colors.onPrimary} />
           ) : (
             <>
-              <Feather name="upload" size={16} color="#fff" />
-              <Text style={styles.uploadText}>Upload</Text>
+              <Feather name="upload" size={16} color={colors.onPrimary} />
+              <Text style={[styles.uploadText, { color: colors.onPrimary }]}>Upload</Text>
             </>
           )}
         </Pressable>
       </View>
 
       {isLoading ? (
-        <View style={styles.center}><ActivityIndicator size="large" color={Colors.primary} /></View>
+        <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>
       ) : files.length === 0 ? (
         <View style={styles.center}>
-          <Feather name="folder" size={48} color={Colors.textTertiary} />
-          <Text style={styles.emptyText}>No files yet</Text>
-          <Text style={styles.emptySubtext}>Upload pitch decks, one-pagers, and more</Text>
+          <Feather name="folder" size={48} color={colors.textTertiary} />
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No files yet</Text>
+          <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Upload pitch decks, one-pagers, and more</Text>
         </View>
       ) : (
         <FlatList
@@ -122,18 +123,18 @@ export default function FilesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  title: { fontSize: 22, fontFamily: "LeagueSpartan_700Bold", color: Colors.text },
-  uploadBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: Colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
+  container: { flex: 1 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
+  title: { fontSize: 22, fontFamily: "LeagueSpartan_700Bold" },
+  uploadBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
   uploadText: { fontSize: 14, fontFamily: "SpaceGrotesk_600SemiBold", color: "#fff" },
   center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 8 },
-  emptyText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary },
-  emptySubtext: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
+  emptyText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold" },
+  emptySubtext: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular" },
   list: { padding: 16 },
-  fileCard: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginBottom: 8, gap: 12 },
-  fileIconWrap: { width: 40, height: 40, borderRadius: 10, backgroundColor: Colors.info + "15", justifyContent: "center", alignItems: "center" },
+  fileCard: { flexDirection: "row", alignItems: "center", borderRadius: 12, padding: 14, marginBottom: 8, gap: 12 },
+  fileIconWrap: { width: 40, height: 40, borderRadius: 10, justifyContent: "center", alignItems: "center" },
   fileInfo: { flex: 1 },
-  fileName: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  fileMeta: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, marginTop: 2 },
+  fileName: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium" },
+  fileMeta: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", marginTop: 2 },
 });

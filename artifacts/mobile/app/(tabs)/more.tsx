@@ -11,8 +11,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Colors from "@/constants/colors";
 import Layout from "@/constants/layout";
+import { useTheme } from "@/lib/theme";
 
 const saIconWhite = require("@/assets/images/sa-icon-white.png");
 
@@ -24,39 +24,40 @@ const MENU_ITEMS = [
 
 export default function MoreScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   return (
     <ScrollView
-      style={[styles.container, { paddingTop: topPad }]}
+      style={[styles.container, { paddingTop: topPad, backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
       contentInsetAdjustmentBehavior="automatic"
     >
       <View style={styles.headerRow}>
-        <View style={styles.headerLogo}>
+        <View style={[styles.headerLogo, { backgroundColor: colors.primary }]}>
           <Image source={saIconWhite} style={styles.headerLogoImage} resizeMode="contain" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>More</Text>
-          <Text style={styles.subtitle}>Files, communications & settings.</Text>
+          <Text style={[styles.title, { color: colors.text }]}>More</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Files, communications & settings.</Text>
         </View>
         <Pressable onPress={() => router.push("/settings")} hitSlop={10}>
-          <Feather name="settings" size={22} color={Colors.text} />
+          <Feather name="settings" size={22} color={colors.text} />
         </Pressable>
       </View>
 
-      <View style={styles.menuCard}>
+      <View style={[styles.menuCard, { backgroundColor: colors.surface }]}>
         {MENU_ITEMS.map((item, idx) => (
           <Pressable
             key={item.label}
-            style={[styles.menuItem, idx < MENU_ITEMS.length - 1 && styles.menuItemBorder]}
+            style={[styles.menuItem, idx < MENU_ITEMS.length - 1 && [styles.menuItemBorder, { borderBottomColor: colors.border }]]}
             onPress={() => router.push(item.route as any)}
           >
-            <View style={styles.menuIconWrap}>
-              <Feather name={item.icon as any} size={20} color={Colors.accent} />
+            <View style={[styles.menuIconWrap, { backgroundColor: colors.accent + "15" }]}>
+              <Feather name={item.icon as any} size={20} color={colors.accent} />
             </View>
-            <Text style={styles.menuLabel}>{item.label}</Text>
-            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+            <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
+            <Feather name="chevron-right" size={18} color={colors.textTertiary} />
           </Pressable>
         ))}
       </View>
@@ -65,16 +66,16 @@ export default function MoreScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
   content: { padding: Layout.screenPadding },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 24 },
-  headerLogo: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center" },
+  headerLogo: { width: 36, height: 36, borderRadius: 10, justifyContent: "center", alignItems: "center" },
   headerLogoImage: { width: 20, height: 20 },
-  title: { fontSize: 22, fontFamily: "LeagueSpartan_700Bold", color: Colors.text },
-  subtitle: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  menuCard: { backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, overflow: "hidden" },
+  title: { fontSize: 22, fontFamily: "LeagueSpartan_700Bold" },
+  subtitle: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", marginTop: 2 },
+  menuCard: { borderRadius: Layout.cardRadius, overflow: "hidden" },
   menuItem: { flexDirection: "row", alignItems: "center", padding: 16, gap: 14 },
-  menuItemBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.border },
-  menuIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.accent + "15", justifyContent: "center", alignItems: "center" },
-  menuLabel: { flex: 1, fontSize: 16, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
+  menuItemBorder: { borderBottomWidth: StyleSheet.hairlineWidth },
+  menuIconWrap: { width: 36, height: 36, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+  menuLabel: { flex: 1, fontSize: 16, fontFamily: "SpaceGrotesk_500Medium" },
 });

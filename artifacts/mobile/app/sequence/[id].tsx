@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Alert,
   Platform,
@@ -15,13 +15,16 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
-import Colors from "@/constants/colors";
+import { type ThemeColors } from "@/constants/colors";
+import { useTheme } from "@/lib/theme";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
 
 const AUDIENCES = ["general", "horizon_lead", "investor", "partner", "advisor"];
 
 export default function SequenceDetailScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams();
   const isNew = id === "new";
   const insets = useSafeAreaInsets();
@@ -101,14 +104,14 @@ export default function SequenceDetailScreen() {
 
       {!isNew && (
         <Pressable style={styles.deleteBtn} onPress={() => Alert.alert("Delete this sequence?", "This can't be undone.", [{ text: "Keep", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => deleteMut.mutate() }])}>
-          <Feather name="trash-2" size={16} color={Colors.error} />
+          <Feather name="trash-2" size={16} color={colors.error} />
           <Text style={styles.deleteText}>Delete</Text>
         </Pressable>
       )}
 
       <View style={styles.formGroup}>
         <Text style={styles.label}>Sequence Name</Text>
-        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="e.g. Beta Welcome Flow" placeholderTextColor={Colors.textTertiary} />
+        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="e.g. Beta Welcome Flow" placeholderTextColor={colors.textTertiary} />
       </View>
 
       <View style={styles.formGroup}>
@@ -147,7 +150,7 @@ export default function SequenceDetailScreen() {
               <Text style={styles.addStepTitle}>Add Step</Text>
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Delay (days)</Text>
-                <TextInput style={styles.input} value={newStepDelay} onChangeText={setNewStepDelay} keyboardType="numeric" placeholder="0" placeholderTextColor={Colors.textTertiary} />
+                <TextInput style={styles.input} value={newStepDelay} onChangeText={setNewStepDelay} keyboardType="numeric" placeholder="0" placeholderTextColor={colors.textTertiary} />
               </View>
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Template</Text>
@@ -157,7 +160,7 @@ export default function SequenceDetailScreen() {
                     style={[styles.templateOption, newStepTemplateId === t.id && styles.templateOptionActive]}
                     onPress={() => setNewStepTemplateId(t.id)}
                   >
-                    <Text style={[styles.templateOptionText, newStepTemplateId === t.id && { color: "#fff" }]}>{t.name}</Text>
+                    <Text style={[styles.templateOptionText, newStepTemplateId === t.id && { color: colors.onPrimary }]}>{t.name}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -166,7 +169,7 @@ export default function SequenceDetailScreen() {
                 onPress={() => newStepTemplateId && addStepMut.mutate()}
                 disabled={!newStepTemplateId}
               >
-                <Feather name="plus" size={16} color="#fff" />
+                <Feather name="plus" size={16} color={colors.onPrimary} />
                 <Text style={styles.addBtnText}>Add Step</Text>
               </Pressable>
             </View>
@@ -177,7 +180,7 @@ export default function SequenceDetailScreen() {
               <Text style={styles.sectionTitle}>Enrolled ({sequence.enrollments.length})</Text>
               {sequence.enrollments.map((e: any) => (
                 <View key={e.id} style={styles.enrollCard}>
-                  <Feather name="user" size={16} color={Colors.textSecondary} />
+                  <Feather name="user" size={16} color={colors.textSecondary} />
                   <Text style={styles.enrollText}>
                     {e.leadId ? `Lead #${e.leadId}` : `Contact #${e.contactId}`} · Step {e.currentStep} · {e.status}
                   </Text>
@@ -193,38 +196,38 @@ export default function SequenceDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   content: { padding: Layout.screenPadding },
   topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Layout.sectionSpacing },
-  cancelText: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.info },
-  title: { fontSize: 17, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
-  saveText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info },
+  cancelText: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: colors.info },
+  title: { fontSize: 17, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text },
+  saveText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: colors.info },
   deleteBtn: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-end", marginBottom: 20 },
-  deleteText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.error },
+  deleteText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: colors.error },
   formGroup: { marginBottom: 22 },
-  label: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary, marginBottom: 8, textTransform: "uppercase" },
-  input: { backgroundColor: Colors.surface, borderRadius: Layout.inputRadius, padding: Layout.cardPadding, fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
+  label: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: colors.textSecondary, marginBottom: 8, textTransform: "uppercase" },
+  input: { backgroundColor: colors.surface, borderRadius: Layout.inputRadius, padding: Layout.cardPadding, fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: colors.text },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text, textTransform: "capitalize" },
-  chipTextActive: { color: "#fff" },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: colors.text, textTransform: "capitalize" },
+  chipTextActive: { color: colors.onPrimary },
   section: { marginBottom: Layout.sectionSpacing },
-  sectionTitle: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 14 },
-  stepCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.cardGap },
-  stepNumber: { width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.info + "15", justifyContent: "center", alignItems: "center" },
-  stepNumText: { fontSize: 13, fontFamily: "Lato_700Bold", color: Colors.info },
+  sectionTitle: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text, marginBottom: 14 },
+  stepCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.cardGap },
+  stepNumber: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.info + "15", justifyContent: "center", alignItems: "center" },
+  stepNumText: { fontSize: 13, fontFamily: "Lato_700Bold", color: colors.info },
   stepInfo: { flex: 1 },
-  stepName: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
-  stepDelay: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  addStepSection: { backgroundColor: Colors.surfaceSecondary, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: 10 },
-  addStepTitle: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 14 },
-  templateOption: { paddingHorizontal: 14, paddingVertical: 12, borderRadius: Layout.cardRadius, backgroundColor: Colors.surface, marginBottom: 8 },
-  templateOptionActive: { backgroundColor: Colors.primary },
-  templateOptionText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  addBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: Colors.primary, borderRadius: Layout.inputRadius, paddingVertical: 12 },
-  addBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
-  enrollCard: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: 8 },
-  enrollText: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary },
+  stepName: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text },
+  stepDelay: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: colors.textSecondary, marginTop: 2 },
+  addStepSection: { backgroundColor: colors.surfaceSecondary, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: 10 },
+  addStepTitle: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text, marginBottom: 14 },
+  templateOption: { paddingHorizontal: 14, paddingVertical: 12, borderRadius: Layout.cardRadius, backgroundColor: colors.surface, marginBottom: 8 },
+  templateOptionActive: { backgroundColor: colors.primary },
+  templateOptionText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: colors.text },
+  addBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: colors.primary, borderRadius: Layout.inputRadius, paddingVertical: 12 },
+  addBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.onPrimary },
+  enrollCard: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: 8 },
+  enrollText: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: colors.textSecondary },
 });

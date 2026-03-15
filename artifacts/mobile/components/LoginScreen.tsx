@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
@@ -14,12 +14,25 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth";
-import colors from "@/constants/colors";
+import { type ThemeColors } from "@/constants/colors";
+import { useTheme } from "@/lib/theme";
 
 const saIconWhite = require("@/assets/images/sa-icon-white.png");
 
 export function LoginScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { login, register, isLoading } = useAuth();
+
+  function FeatureItem({ icon, text }: { icon: string; text: string }) {
+    return (
+      <View style={styles.featureItem}>
+        <Text style={styles.featureIcon}>{icon}</Text>
+        <Text style={styles.featureText}>{text}</Text>
+      </View>
+    );
+  }
+
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [firstName, setFirstName] = React.useState("");
@@ -181,16 +194,7 @@ export function LoginScreen() {
   );
 }
 
-function FeatureItem({ icon, text }: { icon: string; text: string }) {
-  return (
-    <View style={styles.featureItem}>
-      <Text style={styles.featureIcon}>{icon}</Text>
-      <Text style={styles.featureText}>{text}</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -213,7 +217,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,

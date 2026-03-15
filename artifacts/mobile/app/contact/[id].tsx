@@ -26,12 +26,15 @@ import HistoryModal from "@/components/HistoryModal";
 import LinkedInLogModal from "@/components/LinkedInLogModal";
 import ProfilePicModal from "@/components/ProfilePicModal";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
-import Colors from "@/constants/colors";
+import { type ThemeColors } from "@/constants/colors";
+import { useTheme } from "@/lib/theme";
 import { REL_TYPES, REL_COLORS, PRIORITIES, PRIORITY_COLORS } from "@/constants/crm";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
 
 export default function ContactDetailScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
@@ -219,24 +222,24 @@ export default function ContactDetailScreen() {
   }, [deleteMut]);
 
   if (isLoading || !contact) {
-    return <View style={[styles.center, { paddingTop: topPad }]}><ActivityIndicator size="large" color={Colors.primary} /></View>;
+    return <View style={[styles.center, { paddingTop: topPad }]}><ActivityIndicator size="large" color={colors.primary} /></View>;
   }
 
-  const relColor = REL_COLORS[contact.relationshipType] || Colors.primary;
+  const relColor = REL_COLORS[contact.relationshipType] || colors.primary;
   const hasProfilePic = !!contact.profilePictureUrl;
 
   return (
     <KeyboardAwareScrollViewCompat style={[styles.container, { paddingTop: topPad }]} contentContainerStyle={styles.content}>
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="arrow-left" size={22} color={Colors.text} />
+          <Feather name="arrow-left" size={22} color={colors.text} />
         </Pressable>
         <View style={{ flex: 1 }} />
         <Pressable style={styles.historyBtn} onPress={() => setHistoryVisible(true)}>
-          <Feather name="clock" size={20} color={Colors.info} />
+          <Feather name="clock" size={20} color={colors.info} />
         </Pressable>
         <Pressable style={styles.deleteBtn} onPress={handleDelete}>
-          <Feather name="trash-2" size={20} color={Colors.error} />
+          <Feather name="trash-2" size={20} color={colors.error} />
         </Pressable>
       </View>
 
@@ -269,13 +272,13 @@ export default function ContactDetailScreen() {
       <View style={styles.actionRow}>
         {contact.phone && (
           <Pressable style={styles.actionBtn} onPress={() => Linking.openURL(`tel:${contact.phone}`)}>
-            <Feather name="phone" size={18} color={Colors.success} />
+            <Feather name="phone" size={18} color={colors.success} />
             <Text style={styles.actionText}>Call</Text>
           </Pressable>
         )}
         {contact.email && (
           <Pressable style={styles.actionBtn} onPress={() => router.push({ pathname: "/compose-email", params: { to: contact.email, name: contact.name, contactId: String(contact.id) } })}>
-            <Feather name="send" size={18} color={Colors.info} />
+            <Feather name="send" size={18} color={colors.info} />
             <Text style={styles.actionText}>Email</Text>
           </Pressable>
         )}
@@ -286,7 +289,7 @@ export default function ContactDetailScreen() {
           </Pressable>
         )}
         <Pressable style={styles.actionBtn} onPress={() => markMut.mutate()}>
-          <Feather name="check-circle" size={18} color={Colors.success} />
+          <Feather name="check-circle" size={18} color={colors.success} />
           <Text style={styles.actionText}>Contacted</Text>
         </Pressable>
       </View>
@@ -315,7 +318,7 @@ export default function ContactDetailScreen() {
                   value={editFields[f.key] || ""}
                   onChangeText={(v) => setEditFields({ ...editFields, [f.key]: v })}
                   placeholder={f.label}
-                  placeholderTextColor={Colors.textTertiary}
+                  placeholderTextColor={colors.textTertiary}
                 />
               </View>
             ))}
@@ -328,7 +331,7 @@ export default function ContactDetailScreen() {
                     style={[styles.chipSmall, editFields.relationshipType === r && { backgroundColor: REL_COLORS[r], borderColor: REL_COLORS[r] }]}
                     onPress={() => setEditFields({ ...editFields, relationshipType: r })}
                   >
-                    <Text style={[styles.chipSmallText, editFields.relationshipType === r && { color: "#fff" }]}>{r}</Text>
+                    <Text style={[styles.chipSmallText, editFields.relationshipType === r && { color: colors.onPrimary }]}>{r}</Text>
                   </Pressable>
                 ))}
               </RNScrollView>
@@ -342,7 +345,7 @@ export default function ContactDetailScreen() {
                     style={[styles.chipSmall, editFields.priority === p && { backgroundColor: PRIORITY_COLORS[p], borderColor: PRIORITY_COLORS[p] }]}
                     onPress={() => setEditFields({ ...editFields, priority: p })}
                   >
-                    <Text style={[styles.chipSmallText, editFields.priority === p && { color: "#fff" }]}>{p}</Text>
+                    <Text style={[styles.chipSmallText, editFields.priority === p && { color: colors.onPrimary }]}>{p}</Text>
                   </Pressable>
                 ))}
               </RNScrollView>
@@ -350,17 +353,17 @@ export default function ContactDetailScreen() {
           </View>
         ) : (
           <View style={styles.infoSection}>
-            {contact.email && <View style={styles.infoRow}><Feather name="mail" size={16} color={Colors.textTertiary} /><Text style={styles.infoText}>{contact.email}</Text></View>}
-            {contact.phone && <View style={styles.infoRow}><Feather name="phone" size={16} color={Colors.textTertiary} /><Text style={styles.infoText}>{contact.phone}</Text></View>}
-            {contact.company && <View style={styles.infoRow}><Feather name="briefcase" size={16} color={Colors.textTertiary} /><Text style={styles.infoText}>{contact.title ? `${contact.title} at ` : ""}{contact.company}</Text></View>}
+            {contact.email && <View style={styles.infoRow}><Feather name="mail" size={16} color={colors.textTertiary} /><Text style={styles.infoText}>{contact.email}</Text></View>}
+            {contact.phone && <View style={styles.infoRow}><Feather name="phone" size={16} color={colors.textTertiary} /><Text style={styles.infoText}>{contact.phone}</Text></View>}
+            {contact.company && <View style={styles.infoRow}><Feather name="briefcase" size={16} color={colors.textTertiary} /><Text style={styles.infoText}>{contact.title ? `${contact.title} at ` : ""}{contact.company}</Text></View>}
             {contact.linkedinUrl && (
               <Pressable style={styles.infoRow} onPress={() => Linking.openURL(contact.linkedinUrl!)}>
                 <Feather name="linkedin" size={16} color="#0A66C2" />
                 <Text style={[styles.infoText, { color: "#0A66C2" }]} numberOfLines={1}>{contact.linkedinUrl}</Text>
               </Pressable>
             )}
-            {contact.lastContactedAt && <View style={styles.infoRow}><Feather name="clock" size={16} color={Colors.textTertiary} /><Text style={styles.infoText}>Last contacted: {new Date(contact.lastContactedAt).toLocaleDateString()}</Text></View>}
-            {contact.nextFollowUpAt && <View style={styles.infoRow}><Feather name="calendar" size={16} color={Colors.warning} /><Text style={[styles.infoText, { color: Colors.warning }]}>Follow-up: {new Date(contact.nextFollowUpAt).toLocaleDateString()}</Text></View>}
+            {contact.lastContactedAt && <View style={styles.infoRow}><Feather name="clock" size={16} color={colors.textTertiary} /><Text style={styles.infoText}>Last contacted: {new Date(contact.lastContactedAt).toLocaleDateString()}</Text></View>}
+            {contact.nextFollowUpAt && <View style={styles.infoRow}><Feather name="calendar" size={16} color={colors.warning} /><Text style={[styles.infoText, { color: colors.warning }]}>Follow-up: {new Date(contact.nextFollowUpAt).toLocaleDateString()}</Text></View>}
           </View>
         )}
       </View>
@@ -377,9 +380,9 @@ export default function ContactDetailScreen() {
           <Text style={styles.sectionTitle}>Add to Sequence</Text>
           {sequences.map((seq: any) => (
             <Pressable key={seq.id} style={styles.seqCard} onPress={() => enrollMut.mutate(seq.id)}>
-              <Feather name="repeat" size={16} color={Colors.info} />
+              <Feather name="repeat" size={16} color={colors.info} />
               <Text style={styles.seqName}>{seq.name}</Text>
-              <Feather name="plus" size={16} color={Colors.textTertiary} />
+              <Feather name="plus" size={16} color={colors.textTertiary} />
             </Pressable>
           ))}
         </View>
@@ -397,10 +400,10 @@ export default function ContactDetailScreen() {
         ) : (
           contactFiles.map((f: any) => (
             <View key={f.id} style={styles.fileItem}>
-              <Feather name="file" size={16} color={Colors.info} />
+              <Feather name="file" size={16} color={colors.info} />
               <Text style={styles.fileName} numberOfLines={1}>{f.name}</Text>
               <Pressable onPress={() => api.removeContactFile(contactId, f.id).then(() => qc.invalidateQueries({ queryKey: ["contactFiles", id] }))}>
-                <Feather name="x" size={16} color={Colors.textTertiary} />
+                <Feather name="x" size={16} color={colors.textTertiary} />
               </Pressable>
             </View>
           ))
@@ -415,7 +418,7 @@ export default function ContactDetailScreen() {
           </Pressable>
         </View>
         {editing ? (
-          <TextInput style={styles.notesInput} value={editNotes} onChangeText={setEditNotes} multiline placeholder="Add notes..." placeholderTextColor={Colors.textTertiary} />
+          <TextInput style={styles.notesInput} value={editNotes} onChangeText={setEditNotes} multiline placeholder="Add notes..." placeholderTextColor={colors.textTertiary} />
         ) : (
           <Text style={styles.notesText}>{contact.notes || "No notes yet. Add context that matters."}</Text>
         )}
@@ -426,12 +429,12 @@ export default function ContactDetailScreen() {
           <Text style={styles.sectionTitle}>Scheduled Events</Text>
           {calendarEvents.map((ev: any) => (
             <Pressable key={ev.id} style={styles.activityItem} onPress={() => setSelectedEvent(ev)}>
-              <View style={[styles.activityDot, { backgroundColor: Colors.accent }]} />
+              <View style={[styles.activityDot, { backgroundColor: colors.accent }]} />
               <View style={styles.activityContent}>
                 <Text style={styles.activityType}>{ev.title}</Text>
                 <Text style={styles.activityNote}>{ev.eventType} · {new Date(ev.startTime).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</Text>
               </View>
-              <Text style={{ fontSize: 18, color: Colors.textTertiary }}>›</Text>
+              <Text style={{ fontSize: 18, color: colors.textTertiary }}>›</Text>
             </Pressable>
           ))}
         </View>
@@ -488,10 +491,10 @@ export default function ContactDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   content: { padding: Layout.screenPadding },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background },
   topBar: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
   backBtn: { padding: 10, marginLeft: -10 },
   historyBtn: { padding: 10 },
@@ -500,9 +503,9 @@ const styles = StyleSheet.create({
   avatar: { width: 64, height: 64, borderRadius: 32, justifyContent: "center", alignItems: "center", marginBottom: 14 },
   avatarImage: { width: 64, height: 64, borderRadius: 32, marginBottom: 14 },
   avatarText: { fontSize: 26, fontFamily: "Lato_700Bold", color: "#fff" },
-  cameraIcon: { position: "absolute", bottom: 10, right: -4, backgroundColor: Colors.info, borderRadius: 10, width: 20, height: 20, justifyContent: "center", alignItems: "center" },
-  name: { fontSize: 22, fontFamily: "Lato_700Bold", color: Colors.text },
-  subtitle: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },
+  cameraIcon: { position: "absolute", bottom: 10, right: -4, backgroundColor: colors.info, borderRadius: 10, width: 20, height: 20, justifyContent: "center", alignItems: "center" },
+  name: { fontSize: 22, fontFamily: "Lato_700Bold", color: colors.text },
+  subtitle: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.textSecondary, marginTop: 2 },
   badgeRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 },
   relBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: Layout.badgeRadius },
   relText: { fontSize: 12, fontFamily: "LeagueSpartan_600SemiBold", textTransform: "capitalize" },
@@ -510,34 +513,34 @@ const styles = StyleSheet.create({
   priorityDot: { width: 6, height: 6, borderRadius: 3 },
   priorityText: { fontSize: 12, fontFamily: "LeagueSpartan_600SemiBold", textTransform: "capitalize" },
   actionRow: { flexDirection: "row", gap: 8, marginBottom: Layout.sectionSpacing, flexWrap: "wrap" },
-  actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, paddingVertical: 14, minWidth: 80 },
-  actionText: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  infoSection: { backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.sectionSpacing, gap: 12 },
+  actionBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: colors.surface, borderRadius: Layout.cardRadius, paddingVertical: 14, minWidth: 80 },
+  actionText: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: colors.text },
+  infoSection: { backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.sectionSpacing, gap: 12 },
   infoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  infoText: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, flex: 1 },
+  infoText: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.textSecondary, flex: 1 },
   quickActions: { marginBottom: Layout.sectionSpacing },
-  quickBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding },
-  quickText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
+  quickBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding },
+  quickText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: colors.text },
   section: { marginBottom: Layout.sectionSpacing },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  sectionTitle: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 10 },
-  seqCard: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: 8 },
-  seqName: { flex: 1, fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  editBtn: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info },
-  notesInput: { backgroundColor: Colors.surface, borderRadius: Layout.inputRadius, padding: Layout.cardPadding, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, minHeight: 80, textAlignVertical: "top" },
-  notesText: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, lineHeight: 22 },
-  emptyActivity: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
+  sectionTitle: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text, marginBottom: 10 },
+  seqCard: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: 8 },
+  seqName: { flex: 1, fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: colors.text },
+  editBtn: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.info },
+  notesInput: { backgroundColor: colors.surface, borderRadius: Layout.inputRadius, padding: Layout.cardPadding, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: colors.text, minHeight: 80, textAlignVertical: "top" },
+  notesText: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.textSecondary, lineHeight: 22 },
+  emptyActivity: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.textTertiary },
   activityItem: { flexDirection: "row", gap: 10, marginBottom: 14 },
   activityDot: { width: 8, height: 8, borderRadius: 4, marginTop: 6 },
   activityContent: { flex: 1 },
-  activityType: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, textTransform: "capitalize" },
-  activityNote: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  editFieldsContainer: { backgroundColor: Colors.surface, borderRadius: 14, padding: 14, gap: 8 },
+  activityType: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text, textTransform: "capitalize" },
+  activityNote: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: colors.textSecondary, marginTop: 2 },
+  editFieldsContainer: { backgroundColor: colors.surface, borderRadius: 14, padding: 14, gap: 8 },
   editFieldRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  editFieldLabel: { width: 70, fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
-  editFieldInput: { flex: 1, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, borderBottomWidth: 1, borderBottomColor: Colors.borderLight, paddingVertical: 6 },
-  chipSmall: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.background },
-  chipSmallText: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text, textTransform: "capitalize" },
-  fileItem: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: Colors.surface, borderRadius: 10, padding: 10, marginBottom: 6 },
-  fileName: { flex: 1, fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
+  editFieldLabel: { width: 70, fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: colors.textSecondary },
+  editFieldInput: { flex: 1, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.text, borderBottomWidth: 1, borderBottomColor: colors.borderLight, paddingVertical: 6 },
+  chipSmall: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background },
+  chipSmallText: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: colors.text, textTransform: "capitalize" },
+  fileItem: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.surface, borderRadius: 10, padding: 10, marginBottom: 6 },
+  fileName: { flex: 1, fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: colors.text },
 });

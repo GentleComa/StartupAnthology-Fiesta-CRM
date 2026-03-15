@@ -1,7 +1,8 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import Colors from "@/constants/colors";
+import { type ThemeColors } from "@/constants/colors";
+import { useTheme } from "@/lib/theme";
 
 interface ProfilePicModalProps {
   visible: boolean;
@@ -16,6 +17,8 @@ export default function ProfilePicModal({
   onUpload,
   onUrlSet,
 }: ProfilePicModalProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [picUrl, setPicUrl] = useState("");
 
   const handleClose = useCallback(() => {
@@ -36,14 +39,14 @@ export default function ProfilePicModal({
         <View style={styles.content}>
           <Text style={styles.title}>Set Profile Photo</Text>
           <Pressable style={styles.option} onPress={onUpload}>
-            <Feather name="upload" size={18} color={Colors.info} />
+            <Feather name="upload" size={18} color={colors.info} />
             <Text style={styles.optionText}>Upload Image</Text>
           </Pressable>
           <View style={styles.urlRow}>
             <TextInput
               style={[styles.input, { flex: 1 }]}
               placeholder="Paste image URL"
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={colors.textTertiary}
               value={picUrl}
               onChangeText={setPicUrl}
               autoCapitalize="none"
@@ -61,7 +64,7 @@ export default function ProfilePicModal({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -70,7 +73,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   content: {
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
     borderRadius: 16,
     padding: 20,
     width: "100%",
@@ -79,7 +82,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontFamily: "LeagueSpartan_700Bold",
-    color: Colors.text,
+    color: colors.text,
     marginBottom: 16,
   },
   option: {
@@ -87,25 +90,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     padding: 14,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     marginBottom: 12,
   },
-  optionText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
+  optionText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: colors.text },
   urlRow: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
     fontSize: 14,
     fontFamily: "SpaceGrotesk_400Regular",
-    color: Colors.text,
+    color: colors.text,
     marginBottom: 12,
   },
   urlBtn: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: Colors.info,
+    backgroundColor: colors.info,
     borderRadius: 10,
   },
   urlBtnText: { fontSize: 14, fontFamily: "SpaceGrotesk_600SemiBold", color: "#fff" },
@@ -114,12 +117,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     alignItems: "center",
   },
   cancelText: {
     fontSize: 14,
     fontFamily: "SpaceGrotesk_500Medium",
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
 });

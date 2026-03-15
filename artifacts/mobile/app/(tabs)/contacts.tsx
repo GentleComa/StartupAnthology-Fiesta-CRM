@@ -17,13 +17,14 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Colors from "@/constants/colors";
 import { REL_TYPES, REL_COLORS, PRIORITIES, PRIORITY_COLORS } from "@/constants/crm";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
+import { useTheme } from "@/lib/theme";
 
 export default function ContactsScreen() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const qc = useQueryClient();
   const [tab, setTab] = useState<"all" | "followups">("all");
   const [showAdd, setShowAdd] = useState(false);
@@ -65,30 +66,30 @@ export default function ContactsScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.center, { paddingTop: topPad }]}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+      <View style={[styles.center, { paddingTop: topPad, backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: topPad }]}>
+    <View style={[styles.container, { paddingTop: topPad, backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Contacts</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Contacts</Text>
         <Pressable onPress={() => router.push("/settings")} hitSlop={10}>
-          <Feather name="settings" size={22} color={Colors.text} />
+          <Feather name="settings" size={22} color={colors.text} />
         </Pressable>
       </View>
 
       <View style={styles.tabs}>
-        <Pressable style={[styles.tab, tab === "all" && styles.tabActive]} onPress={() => setTab("all")}>
-          <Text style={[styles.tabText, tab === "all" && styles.tabTextActive]}>All</Text>
+        <Pressable style={[styles.tab, { backgroundColor: colors.surfaceSecondary }, tab === "all" && { backgroundColor: colors.primary }]} onPress={() => setTab("all")}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, tab === "all" && styles.tabTextActive, tab === "all" && { color: colors.onPrimary }]}>All</Text>
         </Pressable>
-        <Pressable style={[styles.tab, tab === "followups" && styles.tabActive]} onPress={() => setTab("followups")}>
-          <Feather name="clock" size={14} color={tab === "followups" ? "#FFFFFF" : Colors.textSecondary} />
-          <Text style={[styles.tabText, tab === "followups" && styles.tabTextActive]}>Follow-ups</Text>
+        <Pressable style={[styles.tab, { backgroundColor: colors.surfaceSecondary }, tab === "followups" && { backgroundColor: colors.primary }]} onPress={() => setTab("followups")}>
+          <Feather name="clock" size={14} color={tab === "followups" ? colors.onPrimary : colors.textSecondary} />
+          <Text style={[styles.tabText, { color: colors.textSecondary }, tab === "followups" && styles.tabTextActive, tab === "followups" && { color: colors.onPrimary }]}>Follow-ups</Text>
           {followUps.length > 0 && (
-            <View style={styles.badge}><Text style={styles.badgeText}>{followUps.length}</Text></View>
+            <View style={[styles.badge, { backgroundColor: colors.error }]}><Text style={styles.badgeText}>{followUps.length}</Text></View>
           )}
         </Pressable>
       </View>
@@ -97,21 +98,21 @@ export default function ContactsScreen() {
         data={listData}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={() => { refetch(); refetchFU(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={false} onRefresh={() => { refetch(); refetchFU(); }} tintColor={colors.primary} />}
         renderItem={({ item }) => (
           <Pressable
-            style={({ pressed }) => [styles.contactCard, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.contactCard, { backgroundColor: colors.surface }, pressed && styles.pressed]}
             onPress={() => router.push({ pathname: "/contact/[id]", params: { id: String(item.id) } })}
           >
-            <View style={[styles.avatar, { backgroundColor: REL_COLORS[item.relationshipType] || Colors.primary }]}>
+            <View style={[styles.avatar, { backgroundColor: REL_COLORS[item.relationshipType] || colors.primary }]}>
               <Text style={styles.avatarText}>{item.name?.charAt(0)?.toUpperCase()}</Text>
             </View>
             <View style={styles.contactInfo}>
-              <Text style={styles.contactName}>{item.name}</Text>
-              <Text style={styles.contactCompany}>{item.company || item.title || ""}</Text>
+              <Text style={[styles.contactName, { color: colors.text }]}>{item.name}</Text>
+              <Text style={[styles.contactCompany, { color: colors.textSecondary }]}>{item.company || item.title || ""}</Text>
               <View style={styles.contactMeta}>
-                <View style={[styles.relBadge, { backgroundColor: (REL_COLORS[item.relationshipType] || Colors.primary) + "15" }]}>
-                  <Text style={[styles.relText, { color: REL_COLORS[item.relationshipType] || Colors.primary }]}>
+                <View style={[styles.relBadge, { backgroundColor: (REL_COLORS[item.relationshipType] || colors.primary) + "15" }]}>
+                  <Text style={[styles.relText, { color: REL_COLORS[item.relationshipType] || colors.primary }]}>
                     {item.relationshipType}
                   </Text>
                 </View>
@@ -121,14 +122,14 @@ export default function ContactsScreen() {
               <View style={[styles.priorityIndicator, { backgroundColor: PRIORITY_COLORS[item.priority] }]} />
               {tab === "followups" && (
                 <Pressable
-                  style={styles.markBtn}
+                  style={[styles.markBtn, { backgroundColor: colors.success + "15" }]}
                   onPress={(e) => {
                     e.stopPropagation();
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     markMut.mutate(item.id);
                   }}
                 >
-                  <Feather name="check" size={16} color={Colors.success} />
+                  <Feather name="check" size={16} color={colors.success} />
                 </Pressable>
               )}
             </View>
@@ -136,19 +137,19 @@ export default function ContactsScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Feather name="users" size={48} color={Colors.textTertiary} />
-            <Text style={styles.emptyTitle}>{tab === "all" ? "No contacts yet" : "No follow-ups due"}</Text>
-            <Text style={styles.emptySubtitle}>{tab === "all" ? "Start with the people who matter most." : "All caught up. That's how you stay ahead."}</Text>
+            <Feather name="users" size={48} color={colors.textTertiary} />
+            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>{tab === "all" ? "No contacts yet" : "No follow-ups due"}</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>{tab === "all" ? "Start with the people who matter most." : "All caught up. That's how you stay ahead."}</Text>
             {tab === "all" && (
               <Pressable
-                style={styles.emptyBtn}
+                style={[styles.emptyBtn, { backgroundColor: colors.primary }]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   setShowAdd(true);
                 }}
               >
-                <Feather name="plus" size={16} color="#fff" />
-                <Text style={styles.emptyBtnText}>Add Contact</Text>
+                <Feather name="plus" size={16} color={colors.onPrimary} />
+                <Text style={[styles.emptyBtnText, { color: colors.onPrimary }]}>Add Contact</Text>
               </Pressable>
             )}
           </View>
@@ -156,54 +157,54 @@ export default function ContactsScreen() {
       />
 
       <Pressable
-        style={({ pressed }) => [styles.fab, pressed && { transform: [{ scale: 0.95 }] }]}
+        style={({ pressed }) => [styles.fab, { backgroundColor: colors.primary }, pressed && { transform: [{ scale: 0.95 }] }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           setShowAdd(true);
         }}
       >
-        <Feather name="plus" size={24} color="#fff" />
+        <Feather name="plus" size={24} color={colors.onPrimary} />
       </Pressable>
 
       <Modal visible={showAdd} animationType="slide" presentationStyle="pageSheet">
-        <ScrollView style={[styles.modalContent, { paddingTop: Platform.OS === "web" ? 67 : insets.top + 16 }]}>
+        <ScrollView style={[styles.modalContent, { backgroundColor: colors.background, paddingTop: Platform.OS === "web" ? 67 : insets.top + 16 }]}>
           <View style={styles.modalHeader}>
             <Pressable onPress={() => setShowAdd(false)}>
-              <Text style={styles.cancelBtn}>Cancel</Text>
+              <Text style={[styles.cancelBtn, { color: colors.info }]}>Cancel</Text>
             </Pressable>
-            <Text style={styles.modalTitle}>New Contact</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>New Contact</Text>
             <Pressable onPress={() => { if (newName) createMut.mutate({ name: newName, email: newEmail || undefined, company: newCompany || undefined, relationshipType: newType, priority: newPriority }); }} disabled={!newName}>
-              <Text style={[styles.saveBtn, !newName && styles.saveBtnDisabled]}>Save</Text>
+              <Text style={[styles.saveBtn, { color: colors.info }, !newName && styles.saveBtnDisabled]}>Save</Text>
             </Pressable>
           </View>
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Name</Text>
-            <TextInput style={styles.input} value={newName} onChangeText={setNewName} placeholder="Contact name" placeholderTextColor={Colors.textTertiary} autoFocus />
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Name</Text>
+            <TextInput style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]} value={newName} onChangeText={setNewName} placeholder="Contact name" placeholderTextColor={colors.textTertiary} autoFocus />
           </View>
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Email</Text>
-            <TextInput style={styles.input} value={newEmail} onChangeText={setNewEmail} placeholder="email@example.com" placeholderTextColor={Colors.textTertiary} keyboardType="email-address" autoCapitalize="none" />
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Email</Text>
+            <TextInput style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]} value={newEmail} onChangeText={setNewEmail} placeholder="email@example.com" placeholderTextColor={colors.textTertiary} keyboardType="email-address" autoCapitalize="none" />
           </View>
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Company</Text>
-            <TextInput style={styles.input} value={newCompany} onChangeText={setNewCompany} placeholder="Company name" placeholderTextColor={Colors.textTertiary} />
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Company</Text>
+            <TextInput style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]} value={newCompany} onChangeText={setNewCompany} placeholder="Company name" placeholderTextColor={colors.textTertiary} />
           </View>
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Relationship</Text>
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Relationship</Text>
             <View style={styles.chipRow}>
               {REL_TYPES.map((t) => (
-                <Pressable key={t} style={[styles.chip, newType === t && styles.chipActive]} onPress={() => setNewType(t)}>
-                  <Text style={[styles.chipText, newType === t && styles.chipTextActive]}>{t}</Text>
+                <Pressable key={t} style={[styles.chip, { backgroundColor: colors.surface, borderColor: colors.border }, newType === t && { backgroundColor: colors.primary, borderColor: colors.primary }]} onPress={() => setNewType(t)}>
+                  <Text style={[styles.chipText, { color: colors.text }, newType === t && styles.chipTextActive, newType === t && { color: colors.onPrimary }]}>{t}</Text>
                 </Pressable>
               ))}
             </View>
           </View>
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Priority</Text>
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Priority</Text>
             <View style={styles.chipRow}>
               {PRIORITIES.map((p) => (
-                <Pressable key={p} style={[styles.chip, newPriority === p && { backgroundColor: PRIORITY_COLORS[p], borderColor: PRIORITY_COLORS[p] }]} onPress={() => setNewPriority(p)}>
-                  <Text style={[styles.chipText, newPriority === p && { color: "#fff" }]}>{p}</Text>
+                <Pressable key={p} style={[styles.chip, { backgroundColor: colors.surface, borderColor: colors.border }, newPriority === p && { backgroundColor: PRIORITY_COLORS[p], borderColor: PRIORITY_COLORS[p] }]} onPress={() => setNewPriority(p)}>
+                  <Text style={[styles.chipText, { color: colors.text }, newPriority === p && { color: colors.onPrimary }]}>{p}</Text>
                 </Pressable>
               ))}
             </View>
@@ -216,49 +217,47 @@ export default function ContactsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background },
+  container: { flex: 1 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Layout.screenPadding, paddingTop: 14, paddingBottom: 6 },
-  title: { fontSize: 24, fontFamily: "Lato_700Bold", color: Colors.text },
+  title: { fontSize: 24, fontFamily: "Lato_700Bold" },
   tabs: { flexDirection: "row", paddingHorizontal: Layout.screenPadding, gap: 8, marginBottom: 12, marginTop: 10 },
-  tab: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, backgroundColor: Colors.surfaceSecondary },
-  tabActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  tabText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
+  tab: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius },
+  tabText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium" },
   tabTextActive: { color: "#FFFFFF" },
-  badge: { backgroundColor: Colors.error, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1, minWidth: 20, alignItems: "center" },
+  badge: { borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1, minWidth: 20, alignItems: "center" },
   badgeText: { fontSize: 11, fontFamily: "Lato_700Bold", color: "#fff" },
   listContent: { padding: Layout.screenPadding, paddingBottom: 100 },
-  contactCard: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.cardGap },
+  contactCard: { flexDirection: "row", alignItems: "center", borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.cardGap },
   pressed: { opacity: 0.7 },
   avatar: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center", marginRight: 12 },
   avatarText: { fontSize: 18, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
   contactInfo: { flex: 1 },
-  contactName: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
-  contactCompany: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 1 },
+  contactName: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold" },
+  contactCompany: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", marginTop: 1 },
   contactMeta: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
   relBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   relText: { fontSize: 11, fontFamily: "LeagueSpartan_600SemiBold", textTransform: "capitalize" },
   contactRight: { alignItems: "center", gap: 8 },
   priorityIndicator: { width: 8, height: 8, borderRadius: 4 },
-  markBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.success + "15", justifyContent: "center", alignItems: "center" },
+  markBtn: { width: 32, height: 32, borderRadius: 16, justifyContent: "center", alignItems: "center" },
   emptyState: { alignItems: "center", paddingTop: 80, gap: 12 },
-  emptyTitle: { fontSize: 18, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary },
-  emptySubtitle: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, textAlign: "center", paddingHorizontal: 32 },
-  fab: { position: "absolute", bottom: 100, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: Layout.fabElevation },
-  modalContent: { flex: 1, backgroundColor: Colors.background, padding: Layout.screenPadding },
+  emptyTitle: { fontSize: 18, fontFamily: "LeagueSpartan_600SemiBold" },
+  emptySubtitle: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", textAlign: "center", paddingHorizontal: 32 },
+  fab: { position: "absolute", bottom: 100, right: 20, width: 56, height: 56, borderRadius: 28, justifyContent: "center", alignItems: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: Layout.fabElevation },
+  modalContent: { flex: 1, padding: Layout.screenPadding },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Layout.sectionSpacing },
-  modalTitle: { fontSize: 17, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
-  cancelBtn: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.info },
-  saveBtn: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info },
+  modalTitle: { fontSize: 17, fontFamily: "LeagueSpartan_600SemiBold" },
+  cancelBtn: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular" },
+  saveBtn: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold" },
   saveBtnDisabled: { opacity: 0.4 },
   formGroup: { marginBottom: 22 },
-  formLabel: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary, marginBottom: 8, textTransform: "uppercase" },
-  input: { backgroundColor: Colors.surface, borderRadius: Layout.inputRadius, padding: Layout.cardPadding, fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
+  formLabel: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", marginBottom: 8, textTransform: "uppercase" },
+  input: { borderRadius: Layout.inputRadius, padding: Layout.cardPadding, fontSize: 16, fontFamily: "SpaceGrotesk_400Regular" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text, textTransform: "capitalize" },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, borderWidth: 1 },
+  chipText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", textTransform: "capitalize" },
   chipTextActive: { color: "#fff" },
-  emptyBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: Colors.primary, borderRadius: Layout.inputRadius, paddingVertical: 12, paddingHorizontal: 20, marginTop: 16 },
+  emptyBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: Layout.inputRadius, paddingVertical: 12, paddingHorizontal: 20, marginTop: 16 },
   emptyBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
 });

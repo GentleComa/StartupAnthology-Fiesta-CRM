@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useCallback } from "react";
+import React, { useMemo, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,7 +11,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Colors from "@/constants/colors";
+import { type ThemeColors } from "@/constants/colors";
+import { useTheme } from "@/lib/theme";
 import { ACTION_LABELS, ACTION_COLORS } from "@/constants/crm";
 
 interface HistoryEntry {
@@ -44,6 +45,8 @@ export default function HistoryModal({
   isRollingBack,
   entityLabel,
 }: HistoryModalProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
 
   const handleClose = useCallback(() => {
@@ -83,7 +86,7 @@ export default function HistoryModal({
         <View style={styles.header}>
           <Text style={styles.title}>Change History</Text>
           <Pressable onPress={handleClose}>
-            <Feather name="x" size={24} color={Colors.text} />
+            <Feather name="x" size={24} color={colors.text} />
           </Pressable>
         </View>
         <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -105,14 +108,14 @@ export default function HistoryModal({
                       styles.actionBadge,
                       {
                         backgroundColor:
-                          (ACTION_COLORS[entry.action] || Colors.textTertiary) + "20",
+                          (ACTION_COLORS[entry.action] || colors.textTertiary) + "20",
                       },
                     ]}
                   >
                     <Text
                       style={[
                         styles.actionBadgeText,
-                        { color: ACTION_COLORS[entry.action] || Colors.textTertiary },
+                        { color: ACTION_COLORS[entry.action] || colors.textTertiary },
                       ]}
                     >
                       {ACTION_LABELS[entry.action] || entry.action}
@@ -168,19 +171,19 @@ export default function HistoryModal({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, padding: 20 },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, padding: 20 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
   },
-  title: { fontSize: 20, fontFamily: "Lato_700Bold", color: Colors.text },
+  title: { fontSize: 20, fontFamily: "Lato_700Bold", color: colors.text },
   scroll: { flex: 1 },
-  empty: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
-  entry: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginBottom: 10 },
-  entrySelected: { borderWidth: 1, borderColor: Colors.info },
+  empty: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.textTertiary },
+  entry: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginBottom: 10 },
+  entrySelected: { borderWidth: 1, borderColor: colors.info },
   entryHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
   actionBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   actionBadgeText: {
@@ -192,28 +195,28 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontFamily: "SpaceGrotesk_400Regular",
-    color: Colors.textTertiary,
+    color: colors.textTertiary,
   },
   snapshotContainer: { marginTop: 12, gap: 10 },
-  snapshotBox: { backgroundColor: Colors.background, borderRadius: 8, padding: 10 },
+  snapshotBox: { backgroundColor: colors.background, borderRadius: 8, padding: 10 },
   snapshotLabel: {
     fontSize: 11,
     fontFamily: "LeagueSpartan_600SemiBold",
-    color: Colors.textTertiary,
+    color: colors.textTertiary,
     marginBottom: 4,
     textTransform: "uppercase",
   },
   snapshotText: {
     fontSize: 11,
     fontFamily: "SpaceGrotesk_400Regular",
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   rollbackBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: Colors.warning,
+    backgroundColor: colors.warning,
     borderRadius: 10,
     paddingVertical: 10,
     marginTop: 4,

@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -15,7 +15,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
-import Colors from "@/constants/colors";
+import { type ThemeColors } from "@/constants/colors";
+import { useTheme } from "@/lib/theme";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
 
@@ -25,6 +26,8 @@ const SEGMENTS = [
 ];
 
 export default function BroadcastNewScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
@@ -113,7 +116,7 @@ export default function BroadcastNewScreen() {
           <Text style={styles.stepTitle}>Pick a template</Text>
           {templates.map((t: any) => (
             <Pressable key={t.id} style={[styles.templateCard, templateId === t.id && styles.templateCardActive]} onPress={() => setTemplateId(t.id)}>
-              <Text style={[styles.templateName, templateId === t.id && { color: "#fff" }]}>{t.name}</Text>
+              <Text style={[styles.templateName, templateId === t.id && { color: colors.onPrimary }]}>{t.name}</Text>
               <Text style={[styles.templateSubject, templateId === t.id && { color: "rgba(255,255,255,0.8)" }]}>{t.subject}</Text>
             </Pressable>
           ))}
@@ -136,13 +139,13 @@ export default function BroadcastNewScreen() {
             <Text style={styles.previewLabel}>Template: {selectedTemplate?.name}</Text>
           </View>
           {previewLoading ? (
-            <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 20 }} />
+            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
           ) : (
             <>
               <Text style={styles.recipientCount}>{preview?.count || 0} recipients</Text>
               {(preview?.recipients || []).map((r: any, i: number) => (
                 <View key={i} style={styles.recipientRow}>
-                  <Feather name="user" size={14} color={Colors.textSecondary} />
+                  <Feather name="user" size={14} color={colors.textSecondary} />
                   <Text style={styles.recipientName}>{r.name}</Text>
                   <Text style={styles.recipientEmail}>{r.email}</Text>
                 </View>
@@ -178,10 +181,10 @@ export default function BroadcastNewScreen() {
             disabled={sendMut.isPending}
           >
             {sendMut.isPending ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onPrimary} />
             ) : (
               <>
-                <Feather name="send" size={18} color="#fff" />
+                <Feather name="send" size={18} color={colors.onPrimary} />
                 <Text style={styles.sendBtnText}>Send Broadcast</Text>
               </>
             )}
@@ -194,39 +197,39 @@ export default function BroadcastNewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   content: { padding: Layout.screenPadding },
   topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
-  backText: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.info },
-  title: { fontSize: 17, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
+  backText: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: colors.info },
+  title: { fontSize: 17, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text },
   stepIndicator: { flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: Layout.sectionSpacing },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.border },
-  dotActive: { backgroundColor: Colors.primary, width: 20 },
-  stepTitle: { fontSize: 20, fontFamily: "Lato_700Bold", color: Colors.text, marginBottom: 20 },
-  segLabel: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textSecondary, marginBottom: 8, marginTop: 14, textTransform: "uppercase" },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
+  dotActive: { backgroundColor: colors.primary, width: 20 },
+  stepTitle: { fontSize: 20, fontFamily: "Lato_700Bold", color: colors.text, marginBottom: 20 },
+  segLabel: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: colors.textSecondary, marginBottom: 8, marginTop: 14, textTransform: "uppercase" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text, textTransform: "capitalize" },
-  chipTextActive: { color: "#fff" },
-  nextBtn: { backgroundColor: Colors.primary, borderRadius: Layout.inputRadius, paddingVertical: 14, alignItems: "center", marginTop: Layout.sectionSpacing },
-  nextBtnText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
-  templateCard: { backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.cardGap },
-  templateCardActive: { backgroundColor: Colors.primary },
-  templateName: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
-  templateSubject: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  noTemplates: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, textAlign: "center", paddingVertical: 24 },
-  previewInfo: { backgroundColor: Colors.surfaceSecondary, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: 14, gap: 4 },
-  previewLabel: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary, textTransform: "capitalize" },
-  recipientCount: { fontSize: 16, fontFamily: "Lato_700Bold", color: Colors.text, marginBottom: 14 },
-  recipientRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  recipientName: { flex: 1, fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  recipientEmail: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary },
-  summaryCard: { backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.sectionSpacing, gap: 14 },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: colors.text, textTransform: "capitalize" },
+  chipTextActive: { color: colors.onPrimary },
+  nextBtn: { backgroundColor: colors.primary, borderRadius: Layout.inputRadius, paddingVertical: 14, alignItems: "center", marginTop: Layout.sectionSpacing },
+  nextBtnText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: colors.onPrimary },
+  templateCard: { backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.cardGap },
+  templateCardActive: { backgroundColor: colors.primary },
+  templateName: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text },
+  templateSubject: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: colors.textSecondary, marginTop: 2 },
+  noTemplates: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.textTertiary, textAlign: "center", paddingVertical: 24 },
+  previewInfo: { backgroundColor: colors.surfaceSecondary, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: 14, gap: 4 },
+  previewLabel: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: colors.textSecondary, textTransform: "capitalize" },
+  recipientCount: { fontSize: 16, fontFamily: "Lato_700Bold", color: colors.text, marginBottom: 14 },
+  recipientRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  recipientName: { flex: 1, fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: colors.text },
+  recipientEmail: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: colors.textSecondary },
+  summaryCard: { backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.sectionSpacing, gap: 14 },
   summaryRow: { flexDirection: "row", justifyContent: "space-between" },
-  summaryLabel: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
-  summaryValue: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, textTransform: "capitalize" },
-  sendBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Colors.success, borderRadius: Layout.inputRadius, paddingVertical: 16 },
-  sendBtnText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
+  summaryLabel: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: colors.textSecondary },
+  summaryValue: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text, textTransform: "capitalize" },
+  sendBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.success, borderRadius: Layout.inputRadius, paddingVertical: 16 },
+  sendBtnText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: colors.onPrimary },
 });

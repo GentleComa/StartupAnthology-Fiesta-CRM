@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,11 +18,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
-import Colors from "@/constants/colors";
+import { type ThemeColors } from "@/constants/colors";
+import { useTheme } from "@/lib/theme";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
 
 export default function ComposeEmailScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { to, name, leadId, contactId } = useLocalSearchParams<{ to?: string; name?: string; leadId?: string; contactId?: string }>();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
@@ -113,7 +116,7 @@ export default function ComposeEmailScreen() {
           hitSlop={8}
         >
           {sendMut.isPending ? (
-            <ActivityIndicator size="small" color={Colors.info} />
+            <ActivityIndicator size="small" color={colors.info} />
           ) : (
             <Text style={[styles.sendText, (!subject || !body) && { opacity: 0.4 }]}>Send</Text>
           )}
@@ -130,11 +133,11 @@ export default function ComposeEmailScreen() {
 
         <View style={styles.actionBtnRow}>
           <Pressable style={styles.templateBtn} onPress={() => setShowTemplates(!showTemplates)}>
-            <Feather name="file-text" size={16} color={Colors.info} />
+            <Feather name="file-text" size={16} color={colors.info} />
             <Text style={styles.templateBtnText}>Use Template</Text>
           </Pressable>
           <Pressable style={styles.templateBtn} onPress={() => setShowAttachments(!showAttachments)}>
-            <Feather name="paperclip" size={16} color={Colors.info} />
+            <Feather name="paperclip" size={16} color={colors.info} />
             <Text style={styles.templateBtnText}>
               Attach{selectedFileIds.length > 0 ? ` (${selectedFileIds.length})` : ""}
             </Text>
@@ -164,7 +167,7 @@ export default function ComposeEmailScreen() {
                     <Feather
                       name={selectedFileIds.includes(f.id) ? "check-square" : "square"}
                       size={18}
-                      color={selectedFileIds.includes(f.id) ? Colors.info : Colors.textTertiary}
+                      color={selectedFileIds.includes(f.id) ? colors.info : colors.textTertiary}
                     />
                     <Text style={styles.templateName} numberOfLines={1}>{f.name}</Text>
                   </View>
@@ -178,10 +181,10 @@ export default function ComposeEmailScreen() {
           <View style={styles.attachedList}>
             {allFiles.filter((f: any) => selectedFileIds.includes(f.id)).map((f: any) => (
               <View key={f.id} style={styles.attachedChip}>
-                <Feather name="paperclip" size={12} color={Colors.info} />
+                <Feather name="paperclip" size={12} color={colors.info} />
                 <Text style={styles.attachedName} numberOfLines={1}>{f.name}</Text>
                 <Pressable onPress={() => toggleFile(f.id)} hitSlop={6}>
-                  <Feather name="x" size={14} color={Colors.textTertiary} />
+                  <Feather name="x" size={14} color={colors.textTertiary} />
                 </Pressable>
               </View>
             ))}
@@ -195,7 +198,7 @@ export default function ComposeEmailScreen() {
             value={subject}
             onChangeText={setSubject}
             placeholder="Email subject"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
           />
         </View>
 
@@ -204,7 +207,7 @@ export default function ComposeEmailScreen() {
           value={body}
           onChangeText={setBody}
           placeholder="Write your message..."
-          placeholderTextColor={Colors.textTertiary}
+          placeholderTextColor={colors.textTertiary}
           multiline
           textAlignVertical="top"
         />
@@ -213,29 +216,29 @@ export default function ComposeEmailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: Layout.screenPadding, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  cancelText: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.info },
-  title: { fontSize: 17, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
-  sendText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: Layout.screenPadding, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
+  cancelText: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: colors.info },
+  title: { fontSize: 17, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text },
+  sendText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: colors.info },
   form: { flex: 1, padding: Layout.screenPadding },
-  fieldRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  fieldLabel: { width: 60, fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary },
-  fieldValue: { flex: 1, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
-  toValue: { flex: 1, backgroundColor: Colors.surfaceSecondary, borderRadius: Layout.badgeRadius, paddingHorizontal: 10, paddingVertical: 6 },
-  toText: { fontSize: 15, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  subjectInput: { flex: 1, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
-  actionBtnRow: { flexDirection: "row", gap: 12, paddingVertical: Layout.cardPadding, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  fieldRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  fieldLabel: { width: 60, fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: colors.textSecondary },
+  fieldValue: { flex: 1, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: colors.text },
+  toValue: { flex: 1, backgroundColor: colors.surfaceSecondary, borderRadius: Layout.badgeRadius, paddingHorizontal: 10, paddingVertical: 6 },
+  toText: { fontSize: 15, fontFamily: "SpaceGrotesk_500Medium", color: colors.text },
+  subjectInput: { flex: 1, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: colors.text },
+  actionBtnRow: { flexDirection: "row", gap: 12, paddingVertical: Layout.cardPadding, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   templateBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
-  templateBtnText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.info },
-  templateList: { backgroundColor: Colors.surface, borderRadius: Layout.inputRadius, marginBottom: 14 },
-  templateItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: Layout.cardPadding, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  templateName: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  templateAudience: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, textTransform: "capitalize" },
-  noTemplates: { padding: Layout.cardPadding, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
+  templateBtnText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: colors.info },
+  templateList: { backgroundColor: colors.surface, borderRadius: Layout.inputRadius, marginBottom: 14 },
+  templateItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: Layout.cardPadding, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  templateName: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: colors.text },
+  templateAudience: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: colors.textTertiary, textTransform: "capitalize" },
+  noTemplates: { padding: Layout.cardPadding, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.textTertiary },
   attachedList: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingVertical: 8 },
-  attachedChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: Colors.info + "15", paddingHorizontal: 10, paddingVertical: 6, borderRadius: Layout.badgeRadius },
-  attachedName: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: Colors.info, maxWidth: 120 },
-  bodyInput: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, minHeight: 200, paddingTop: 18, lineHeight: 24 },
+  attachedChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.info + "15", paddingHorizontal: 10, paddingVertical: 6, borderRadius: Layout.badgeRadius },
+  attachedName: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: colors.info, maxWidth: 120 },
+  bodyInput: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: colors.text, minHeight: 200, paddingTop: 18, lineHeight: 24 },
 });

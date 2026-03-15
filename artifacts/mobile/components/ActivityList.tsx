@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
-import Colors from "@/constants/colors";
+import { type ThemeColors } from "@/constants/colors";
+import { useTheme } from "@/lib/theme";
 
 interface Activity {
   id: number;
@@ -19,20 +20,22 @@ interface ActivityListProps {
   onPress?: (activity: Activity) => void;
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  email: Colors.info,
-  linkedin: "#0A66C2",
-  note: Colors.accent,
-  call: "#34C759",
-  meeting: "#AF52DE",
-  status_change: "#FF9500",
-};
-
 export default function ActivityList({
   activities,
   emptyMessage = "No activity yet. Every touchpoint counts.",
   onPress,
 }: ActivityListProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const TYPE_COLORS: Record<string, string> = useMemo(() => ({
+    email: colors.info,
+    linkedin: "#0A66C2",
+    note: colors.accent,
+    call: "#34C759",
+    meeting: "#AF52DE",
+    status_change: "#FF9500",
+  }), [colors]);
+
   if (activities.length === 0) {
     return <Text style={styles.empty}>{emptyMessage}</Text>;
   }
@@ -54,7 +57,7 @@ export default function ActivityList({
           <View
             style={[
               styles.dot,
-              { backgroundColor: TYPE_COLORS[a.type] || Colors.textTertiary },
+              { backgroundColor: TYPE_COLORS[a.type] || colors.textTertiary },
             ]}
           />
           <View style={styles.content}>
@@ -77,33 +80,33 @@ export default function ActivityList({
   );
 }
 
-const styles = StyleSheet.create({
-  empty: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  empty: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.textTertiary },
   item: { flexDirection: "row", gap: 10, marginBottom: 14, alignItems: "center" },
   dot: { width: 8, height: 8, borderRadius: 4, marginTop: 0 },
   content: { flex: 1 },
   type: {
     fontSize: 13,
     fontFamily: "LeagueSpartan_600SemiBold",
-    color: Colors.text,
+    color: colors.text,
     textTransform: "capitalize",
   },
   note: {
     fontSize: 13,
     fontFamily: "SpaceGrotesk_400Regular",
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   date: {
     fontSize: 12,
     fontFamily: "SpaceGrotesk_400Regular",
-    color: Colors.textTertiary,
+    color: colors.textTertiary,
     marginTop: 2,
   },
   gmailLink: {
     fontSize: 12,
     fontFamily: "SpaceGrotesk_500Medium",
-    color: Colors.info,
+    color: colors.info,
     marginTop: 2,
   },
   chevron: {
@@ -111,6 +114,6 @@ const styles = StyleSheet.create({
   },
   chevronText: {
     fontSize: 18,
-    color: Colors.textTertiary,
+    color: colors.textTertiary,
   },
 });

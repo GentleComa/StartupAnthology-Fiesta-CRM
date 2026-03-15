@@ -3,13 +3,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Alert,
   Platform,
   Pressable,
   ScrollView as RNScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -18,7 +19,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
-import Colors from "@/constants/colors";
+import { type ThemeColors } from "@/constants/colors";
+import { useTheme } from "@/lib/theme";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -27,6 +29,8 @@ const STATUSES = ["new", "contacted", "interested", "engaged", "converted"];
 const ACTION_TYPES = ["enroll_sequence", "schedule_followup"];
 
 export default function SettingsScreen() {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
   const { user, logout, refreshUser } = useAuth();
@@ -224,7 +228,7 @@ export default function SettingsScreen() {
     <KeyboardAwareScrollViewCompat style={[styles.container, { paddingTop: topPad }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()}>
-          <Feather name="arrow-left" size={22} color={Colors.text} />
+          <Feather name="arrow-left" size={22} color={colors.text} />
         </Pressable>
         <Text style={styles.title}>Settings</Text>
         <View style={{ width: 22 }} />
@@ -239,7 +243,7 @@ export default function SettingsScreen() {
             value={editFirstName}
             onChangeText={setEditFirstName}
             placeholder="First name"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
           />
         </View>
         <View style={styles.settingRow}>
@@ -249,7 +253,7 @@ export default function SettingsScreen() {
             value={editLastName}
             onChangeText={setEditLastName}
             placeholder="Last name"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
           />
         </View>
         <View style={styles.settingRow}>
@@ -259,7 +263,7 @@ export default function SettingsScreen() {
             value={editProfileImage}
             onChangeText={setEditProfileImage}
             placeholder="https://..."
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
@@ -268,7 +272,7 @@ export default function SettingsScreen() {
         {user?.email && (
           <View style={styles.settingRow}>
             <Text style={styles.settingLabel}>Email</Text>
-            <Text style={[styles.settingInput, { color: Colors.textSecondary }]}>{user.email}</Text>
+            <Text style={[styles.settingInput, { color: colors.textSecondary }]}>{user.email}</Text>
           </View>
         )}
         {user?.role && (
@@ -285,7 +289,7 @@ export default function SettingsScreen() {
           disabled={updateProfileMut.isPending}
         >
           {updateProfileMut.isPending ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color={colors.onPrimary} size="small" />
           ) : (
             <Text style={styles.saveBtnText}>Save Profile</Text>
           )}
@@ -293,11 +297,27 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Appearance</Text>
+        <View style={styles.settingRow}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Feather name={isDark ? "moon" : "sun"} size={18} color={colors.accent} />
+            <Text style={styles.settingLabel}>Dark Mode</Text>
+          </View>
+          <Switch
+            value={isDark}
+            onValueChange={toggleTheme}
+            trackColor={{ false: colors.border, true: colors.accent }}
+            thumbColor="#FFFFFF"
+          />
+        </View>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Change Password</Text>
         <TextInput
           style={styles.passwordInput}
           placeholder="Current password"
-          placeholderTextColor={Colors.textTertiary}
+          placeholderTextColor={colors.textTertiary}
           value={currentPassword}
           onChangeText={setCurrentPassword}
           secureTextEntry
@@ -306,7 +326,7 @@ export default function SettingsScreen() {
         <TextInput
           style={styles.passwordInput}
           placeholder="New password (min 6 characters)"
-          placeholderTextColor={Colors.textTertiary}
+          placeholderTextColor={colors.textTertiary}
           value={newPassword}
           onChangeText={setNewPassword}
           secureTextEntry
@@ -315,7 +335,7 @@ export default function SettingsScreen() {
         <TextInput
           style={styles.passwordInput}
           placeholder="Confirm new password"
-          placeholderTextColor={Colors.textTertiary}
+          placeholderTextColor={colors.textTertiary}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
@@ -327,7 +347,7 @@ export default function SettingsScreen() {
           disabled={changePasswordMut.isPending}
         >
           {changePasswordMut.isPending ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color={colors.onPrimary} size="small" />
           ) : (
             <Text style={styles.saveBtnText}>Update Password</Text>
           )}
@@ -352,7 +372,7 @@ export default function SettingsScreen() {
             value={founderName}
             onChangeText={setFounderName}
             placeholder="Your name"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             onBlur={() => updateSettingsMut.mutate({ founder_name: founderName })}
           />
         </View>
@@ -378,7 +398,7 @@ export default function SettingsScreen() {
             value={myLinkedin}
             onChangeText={setMyLinkedin}
             placeholder="https://linkedin.com/in/..."
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
@@ -392,7 +412,7 @@ export default function SettingsScreen() {
             value={companyLinkedin}
             onChangeText={setCompanyLinkedin}
             placeholder="https://linkedin.com/company/..."
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
@@ -406,7 +426,7 @@ export default function SettingsScreen() {
             value={calendarLink}
             onChangeText={setCalendarLink}
             placeholder="https://calendly.com/..."
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
@@ -424,7 +444,7 @@ export default function SettingsScreen() {
               value={slot.label}
               onChangeText={slot.setLabel}
               placeholder={`Custom label ${idx + 1}`}
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={colors.textTertiary}
               onBlur={() => updateSettingsMut.mutate({ [slot.labelKey]: slot.label })}
             />
             <TextInput
@@ -432,7 +452,7 @@ export default function SettingsScreen() {
               value={slot.url}
               onChangeText={slot.setUrl}
               placeholder="https://..."
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={colors.textTertiary}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
@@ -446,7 +466,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>Integrations</Text>
         <View style={styles.integrationRow}>
           <View style={styles.integrationIcon}>
-            <Feather name="mail" size={18} color={Colors.success} />
+            <Feather name="mail" size={18} color={colors.success} />
           </View>
           <View style={styles.integrationInfo}>
             <Text style={styles.integrationName}>Gmail</Text>
@@ -456,7 +476,7 @@ export default function SettingsScreen() {
         </View>
         <View style={styles.integrationRow}>
           <View style={styles.integrationIcon}>
-            <Feather name="book" size={18} color={Colors.primary} />
+            <Feather name="book" size={18} color={colors.primary} />
           </View>
           <View style={styles.integrationInfo}>
             <Text style={styles.integrationName}>Notion</Text>
@@ -476,7 +496,7 @@ export default function SettingsScreen() {
             value={notionLeadsDb}
             onChangeText={setNotionLeadsDb}
             placeholder="Notion database ID"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             autoCapitalize="none"
             autoCorrect={false}
             onBlur={() => updateSettingsMut.mutate({ notion_leads_db: notionLeadsDb })}
@@ -489,7 +509,7 @@ export default function SettingsScreen() {
             value={notionContactsDb}
             onChangeText={setNotionContactsDb}
             placeholder="Notion database ID"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             autoCapitalize="none"
             autoCorrect={false}
             onBlur={() => updateSettingsMut.mutate({ notion_contacts_db: notionContactsDb })}
@@ -502,7 +522,7 @@ export default function SettingsScreen() {
             value={notionActivitiesDb}
             onChangeText={setNotionActivitiesDb}
             placeholder="Notion database ID"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             autoCapitalize="none"
             autoCorrect={false}
             onBlur={() => updateSettingsMut.mutate({ notion_activities_db: notionActivitiesDb })}
@@ -524,7 +544,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
             <Pressable onPress={() => deleteTriggerMut.mutate(t.id)}>
-              <Feather name="x" size={18} color={Colors.error} />
+              <Feather name="x" size={18} color={colors.error} />
             </Pressable>
           </View>
         ))}
@@ -555,8 +575,8 @@ export default function SettingsScreen() {
             <View style={styles.formGroup}>
               <Text style={styles.label}>Sequence</Text>
               {sequences.map((s: any) => (
-                <Pressable key={s.id} style={[styles.seqOption, newTriggerSeqId === s.id && { backgroundColor: Colors.primary }]} onPress={() => setNewTriggerSeqId(s.id)}>
-                  <Text style={[styles.seqOptionText, newTriggerSeqId === s.id && { color: "#fff" }]}>{s.name}</Text>
+                <Pressable key={s.id} style={[styles.seqOption, newTriggerSeqId === s.id && { backgroundColor: colors.primary }]} onPress={() => setNewTriggerSeqId(s.id)}>
+                  <Text style={[styles.seqOptionText, newTriggerSeqId === s.id && { color: colors.onPrimary }]}>{s.name}</Text>
                 </Pressable>
               ))}
             </View>
@@ -597,7 +617,7 @@ export default function SettingsScreen() {
           <View style={styles.adminHeader}>
             <Text style={styles.sectionTitle}>User Management</Text>
             <Pressable style={styles.addUserBtn} onPress={() => setShowAddUser(true)}>
-              <Feather name="plus" size={16} color="#fff" />
+              <Feather name="plus" size={16} color={colors.onPrimary} />
               <Text style={styles.addUserBtnText}>Add User</Text>
             </Pressable>
           </View>
@@ -642,7 +662,7 @@ export default function SettingsScreen() {
                       );
                     }}
                   >
-                    <Feather name="shield" size={16} color={u.role === "admin" ? Colors.accent : Colors.textTertiary} />
+                    <Feather name="shield" size={16} color={u.role === "admin" ? colors.accent : colors.textTertiary} />
                   </Pressable>
                   <Pressable
                     style={styles.userActionBtn}
@@ -658,7 +678,7 @@ export default function SettingsScreen() {
                       );
                     }}
                   >
-                    <Feather name={u.isActive ? "user-check" : "user-x"} size={16} color={u.isActive ? Colors.success : Colors.error} />
+                    <Feather name={u.isActive ? "user-check" : "user-x"} size={16} color={u.isActive ? colors.success : colors.error} />
                   </Pressable>
                 </View>
               )}
@@ -669,7 +689,7 @@ export default function SettingsScreen() {
 
       <View style={styles.section}>
         <Pressable
-          style={[styles.addBtn, { backgroundColor: Colors.error, marginTop: 14 }]}
+          style={[styles.addBtn, { backgroundColor: colors.error, marginTop: 14 }]}
           onPress={() => {
             Alert.alert("Log out?", "You'll need to sign in again.", [
               { text: "Stay", style: "cancel" },
@@ -689,14 +709,14 @@ export default function SettingsScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add User</Text>
               <Pressable onPress={() => setShowAddUser(false)}>
-                <Feather name="x" size={22} color={Colors.text} />
+                <Feather name="x" size={22} color={colors.text} />
               </Pressable>
             </View>
             <View style={styles.modalNameRow}>
               <TextInput
                 style={[styles.modalInput, { flex: 1 }]}
                 placeholder="First name"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={colors.textTertiary}
                 value={newUserFirstName}
                 onChangeText={setNewUserFirstName}
                 autoCapitalize="words"
@@ -704,7 +724,7 @@ export default function SettingsScreen() {
               <TextInput
                 style={[styles.modalInput, { flex: 1 }]}
                 placeholder="Last name"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={colors.textTertiary}
                 value={newUserLastName}
                 onChangeText={setNewUserLastName}
                 autoCapitalize="words"
@@ -713,7 +733,7 @@ export default function SettingsScreen() {
             <TextInput
               style={styles.modalInput}
               placeholder="Email"
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={colors.textTertiary}
               value={newUserEmail}
               onChangeText={setNewUserEmail}
               keyboardType="email-address"
@@ -722,7 +742,7 @@ export default function SettingsScreen() {
             <TextInput
               style={styles.modalInput}
               placeholder="Password (min 6 characters)"
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={colors.textTertiary}
               value={newUserPassword}
               onChangeText={setNewUserPassword}
               secureTextEntry
@@ -749,7 +769,7 @@ export default function SettingsScreen() {
               disabled={createUserMut.isPending}
             >
               {createUserMut.isPending ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color={colors.onPrimary} size="small" />
               ) : (
                 <Text style={styles.addBtnText}>Create User</Text>
               )}
@@ -761,79 +781,79 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   content: { padding: Layout.screenPadding },
   topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Layout.sectionSpacing },
-  title: { fontSize: 20, fontFamily: "Lato_700Bold", color: Colors.text },
+  title: { fontSize: 20, fontFamily: "Lato_700Bold", color: colors.text },
   section: { marginBottom: Layout.sectionSpacing },
-  sectionTitle: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 6 },
-  sectionSubtitle: { fontSize: 13, fontFamily: "Montserrat_400Regular", color: Colors.textTertiary, marginBottom: 14 },
-  settingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
-  settingLabel: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  settingInput: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, backgroundColor: Colors.surfaceSecondary, borderRadius: Layout.badgeRadius, paddingHorizontal: 10, paddingVertical: 6, minWidth: 120 },
-  integrationRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
-  integrationIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surfaceSecondary, justifyContent: "center", alignItems: "center" },
+  sectionTitle: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text, marginBottom: 6 },
+  sectionSubtitle: { fontSize: 13, fontFamily: "Montserrat_400Regular", color: colors.textTertiary, marginBottom: 14 },
+  settingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
+  settingLabel: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: colors.text },
+  settingInput: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.text, backgroundColor: colors.surfaceSecondary, borderRadius: Layout.badgeRadius, paddingHorizontal: 10, paddingVertical: 6, minWidth: 120 },
+  integrationRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
+  integrationIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.surfaceSecondary, justifyContent: "center", alignItems: "center" },
   integrationInfo: { flex: 1 },
-  integrationName: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
-  integrationStatus: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.success },
-  connectedDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.success },
-  triggerCard: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
+  integrationName: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text },
+  integrationStatus: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: colors.success },
+  connectedDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success },
+  triggerCard: { flexDirection: "row", alignItems: "center", backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
   triggerInfo: { flex: 1 },
-  triggerText: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
-  triggerAction: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },
-  addTrigger: { backgroundColor: Colors.surfaceSecondary, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: 14 },
-  addTriggerTitle: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 14 },
+  triggerText: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.text },
+  triggerAction: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: colors.textSecondary, marginTop: 2 },
+  addTrigger: { backgroundColor: colors.surfaceSecondary, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: 14 },
+  addTriggerTitle: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text, marginBottom: 14 },
   formGroup: { marginBottom: 16 },
-  label: { fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: Colors.textSecondary, marginBottom: 8, textTransform: "uppercase" },
+  label: { fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: colors.textSecondary, marginBottom: 8, textTransform: "uppercase" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text, textTransform: "capitalize" },
-  chipTextActive: { color: "#fff" },
-  seqOption: { paddingHorizontal: 14, paddingVertical: 12, borderRadius: Layout.cardRadius, backgroundColor: Colors.surface, marginBottom: 8 },
-  seqOptionText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
-  addBtn: { backgroundColor: Colors.primary, borderRadius: Layout.inputRadius, paddingVertical: 12, alignItems: "center" },
-  addBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
-  saveBtn: { backgroundColor: Colors.accent, borderRadius: 12, paddingVertical: 12, alignItems: "center", marginTop: 12 },
-  saveBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
-  mergeTagCard: { backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap, gap: 10 },
+  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: colors.text, textTransform: "capitalize" },
+  chipTextActive: { color: colors.onPrimary },
+  seqOption: { paddingHorizontal: 14, paddingVertical: 12, borderRadius: Layout.cardRadius, backgroundColor: colors.surface, marginBottom: 8 },
+  seqOptionText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: colors.text },
+  addBtn: { backgroundColor: colors.primary, borderRadius: Layout.inputRadius, paddingVertical: 12, alignItems: "center" },
+  addBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.onPrimary },
+  saveBtn: { backgroundColor: colors.accent, borderRadius: 12, paddingVertical: 12, alignItems: "center", marginTop: 12 },
+  saveBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.onPrimary },
+  mergeTagCard: { backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap, gap: 10 },
   mergeRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  mergeTag: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info, backgroundColor: Colors.info + "10", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
-  mergeDesc: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary },
+  mergeTag: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: colors.info, backgroundColor: colors.info + "10", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
+  mergeDesc: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: colors.textSecondary },
   customLinkRow: { flexDirection: "row", gap: 8, marginTop: Layout.cardGap },
-  customLinkLabel: { flex: 1, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, paddingHorizontal: 10, paddingVertical: 10 },
-  customLinkUrl: { flex: 2, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, paddingHorizontal: 10, paddingVertical: 10 },
-  notionDbRow: { backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
-  notionDbLabel: { fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: Colors.textSecondary, marginBottom: 8, textTransform: "uppercase" },
-  notionDbInput: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, backgroundColor: Colors.surfaceSecondary, borderRadius: Layout.badgeRadius, paddingHorizontal: 10, paddingVertical: 8 },
-  passwordInput: { backgroundColor: Colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, marginTop: 8 },
-  roleBadge: { backgroundColor: Colors.surfaceSecondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  roleBadgeAdmin: { backgroundColor: Colors.accent + "20" },
-  roleBadgeText: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary, textTransform: "capitalize" },
-  roleBadgeTextAdmin: { color: Colors.accent },
+  customLinkLabel: { flex: 1, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.text, backgroundColor: colors.surface, borderRadius: Layout.cardRadius, paddingHorizontal: 10, paddingVertical: 10 },
+  customLinkUrl: { flex: 2, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.text, backgroundColor: colors.surface, borderRadius: Layout.cardRadius, paddingHorizontal: 10, paddingVertical: 10 },
+  notionDbRow: { backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
+  notionDbLabel: { fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: colors.textSecondary, marginBottom: 8, textTransform: "uppercase" },
+  notionDbInput: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: colors.text, backgroundColor: colors.surfaceSecondary, borderRadius: Layout.badgeRadius, paddingHorizontal: 10, paddingVertical: 8 },
+  passwordInput: { backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.text, marginTop: 8 },
+  roleBadge: { backgroundColor: colors.surfaceSecondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  roleBadgeAdmin: { backgroundColor: colors.accent + "20" },
+  roleBadgeText: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: colors.textSecondary, textTransform: "capitalize" },
+  roleBadgeTextAdmin: { color: colors.accent },
   adminHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  addUserBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: Colors.accent, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  addUserBtnText: { fontSize: 12, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
-  userCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginTop: 8 },
-  userAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center" },
-  userAvatarText: { color: Colors.accent, fontFamily: "Lato_700Bold", fontSize: 16 },
+  addUserBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+  addUserBtnText: { fontSize: 12, fontFamily: "LeagueSpartan_600SemiBold", color: colors.onPrimary },
+  userCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginTop: 8 },
+  userAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, justifyContent: "center", alignItems: "center" },
+  userAvatarText: { color: colors.accent, fontFamily: "Lato_700Bold", fontSize: 16 },
   userInfo: { flex: 1 },
-  userName: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
-  userEmail: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary },
+  userName: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text },
+  userEmail: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: colors.textSecondary },
   userMeta: { flexDirection: "row", gap: 6, marginTop: 4 },
-  roleBadgeSmall: { backgroundColor: Colors.surfaceSecondary, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  roleBadgeSmallAdmin: { backgroundColor: Colors.accent + "20" },
-  roleBadgeSmallText: { fontSize: 10, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary, textTransform: "capitalize" },
-  roleBadgeSmallTextAdmin: { color: Colors.accent },
-  disabledBadge: { backgroundColor: Colors.error + "20", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  disabledBadgeText: { fontSize: 10, fontFamily: "SpaceGrotesk_500Medium", color: Colors.error },
+  roleBadgeSmall: { backgroundColor: colors.surfaceSecondary, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  roleBadgeSmallAdmin: { backgroundColor: colors.accent + "20" },
+  roleBadgeSmallText: { fontSize: 10, fontFamily: "SpaceGrotesk_500Medium", color: colors.textSecondary, textTransform: "capitalize" },
+  roleBadgeSmallTextAdmin: { color: colors.accent },
+  disabledBadge: { backgroundColor: colors.error + "20", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  disabledBadgeText: { fontSize: 10, fontFamily: "SpaceGrotesk_500Medium", color: colors.error },
   userActions: { flexDirection: "row", gap: 8 },
-  userActionBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: Colors.surfaceSecondary, justifyContent: "center", alignItems: "center" },
+  userActionBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: colors.surfaceSecondary, justifyContent: "center", alignItems: "center" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  modalContent: { backgroundColor: Colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalContent: { backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
-  modalTitle: { fontSize: 18, fontFamily: "Lato_700Bold", color: Colors.text },
-  modalInput: { backgroundColor: Colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, marginBottom: 12 },
+  modalTitle: { fontSize: 18, fontFamily: "Lato_700Bold", color: colors.text },
+  modalInput: { backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.text, marginBottom: 12 },
   modalNameRow: { flexDirection: "row", gap: 10 },
 });

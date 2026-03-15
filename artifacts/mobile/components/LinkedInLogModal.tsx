@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -8,7 +8,8 @@ import {
   TextInput,
   View,
 } from "react-native";
-import Colors from "@/constants/colors";
+import { type ThemeColors } from "@/constants/colors";
+import { useTheme } from "@/lib/theme";
 
 interface LinkedInLogModalProps {
   visible: boolean;
@@ -23,6 +24,8 @@ export default function LinkedInLogModal({
   onSubmit,
   isPending,
 }: LinkedInLogModalProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
 
@@ -51,14 +54,14 @@ export default function LinkedInLogModal({
           <TextInput
             style={styles.input}
             placeholder="Subject / Context"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             value={subject}
             onChangeText={setSubject}
           />
           <TextInput
             style={[styles.input, { minHeight: 80, textAlignVertical: "top" }]}
             placeholder="Message content"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             value={message}
             onChangeText={setMessage}
             multiline
@@ -85,7 +88,7 @@ export default function LinkedInLogModal({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -94,7 +97,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   content: {
-    backgroundColor: Colors.background,
+    backgroundColor: colors.background,
     borderRadius: 16,
     padding: 20,
     width: "100%",
@@ -103,16 +106,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontFamily: "LeagueSpartan_700Bold",
-    color: Colors.text,
+    color: colors.text,
     marginBottom: 16,
   },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
     fontSize: 14,
     fontFamily: "SpaceGrotesk_400Regular",
-    color: Colors.text,
+    color: colors.text,
     marginBottom: 12,
   },
   actions: { flexDirection: "row", gap: 10, marginTop: 4 },
@@ -121,19 +124,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: colors.border,
     alignItems: "center",
   },
   cancelText: {
     fontSize: 14,
     fontFamily: "SpaceGrotesk_500Medium",
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
   },
   saveBtn: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: Colors.info,
+    backgroundColor: colors.info,
     alignItems: "center",
   },
   saveText: { fontSize: 14, fontFamily: "SpaceGrotesk_600SemiBold", color: "#fff" },
