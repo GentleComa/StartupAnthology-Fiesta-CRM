@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import React, { useState, useMemo } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Modal,
   Platform,
@@ -17,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import EventDetailModal from "@/components/EventDetailModal";
 import Colors from "@/constants/colors";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
@@ -59,6 +61,7 @@ export default function CalendarScreen() {
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
   const baseDate = useMemo(() => {
     const d = new Date();
@@ -67,6 +70,15 @@ export default function CalendarScreen() {
   }, [weekOffset]);
 
   const { start: weekStart, end: weekEnd } = useMemo(() => getWeekRange(baseDate), [baseDate]);
+
+  const updateEventMut = useMutation({
+    mutationFn: ({ evId, data }: { evId: number; data: any }) => api.updateCalendarEvent(evId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendarEvents"] });
+      setSelectedEvent(null);
+    },
+    onError: (err: Error) => Alert.alert("Update failed", err.message),
+  });
 
   const { data: events = [], isLoading, refetch } = useQuery({
     queryKey: ["calendarEvents", weekStart.toISOString(), weekEnd.toISOString()],
@@ -139,7 +151,7 @@ export default function CalendarScreen() {
                   <Text style={styles.noEvents}>Nothing scheduled</Text>
                 ) : (
                   day.events.map((ev: any) => (
-                    <View key={ev.id} style={styles.eventCard}>
+                    <Pressable key={ev.id} style={styles.eventCard} onPress={() => setSelectedEvent(ev)}>
                       <View style={[styles.eventStripe, { backgroundColor: EVENT_TYPE_COLORS[ev.eventType] || Colors.textTertiary }]} />
                       <View style={styles.eventBody}>
                         <View style={styles.eventTop}>
@@ -165,7 +177,7 @@ export default function CalendarScreen() {
                           )}
                         </View>
                       </View>
-                    </View>
+                    </Pressable>
                   ))
                 )}
               </View>
@@ -186,6 +198,14 @@ export default function CalendarScreen() {
           setShowCreate(false);
           qc.invalidateQueries({ queryKey: ["calendarEvents"] });
         }}
+      />
+
+      <EventDetailModal
+        visible={!!selectedEvent}
+        event={selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        onSave={(evId, data) => updateEventMut.mutate({ evId, data })}
+        isSaving={updateEventMut.isPending}
       />
     </View>
   );

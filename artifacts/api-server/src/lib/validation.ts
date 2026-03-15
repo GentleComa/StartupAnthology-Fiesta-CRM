@@ -106,6 +106,22 @@ export const createActivitySchema = z.object({
   gmailLink: z.string().nullish(),
 });
 
+export const updateActivitySchema = z.object({
+  type: z.string().min(1).optional(),
+  direction: z.string().nullish(),
+  subject: z.string().nullish(),
+  body: z.string().nullish(),
+  note: z.string().nullish(),
+});
+
+export const updateCalendarEventSchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().nullish(),
+  startTime: z.string().min(1).optional(),
+  endTime: z.string().min(1).optional(),
+  eventType: z.string().optional(),
+});
+
 export const sendEmailSchema = z.object({
   to: z.string().email(),
   subject: z.string().min(1),

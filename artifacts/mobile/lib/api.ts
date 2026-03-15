@@ -130,6 +130,8 @@ export const api = {
   },
   createActivity: (data: any) =>
     request("/activities", { method: "POST", body: JSON.stringify(data) }),
+  updateActivity: (id: number, data: any) =>
+    request(`/activities/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
 
   getTemplates: (audience?: string) => {
     const qs = audience ? `?audience=${audience}` : "";
@@ -193,6 +195,8 @@ export const api = {
     contactId?: number;
     eventType?: string;
   }) => request("/calendar/events", { method: "POST", body: JSON.stringify(data) }),
+  updateCalendarEvent: (id: number, data: any) =>
+    request(`/calendar/events/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   deleteCalendarEvent: (id: number) =>
     request(`/calendar/events/${id}`, { method: "DELETE" }),
 

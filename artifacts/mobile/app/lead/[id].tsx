@@ -20,7 +20,9 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import ActivityDetailModal from "@/components/ActivityDetailModal";
 import ActivityList from "@/components/ActivityList";
+import EventDetailModal from "@/components/EventDetailModal";
 import HistoryModal from "@/components/HistoryModal";
 import LinkedInLogModal from "@/components/LinkedInLogModal";
 import ProfilePicModal from "@/components/ProfilePicModal";
@@ -42,6 +44,8 @@ export default function LeadDetailScreen() {
   const [editFields, setEditFields] = useState<Record<string, string>>({});
   const [showLinkedInModal, setShowLinkedInModal] = useState(false);
   const [showPicModal, setShowPicModal] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<any>(null);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
   const leadId = useMemo(() => Number(id), [id]);
 
@@ -117,6 +121,22 @@ export default function LeadDetailScreen() {
       setSelectedRevision(null);
     },
     onError: (err: Error) => Alert.alert("Rollback failed", err.message),
+  });
+  const updateActivityMut = useMutation({
+    mutationFn: ({ actId, data }: { actId: number; data: any }) => api.updateActivity(actId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["activities", "lead", id] });
+      setSelectedActivity(null);
+    },
+    onError: (err: Error) => Alert.alert("Update failed", err.message),
+  });
+  const updateEventMut = useMutation({
+    mutationFn: ({ evId, data }: { evId: number; data: any }) => api.updateCalendarEvent(evId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["calendarEvents", "lead", id] });
+      setSelectedEvent(null);
+    },
+    onError: (err: Error) => Alert.alert("Update failed", err.message),
   });
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -369,23 +389,40 @@ export default function LeadDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Scheduled Events</Text>
           {calendarEvents.map((ev: any) => (
-            <View key={ev.id} style={styles.activityItem}>
+            <Pressable key={ev.id} style={styles.activityItem} onPress={() => setSelectedEvent(ev)}>
               <View style={[styles.activityDot, { backgroundColor: Colors.accent }]} />
               <View style={styles.activityContent}>
                 <Text style={styles.activityType}>{ev.title}</Text>
                 <Text style={styles.activityNote}>{ev.eventType} · {new Date(ev.startTime).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</Text>
               </View>
-            </View>
+              <Text style={{ fontSize: 18, color: Colors.textTertiary }}>›</Text>
+            </Pressable>
           ))}
         </View>
       )}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Activity</Text>
-        <ActivityList activities={activities} />
+        <ActivityList activities={activities} onPress={setSelectedActivity} />
       </View>
 
       <View style={{ height: 40 }} />
+
+      <ActivityDetailModal
+        visible={!!selectedActivity}
+        activity={selectedActivity}
+        onClose={() => setSelectedActivity(null)}
+        onSave={(actId, data) => updateActivityMut.mutate({ actId, data })}
+        isSaving={updateActivityMut.isPending}
+      />
+
+      <EventDetailModal
+        visible={!!selectedEvent}
+        event={selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        onSave={(evId, data) => updateEventMut.mutate({ evId, data })}
+        isSaving={updateEventMut.isPending}
+      />
 
       <HistoryModal
         visible={historyVisible}

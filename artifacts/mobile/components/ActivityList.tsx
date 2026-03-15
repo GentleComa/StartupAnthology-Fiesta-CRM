@@ -7,6 +7,7 @@ interface Activity {
   type: string;
   direction?: string;
   subject?: string;
+  body?: string;
   note?: string;
   createdAt: string;
   gmailLink?: string;
@@ -15,17 +16,21 @@ interface Activity {
 interface ActivityListProps {
   activities: Activity[];
   emptyMessage?: string;
+  onPress?: (activity: Activity) => void;
 }
 
 const TYPE_COLORS: Record<string, string> = {
   email: Colors.info,
   linkedin: "#0A66C2",
   note: Colors.accent,
+  call: "#34C759",
+  meeting: "#AF52DE",
 };
 
 export default function ActivityList({
   activities,
   emptyMessage = "No activity yet. Every touchpoint counts.",
+  onPress,
 }: ActivityListProps) {
   if (activities.length === 0) {
     return <Text style={styles.empty}>{emptyMessage}</Text>;
@@ -37,7 +42,13 @@ export default function ActivityList({
         <Pressable
           key={a.id}
           style={styles.item}
-          onPress={() => a.gmailLink && Linking.openURL(a.gmailLink)}
+          onPress={() => {
+            if (onPress) {
+              onPress(a);
+            } else if (a.gmailLink) {
+              Linking.openURL(a.gmailLink);
+            }
+          }}
         >
           <View
             style={[
@@ -54,7 +65,10 @@ export default function ActivityList({
               {a.subject || a.note || ""}
             </Text>
             <Text style={styles.date}>{new Date(a.createdAt).toLocaleDateString()}</Text>
-            {a.gmailLink && <Text style={styles.gmailLink}>Open in Gmail →</Text>}
+            {a.gmailLink && !onPress && <Text style={styles.gmailLink}>Open in Gmail →</Text>}
+          </View>
+          <View style={styles.chevron}>
+            <Text style={styles.chevronText}>›</Text>
           </View>
         </Pressable>
       ))}
@@ -64,8 +78,8 @@ export default function ActivityList({
 
 const styles = StyleSheet.create({
   empty: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
-  item: { flexDirection: "row", gap: 10, marginBottom: 14 },
-  dot: { width: 8, height: 8, borderRadius: 4, marginTop: 6 },
+  item: { flexDirection: "row", gap: 10, marginBottom: 14, alignItems: "center" },
+  dot: { width: 8, height: 8, borderRadius: 4, marginTop: 0 },
   content: { flex: 1 },
   type: {
     fontSize: 13,
@@ -90,5 +104,12 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceGrotesk_500Medium",
     color: Colors.info,
     marginTop: 2,
+  },
+  chevron: {
+    paddingLeft: 4,
+  },
+  chevronText: {
+    fontSize: 18,
+    color: Colors.textTertiary,
   },
 });

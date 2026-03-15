@@ -96,6 +96,8 @@ artifacts-monorepo/
 - `isProcessing` flag as secondary guard against concurrent workers
 
 ### Mobile Shared Components
+- `ActivityDetailModal` — view/edit activity details (type, subject, body, notes) in a popup modal
+- `EventDetailModal` — view/edit calendar event details (title, times, type, description) in a popup modal
 - `HistoryModal` — revision history with snapshot viewer and rollback
 - `ActivityList` — activity timeline with type-based dot colors
 - `LinkedInLogModal` — log LinkedIn messages with subject/message

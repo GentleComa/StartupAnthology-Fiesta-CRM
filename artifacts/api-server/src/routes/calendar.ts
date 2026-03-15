@@ -5,7 +5,7 @@ import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
 import { createCalendarEvent, deleteCalendarEvent } from "../lib/calendar";
 import { logAudit } from "../lib/audit";
 import { parseIntParam, notFound, badRequest } from "../lib/errors";
-import { validate, createCalendarEventSchema } from "../lib/validation";
+import { validate, createCalendarEventSchema, updateCalendarEventSchema } from "../lib/validation";
 
 const router = Router();
 
@@ -111,6 +111,37 @@ router.post("/calendar/events", async (req: Request, res: Response, next: NextFu
 
     logAudit("calendar_event", event.id, "create", userId, null, event as Record<string, unknown>);
     res.status(201).json(event);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/calendar/events/:id", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const id = parseIntParam(req.params.id);
+    const data = validate(updateCalendarEventSchema, req.body);
+
+    const [existing] = await db.select().from(calendarEventsTable).where(and(eq(calendarEventsTable.id, id), eq(calendarEventsTable.userId, userId)));
+    if (!existing) throw notFound("Event not found");
+
+    if (data.startTime && !isValidISODate(data.startTime)) throw badRequest("Invalid startTime");
+    if (data.endTime && !isValidISODate(data.endTime)) throw badRequest("Invalid endTime");
+
+    const finalStart = data.startTime ? new Date(data.startTime) : existing.startTime;
+    const finalEnd = data.endTime ? new Date(data.endTime) : existing.endTime;
+    if (finalEnd <= finalStart) throw badRequest("endTime must be after startTime");
+
+    const updatePayload: Record<string, any> = {};
+    if (data.title !== undefined) updatePayload.title = data.title;
+    if (data.description !== undefined) updatePayload.description = data.description;
+    if (data.startTime !== undefined) updatePayload.startTime = new Date(data.startTime);
+    if (data.endTime !== undefined) updatePayload.endTime = new Date(data.endTime);
+    if (data.eventType !== undefined) updatePayload.eventType = data.eventType;
+
+    const [updated] = await db.update(calendarEventsTable).set(updatePayload).where(eq(calendarEventsTable.id, id)).returning();
+    logAudit("calendar_event", id, "update", userId, existing as Record<string, unknown>, updated as Record<string, unknown>);
+    res.json(updated);
   } catch (err) {
     next(err);
   }
