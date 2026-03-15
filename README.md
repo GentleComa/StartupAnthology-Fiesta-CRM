@@ -1,6 +1,6 @@
 # Fiesta CRM
 
-A mobile-first CRM for solo founders and small teams. Track leads, manage business relationships, send emails, run drip sequences, and get AI coaching — all from your iPhone.
+Fiesta is a mobile CRM built for solo founders — manage your leads, contacts, follow-ups, email outreach, and AI coaching in one focused app, without the enterprise bloat. Your relationships, your pipeline, one place.
 
 ## What it does
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Mobile-first CRM app for solo founders and small teams. Built with Expo (React Native) for iOS, Express API server with PostgreSQL. Integrates with Gmail, Google Calendar, and Notion. Multi-user support with Replit OAuth (OIDC/PKCE), role-based access, admin 2FA (TOTP or email code), and an admin panel with user management, data export/import, and system diagnostics.
+Fiesta is a mobile CRM built for solo founders — manage your leads, contacts, follow-ups, email outreach, and AI coaching in one focused app, without the enterprise bloat. Your relationships, your pipeline, one place.
 
 ## Stack
 
