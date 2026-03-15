@@ -28,60 +28,27 @@ interface EntityDescriptor {
 }
 
 const ENTITY_MAP: Record<string, EntityDescriptor> = {
-  lead: {
-    table: leadsTable,
-    idCol: leadsTable.id,
-    userCol: leadsTable.userId,
-    hasUpdatedAt: true,
-  },
-  contact: {
-    table: contactsTable,
-    idCol: contactsTable.id,
-    userCol: contactsTable.userId,
-    hasUpdatedAt: true,
-  },
-  template: {
-    table: emailTemplatesTable,
-    idCol: emailTemplatesTable.id,
-    userCol: emailTemplatesTable.userId,
-    hasUpdatedAt: true,
-  },
-  sequence: {
-    table: dripSequencesTable,
-    idCol: dripSequencesTable.id,
-    userCol: dripSequencesTable.userId,
-    hasUpdatedAt: true,
-  },
-  sequence_step: {
-    table: dripSequenceStepsTable,
-    idCol: dripSequenceStepsTable.id,
-    userCol: null,
-    hasUpdatedAt: false,
-  },
-  calendar_event: {
-    table: calendarEventsTable,
-    idCol: calendarEventsTable.id,
-    userCol: calendarEventsTable.userId,
-    hasUpdatedAt: false,
-  },
-  trigger: {
-    table: triggerRulesTable,
-    idCol: triggerRulesTable.id,
-    userCol: triggerRulesTable.userId,
-    hasUpdatedAt: false,
-  },
-  broadcast: {
-    table: broadcastsTable,
-    idCol: broadcastsTable.id,
-    userCol: broadcastsTable.userId,
-    hasUpdatedAt: false,
-  },
-  setting: {
-    table: settingsTable,
-    idCol: settingsTable.id,
-    userCol: settingsTable.userId,
-    hasUpdatedAt: true,
-  },
+  lead: { table: leadsTable, idCol: leadsTable.id, userCol: leadsTable.userId, hasUpdatedAt: true },
+  contact: { table: contactsTable, idCol: contactsTable.id, userCol: contactsTable.userId, hasUpdatedAt: true },
+  template: { table: emailTemplatesTable, idCol: emailTemplatesTable.id, userCol: emailTemplatesTable.userId, hasUpdatedAt: true },
+  sequence: { table: dripSequencesTable, idCol: dripSequencesTable.id, userCol: dripSequencesTable.userId, hasUpdatedAt: true },
+  sequence_step: { table: dripSequenceStepsTable, idCol: dripSequenceStepsTable.id, userCol: null, hasUpdatedAt: false },
+  calendar_event: { table: calendarEventsTable, idCol: calendarEventsTable.id, userCol: calendarEventsTable.userId, hasUpdatedAt: false },
+  trigger: { table: triggerRulesTable, idCol: triggerRulesTable.id, userCol: triggerRulesTable.userId, hasUpdatedAt: false },
+  broadcast: { table: broadcastsTable, idCol: broadcastsTable.id, userCol: broadcastsTable.userId, hasUpdatedAt: false },
+  setting: { table: settingsTable, idCol: settingsTable.id, userCol: settingsTable.userId, hasUpdatedAt: true },
+};
+
+const PLURAL_TO_ENTITY: Record<string, string> = {
+  leads: "lead",
+  contacts: "contact",
+  templates: "template",
+  sequences: "sequence",
+  sequence_steps: "sequence_step",
+  calendar_events: "calendar_event",
+  triggers: "trigger",
+  broadcasts: "broadcast",
+  settings: "setting",
 };
 
 async function verifyOwnership(
@@ -111,18 +78,26 @@ async function verifyOwnership(
   return !!record;
 }
 
-router.get("/history/:entityType/:entityId", async (req: Request, res: Response) => {
+function resolveEntityType(raw: string): string | null {
+  if (ENTITY_MAP[raw]) return raw;
+  if (PLURAL_TO_ENTITY[raw]) return PLURAL_TO_ENTITY[raw];
+  return null;
+}
+
+async function handleHistory(req: Request, res: Response) {
   try {
     const userId = req.user!.id;
-    const { entityType, entityId } = req.params;
+    const rawEntityType = req.params.entityType;
+    const entityId = req.params.entityId || req.params.id;
     const limit = Math.min(Number(req.query.limit) || 50, 100);
     const offset = Number(req.query.offset) || 0;
 
-    const descriptor = ENTITY_MAP[entityType];
-    if (!descriptor) {
+    const entityType = resolveEntityType(rawEntityType);
+    if (!entityType) {
       return res.status(400).json({ error: "Invalid entity type" });
     }
 
+    const descriptor = ENTITY_MAP[entityType];
     const owned = await verifyOwnership(descriptor, entityType, Number(entityId), userId);
 
     if (!owned) {
@@ -188,18 +163,21 @@ router.get("/history/:entityType/:entityId", async (req: Request, res: Response)
     const message = err instanceof Error ? err.message : "Unknown error";
     res.status(500).json({ error: message });
   }
-});
+}
 
-router.post("/history/:entityType/:entityId/rollback/:revisionId", async (req: Request, res: Response) => {
+async function handleRollback(req: Request, res: Response) {
   try {
     const userId = req.user!.id;
-    const { entityType, entityId, revisionId } = req.params;
+    const rawEntityType = req.params.entityType;
+    const entityId = req.params.entityId || req.params.id;
+    const { revisionId } = req.params;
 
-    const descriptor = ENTITY_MAP[entityType];
-    if (!descriptor) {
+    const entityType = resolveEntityType(rawEntityType);
+    if (!entityType) {
       return res.status(400).json({ error: "Invalid entity type" });
     }
 
+    const descriptor = ENTITY_MAP[entityType];
     const owned = await verifyOwnership(descriptor, entityType, Number(entityId), userId);
 
     if (!owned) {
@@ -234,19 +212,11 @@ router.post("/history/:entityType/:entityId/rollback/:revisionId", async (req: R
       return res.status(404).json({ error: "Revision not found" });
     }
 
-    let restoreData: Record<string, unknown> | null = null;
-
-    if (auditEntry.action === "update" && auditEntry.beforeSnapshot) {
-      restoreData = auditEntry.beforeSnapshot as Record<string, unknown>;
-    } else if (auditEntry.action === "delete" && auditEntry.beforeSnapshot) {
-      restoreData = auditEntry.beforeSnapshot as Record<string, unknown>;
-    } else if (auditEntry.action === "create" && auditEntry.afterSnapshot) {
-      restoreData = auditEntry.afterSnapshot as Record<string, unknown>;
-    } else if (auditEntry.action === "rollback" && auditEntry.afterSnapshot) {
-      restoreData = auditEntry.afterSnapshot as Record<string, unknown>;
-    } else {
+    const snapshot = auditEntry.afterSnapshot ?? auditEntry.beforeSnapshot;
+    if (!snapshot) {
       return res.status(400).json({ error: "This revision cannot be used for rollback" });
     }
+    const restoreData = snapshot as Record<string, unknown>;
 
     const { id: _id, createdAt: _ca, updatedAt: _ua, userId: _uid, ...safeData } = restoreData;
 
@@ -286,20 +256,19 @@ router.post("/history/:entityType/:entityId/rollback/:revisionId", async (req: R
       result = inserted as Record<string, unknown>;
     }
 
-    logAudit(
-      entityType,
-      Number(entityId),
-      "rollback",
-      userId,
-      beforeState,
-      result
-    );
+    logAudit(entityType, Number(entityId), "rollback", userId, beforeState, result);
 
     res.json(result);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     res.status(500).json({ error: message });
   }
-});
+}
+
+router.get("/history/:entityType/:entityId", handleHistory);
+router.get("/:entityType/:id/history", handleHistory);
+
+router.post("/history/:entityType/:entityId/rollback/:revisionId", handleRollback);
+router.post("/:entityType/:id/rollback/:revisionId", handleRollback);
 
 export default router;

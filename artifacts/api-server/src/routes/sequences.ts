@@ -65,6 +65,10 @@ router.delete("/sequences/:id", async (req: Request, res: Response) => {
     const [before] = await db.select().from(dripSequencesTable).where(and(eq(dripSequencesTable.id, id), eq(dripSequencesTable.userId, userId)));
     if (!before) return res.status(404).json({ error: "Not found" });
 
+    const steps = await db.select().from(dripSequenceStepsTable).where(eq(dripSequenceStepsTable.sequenceId, id));
+    for (const step of steps) {
+      logAudit("sequence_step", step.id, "delete", userId, step as Record<string, unknown>, null);
+    }
     await db.delete(dripSequenceStepsTable).where(eq(dripSequenceStepsTable.sequenceId, id));
     await db.delete(dripEnrollmentsTable).where(eq(dripEnrollmentsTable.sequenceId, id));
     await db.delete(dripSequencesTable).where(eq(dripSequencesTable.id, id));

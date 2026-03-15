@@ -9,6 +9,8 @@ export function logAudit(
   before: Record<string, unknown> | null,
   after: Record<string, unknown> | null
 ) {
+  const afterSnapshot = action === "delete" && !after && before ? before : after;
+
   db.insert(auditLogTable)
     .values({
       entityType,
@@ -16,7 +18,7 @@ export function logAudit(
       action,
       userId,
       beforeSnapshot: before,
-      afterSnapshot: after,
+      afterSnapshot,
     })
     .then(() => {})
     .catch((err) => {
