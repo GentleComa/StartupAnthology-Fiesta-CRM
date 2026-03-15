@@ -222,7 +222,7 @@ export default function AIChatScreen() {
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: topPad, backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      keyboardVerticalOffset={Platform.OS === "ios" ? (insets.bottom + 49) : 20}
     >
       <View style={styles.header}>
         <Pressable onPress={() => { refetchConversations(); setViewState("history"); }} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel="View conversation history">

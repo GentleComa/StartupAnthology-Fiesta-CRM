@@ -79,6 +79,11 @@ export default function SettingsScreen() {
   const [diagData, setDiagData] = useState<any>(null);
   const [diagLoading, setDiagLoading] = useState(false);
   const [recentData, setRecentData] = useState<any>(null);
+  const [integrationStatuses, setIntegrationStatuses] = useState<{
+    gmail?: string;
+    googleCalendar?: string;
+    notion?: string;
+  }>({});
 
   useEffect(() => {
     if (settings) {
@@ -107,6 +112,15 @@ export default function SettingsScreen() {
       setEditProfileImage(user.profileImageUrl || "");
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    api.getDiagnostics().then((diag: any) => {
+      if (diag?.integrations) {
+        setIntegrationStatuses(diag.integrations);
+      }
+    }).catch(() => {});
+  }, [isAdmin]);
 
   const updateSettingsMut = useMutation({
     mutationFn: (data: Record<string, string>) => api.updateSettings(data),
@@ -424,26 +438,29 @@ export default function SettingsScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Integrations</Text>
-        <View style={styles.integrationRow}>
-          <View style={styles.integrationIcon}>
-            <Feather name="mail" size={18} color={colors.success} />
-          </View>
-          <View style={styles.integrationInfo}>
-            <Text style={styles.integrationName}>Gmail</Text>
-            <Text style={styles.integrationStatus}>Connected</Text>
-          </View>
-          <View style={styles.connectedDot} />
-        </View>
-        <View style={styles.integrationRow}>
-          <View style={styles.integrationIcon}>
-            <Feather name="book" size={18} color={colors.primary} />
-          </View>
-          <View style={styles.integrationInfo}>
-            <Text style={styles.integrationName}>Notion</Text>
-            <Text style={styles.integrationStatus}>Connected</Text>
-          </View>
-          <View style={styles.connectedDot} />
-        </View>
+        {([
+          { key: "gmail" as const, label: "Gmail", icon: "mail" as const, fallbackColor: colors.success },
+          { key: "googleCalendar" as const, label: "Google Calendar", icon: "calendar" as const, fallbackColor: colors.accent },
+          { key: "notion" as const, label: "Notion", icon: "book" as const, fallbackColor: colors.primary },
+        ]).map((integration) => {
+          const status = integrationStatuses[integration.key];
+          const hasStatus = status !== undefined;
+          const isConnected = status === "configured";
+          const dotColor = !hasStatus ? colors.textTertiary : isConnected ? colors.success : colors.textTertiary;
+          const statusLabel = !hasStatus ? "Unknown" : isConnected ? "Connected" : "Not connected";
+          return (
+            <View key={integration.key} style={styles.integrationRow}>
+              <View style={styles.integrationIcon}>
+                <Feather name={integration.icon} size={18} color={isConnected ? integration.fallbackColor : colors.textTertiary} />
+              </View>
+              <View style={styles.integrationInfo}>
+                <Text style={styles.integrationName}>{integration.label}</Text>
+                <Text style={[styles.integrationStatus, { color: dotColor }]}>{statusLabel}</Text>
+              </View>
+              <View style={[styles.connectedDot, { backgroundColor: dotColor }]} />
+            </View>
+          );
+        })}
         <View style={styles.integrationRow}>
           <View style={styles.integrationIcon}>
             <Feather name="refresh-cw" size={18} color={colors.accent} />
