@@ -20,7 +20,15 @@ router.post("/email/send", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid email address" });
     }
 
-    await sendGmailEmail(to, subject, body);
+    try {
+      await sendGmailEmail(to, subject, body);
+    } catch (gmailErr: any) {
+      const msg = gmailErr.message || "";
+      if (msg.includes("access") || msg.includes("token") || msg.includes("credentials") || msg.includes("refresh")) {
+        return res.status(503).json({ error: "Gmail is not connected. Please configure Gmail integration in your Replit workspace." });
+      }
+      throw gmailErr;
+    }
 
     const [activity] = await db.insert(activitiesTable).values({
       leadId: leadId || null,
@@ -36,12 +44,17 @@ router.post("/email/send", async (req: Request, res: Response) => {
     if (addToCalendar) {
       const now = new Date();
       const endTime = new Date(now.getTime() + 5 * 60000);
-      const googleEventId = await createCalendarEvent({
-        title: `Email sent: ${subject}`,
-        description: `Sent to ${to}`,
-        startTime: now.toISOString(),
-        endTime: endTime.toISOString(),
-      });
+      let googleEventId: string | null = null;
+      try {
+        googleEventId = await createCalendarEvent({
+          title: `Email sent: ${subject}`,
+          description: `Sent to ${to}`,
+          startTime: now.toISOString(),
+          endTime: endTime.toISOString(),
+        });
+      } catch (calErr: any) {
+        console.error("Google Calendar sync failed for email event:", calErr.message);
+      }
       await db.insert(calendarEventsTable).values({
         googleEventId,
         title: `Email sent: ${subject}`,
