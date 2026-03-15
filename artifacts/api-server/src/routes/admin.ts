@@ -6,9 +6,7 @@ import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
 
-router.use(requireAdmin);
-
-router.get("/admin/users", async (req: Request, res: Response) => {
+router.get("/admin/users", requireAdmin, async (req: Request, res: Response) => {
   try {
     const users = await db.select({
       id: usersTable.id,
@@ -27,7 +25,7 @@ router.get("/admin/users", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/admin/users", async (req: Request, res: Response) => {
+router.post("/admin/users", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { email, password, firstName, lastName, role } = req.body;
 
@@ -72,7 +70,7 @@ router.post("/admin/users", async (req: Request, res: Response) => {
   }
 });
 
-router.put("/admin/users/:id", async (req: Request, res: Response) => {
+router.put("/admin/users/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const { role, isActive } = req.body;
     if (role !== undefined && !["admin", "user"].includes(role)) {
