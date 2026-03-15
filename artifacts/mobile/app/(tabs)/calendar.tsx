@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import EventDetailModal from "@/components/EventDetailModal";
+import FriendlyDateTimePicker from "@/components/FriendlyDateTimePicker";
 import Colors from "@/constants/colors";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
@@ -215,11 +216,10 @@ function CreateEventModal({ visible, onClose, onCreated }: { visible: boolean; o
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [eventType, setEventType] = useState("other");
-  const [dateStr, setDateStr] = useState(() => {
+  const [startDate, setStartDate] = useState(() => {
     const d = new Date();
-    d.setMinutes(0);
-    d.setSeconds(0);
-    return d.toISOString().slice(0, 16);
+    d.setMinutes(0, 0, 0);
+    return d;
   });
   const [duration, setDuration] = useState("30");
   const [linkType, setLinkType] = useState<"none" | "lead" | "contact">("none");
@@ -243,8 +243,8 @@ function CreateEventModal({ visible, onClose, onCreated }: { visible: boolean; o
 
   const handleCreate = () => {
     if (!title.trim()) return;
-    const startTime = new Date(dateStr).toISOString();
-    const endTime = new Date(new Date(dateStr).getTime() + Number(duration) * 60000).toISOString();
+    const startTime = startDate.toISOString();
+    const endTime = new Date(startDate.getTime() + Number(duration) * 60000).toISOString();
     createMut.mutate({
       title: title.trim(),
       description: description.trim() || undefined,
@@ -290,14 +290,7 @@ function CreateEventModal({ visible, onClose, onCreated }: { visible: boolean; o
             ))}
           </View>
 
-          <Text style={modalStyles.label}>Date & Time</Text>
-          <TextInput
-            style={modalStyles.input}
-            value={dateStr}
-            onChangeText={setDateStr}
-            placeholder="YYYY-MM-DDTHH:MM"
-            placeholderTextColor={Colors.textTertiary}
-          />
+          <FriendlyDateTimePicker label="Date & Time" value={startDate} onChange={setStartDate} />
 
           <Text style={modalStyles.label}>Duration (minutes)</Text>
           <View style={modalStyles.typeRow}>

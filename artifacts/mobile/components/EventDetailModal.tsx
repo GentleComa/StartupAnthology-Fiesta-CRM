@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import FriendlyDateTimePicker from "@/components/FriendlyDateTimePicker";
 import Colors from "@/constants/colors";
 
 interface CalendarEvent {
@@ -42,19 +43,6 @@ const EVENT_COLORS: Record<string, string> = {
   other: Colors.textTertiary,
 };
 
-function toLocalInputStr(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function fromLocalInputStr(str: string): Date | null {
-  const m = str.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})$/);
-  if (!m) return null;
-  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]));
-  return isNaN(d.getTime()) ? null : d;
-}
-
 export default function EventDetailModal({
   visible,
   event,
@@ -67,31 +55,28 @@ export default function EventDetailModal({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [eventType, setEventType] = useState("other");
-  const [startStr, setStartStr] = useState("");
-  const [endStr, setEndStr] = useState("");
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
 
   useEffect(() => {
     if (event) {
       setTitle(event.title || "");
       setDescription(event.description || "");
       setEventType(event.eventType || "other");
-      setStartStr(toLocalInputStr(event.startTime));
-      setEndStr(toLocalInputStr(event.endTime));
+      setStartDate(new Date(event.startTime));
+      setEndDate(new Date(event.endTime));
       setEditing(false);
     }
   }, [event]);
 
   const handleSave = () => {
     if (!event) return;
-    const s = fromLocalInputStr(startStr);
-    const e = fromLocalInputStr(endStr);
-    if (!s || !e) return;
     onSave(event.id, {
       title,
       description: description || undefined,
       eventType,
-      startTime: s.toISOString(),
-      endTime: e.toISOString(),
+      startTime: startDate.toISOString(),
+      endTime: endDate.toISOString(),
     });
   };
 
@@ -105,17 +90,15 @@ export default function EventDetailModal({
     setTitle(event.title || "");
     setDescription(event.description || "");
     setEventType(event.eventType || "other");
-    setStartStr(toLocalInputStr(event.startTime));
-    setEndStr(toLocalInputStr(event.endTime));
+    setStartDate(new Date(event.startTime));
+    setEndDate(new Date(event.endTime));
     setEditing(false);
   };
 
   if (!event) return null;
 
   const typeColor = EVENT_COLORS[event.eventType] || Colors.textTertiary;
-  const startValid = fromLocalInputStr(startStr) !== null;
-  const endValid = fromLocalInputStr(endStr) !== null;
-  const canSave = title.trim() && startValid && endValid && !isSaving;
+  const canSave = title.trim() && !isSaving;
 
   const formatDateTime = (dateStr: string) =>
     new Date(dateStr).toLocaleString([], {
@@ -177,23 +160,8 @@ export default function EventDetailModal({
                 ))}
               </View>
 
-              <Text style={styles.label}>Start Time</Text>
-              <TextInput
-                style={[styles.input, !startValid && startStr.length > 0 && styles.inputError]}
-                value={startStr}
-                onChangeText={setStartStr}
-                placeholder="YYYY-MM-DD HH:MM"
-                placeholderTextColor={Colors.textTertiary}
-              />
-
-              <Text style={styles.label}>End Time</Text>
-              <TextInput
-                style={[styles.input, !endValid && endStr.length > 0 && styles.inputError]}
-                value={endStr}
-                onChangeText={setEndStr}
-                placeholder="YYYY-MM-DD HH:MM"
-                placeholderTextColor={Colors.textTertiary}
-              />
+              <FriendlyDateTimePicker label="Start Time" value={startDate} onChange={setStartDate} />
+              <FriendlyDateTimePicker label="End Time" value={endDate} onChange={setEndDate} />
 
               <Text style={styles.label}>Description</Text>
               <TextInput
@@ -369,7 +337,6 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceGrotesk_400Regular",
     color: Colors.text,
   },
-  inputError: { borderWidth: 1, borderColor: Colors.error },
   textArea: { minHeight: 100 },
   formActions: { flexDirection: "row", gap: 12, marginTop: 8 },
   cancelBtn: {
