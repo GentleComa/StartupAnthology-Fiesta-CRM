@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth";
 import { type ThemeColors } from "@/constants/colors";
 import { useTheme } from "@/lib/theme";
 
-const saIconWhite = require("@/assets/images/sa-icon-white.png");
+const saLogoBlack = require("@/assets/images/sa-logo-black.png");
 
 export function LoginScreen() {
   const { colors } = useTheme();
@@ -35,9 +35,7 @@ export function LoginScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <View style={styles.logoCircle}>
-            <Image source={saIconWhite} style={styles.logoImage} resizeMode="contain" />
-          </View>
+          <Image source={saLogoBlack} style={styles.logoImage} resizeMode="contain" />
           <Text style={styles.title}>Fiesta</Text>
           <Text style={styles.subtitle}>
             Your relationships. Your pipeline. One place.
@@ -112,18 +110,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: "center",
     marginBottom: 32,
   },
-  logoCircle: {
+  logoImage: {
     width: 100,
     height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.accent,
-    justifyContent: "center",
-    alignItems: "center",
     marginBottom: 20,
-  },
-  logoImage: {
-    width: 64,
-    height: 64,
   },
   title: {
     fontSize: 28,
