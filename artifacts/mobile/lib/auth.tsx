@@ -182,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       }
     })();
-  }, [response, request, redirectUri, fetchUser]);
+  }, [response, request, fetchUser]);
 
   const login = useCallback(async () => {
     try {
