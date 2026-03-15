@@ -75,18 +75,19 @@ router.get("/history/:entityType/:entityId", async (req: Request, res: Response)
     const [record] = await db.select().from(table).where(and(eq(idCol, Number(entityId)), eq(userCol, userId)));
 
     if (!record) {
-      const [anyAudit] = await db
+      const [ownedAudit] = await db
         .select({ id: auditLogTable.id })
         .from(auditLogTable)
         .where(
           and(
             eq(auditLogTable.entityType, entityType),
-            eq(auditLogTable.entityId, Number(entityId))
+            eq(auditLogTable.entityId, Number(entityId)),
+            eq(auditLogTable.userId, userId)
           )
         )
         .limit(1);
 
-      if (!anyAudit) {
+      if (!ownedAudit) {
         return res.status(404).json({ error: "Entity not found" });
       }
     }
@@ -106,7 +107,8 @@ router.get("/history/:entityType/:entityId", async (req: Request, res: Response)
       .where(
         and(
           eq(auditLogTable.entityType, entityType),
-          eq(auditLogTable.entityId, Number(entityId))
+          eq(auditLogTable.entityId, Number(entityId)),
+          eq(auditLogTable.userId, userId)
         )
       )
       .orderBy(desc(auditLogTable.createdAt))

@@ -116,7 +116,7 @@ router.post("/contacts/:id/mark-contacted", async (req: Request, res: Response) 
       } catch (err: any) {
         console.error("Google Calendar sync failed for follow-up:", err.message);
       }
-      await db.insert(calendarEventsTable).values({
+      const [calEvent] = await db.insert(calendarEventsTable).values({
         googleEventId,
         title: `Follow-up: ${contact.name}`,
         description: `Scheduled follow-up with ${contact.name}`,
@@ -125,7 +125,8 @@ router.post("/contacts/:id/mark-contacted", async (req: Request, res: Response) 
         contactId: contact.id,
         eventType: "follow-up",
         userId,
-      });
+      }).returning();
+      logAudit("calendar_event", calEvent.id, "create", userId, null, calEvent as Record<string, unknown>);
     }
 
     res.json(contact);

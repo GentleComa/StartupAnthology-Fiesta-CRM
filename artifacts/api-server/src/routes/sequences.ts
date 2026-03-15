@@ -131,7 +131,7 @@ router.post("/sequences/:id/enroll", async (req: Request, res: Response) => {
       } catch (err: any) {
         console.error("Google Calendar sync failed for enrollment:", err.message);
       }
-      await db.insert(calendarEventsTable).values({
+      const [calEvent] = await db.insert(calendarEventsTable).values({
         googleEventId,
         title: `Drip: ${sequence.name}`,
         description: `Enrolled in drip sequence "${sequence.name}"`,
@@ -141,7 +141,8 @@ router.post("/sequences/:id/enroll", async (req: Request, res: Response) => {
         contactId: req.body.contactId || null,
         eventType: "follow-up",
         userId,
-      });
+      }).returning();
+      logAudit("calendar_event", calEvent.id, "create", userId, null, calEvent as Record<string, unknown>);
     }
 
     res.status(201).json(enrollment);
