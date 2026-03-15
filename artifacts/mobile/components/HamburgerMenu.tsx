@@ -14,7 +14,7 @@ import { useTheme } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 
 const BASE_MENU_ITEMS = [
-  { label: "Workflows", icon: "send" as const, route: "/comms" },
+  { label: "Workflows", icon: "git-branch" as const, route: "/comms" },
   { label: "Files", icon: "folder" as const, route: "/files" },
   { label: "Settings", icon: "settings" as const, route: "/settings" },
 ];
@@ -36,7 +36,13 @@ export function HamburgerMenu() {
 
   return (
     <>
-      <Pressable onPress={() => setOpen(true)} hitSlop={10}>
+      <Pressable
+        onPress={() => setOpen(true)}
+        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel="Open menu"
+        accessibilityHint="Opens navigation menu"
+      >
         <Feather name="menu" size={22} color={colors.text} />
       </Pressable>
 
@@ -46,8 +52,16 @@ export function HamburgerMenu() {
         animationType="fade"
         onRequestClose={() => setOpen(false)}
       >
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-          <View style={[styles.menuContainer, { top: topPad, backgroundColor: colors.surface, shadowColor: colors.text }]}>
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => setOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Close menu"
+        >
+          <View
+            style={[styles.menuContainer, { top: topPad, backgroundColor: colors.surface, shadowColor: colors.text }]}
+            accessibilityViewIsModal
+          >
             {menuItems.map((item, idx) => (
               <Pressable
                 key={item.label}
@@ -61,6 +75,8 @@ export function HamburgerMenu() {
                     router.push(item.route as any);
                   }, 100);
                 }}
+                accessibilityRole="button"
+                accessibilityLabel={item.label}
               >
                 <Feather name={item.icon} size={18} color={colors.accent} />
                 <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>

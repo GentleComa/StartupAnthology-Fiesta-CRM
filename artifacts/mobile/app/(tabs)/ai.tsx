@@ -205,11 +205,11 @@ export default function AIChatScreen() {
     return (
       <View style={[styles.container, { paddingTop: topPad, backgroundColor: colors.background }]}>
         <View style={styles.header}>
-          <Pressable onPress={() => setViewState("chat")} style={styles.headerBtn}>
+          <Pressable onPress={() => setViewState("chat")} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel="Back to chat">
             <Feather name="arrow-left" size={22} color={colors.text} />
           </Pressable>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Past Conversations</Text>
-          <Pressable onPress={startNewChat} style={styles.headerBtn}>
+          <Pressable onPress={startNewChat} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel="New conversation">
             <Feather name="plus" size={22} color={colors.primary} />
           </Pressable>
         </View>
@@ -225,6 +225,9 @@ export default function AIChatScreen() {
                 pressed && styles.pressed,
               ]}
               onPress={() => loadConversation(item.id)}
+              accessibilityRole="button"
+              accessibilityLabel={item.title}
+              accessibilityHint="Double tap to open this conversation"
             >
               <View style={{ flex: 1 }}>
                 <Text style={[styles.historyTitle, { color: colors.text }]} numberOfLines={1}>
@@ -252,7 +255,7 @@ export default function AIChatScreen() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
       <View style={styles.header}>
-        <Pressable onPress={() => { refetchConversations(); setViewState("history"); }} style={styles.headerBtn}>
+        <Pressable onPress={() => { refetchConversations(); setViewState("history"); }} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel="View conversation history">
           <Feather name="clock" size={22} color={colors.text} />
         </Pressable>
         <View style={styles.headerCenter}>
@@ -261,7 +264,7 @@ export default function AIChatScreen() {
           </View>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Coach</Text>
         </View>
-        <Pressable onPress={startNewChat} style={styles.headerBtn}>
+        <Pressable onPress={startNewChat} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel="New conversation">
           <Feather name="edit" size={20} color={colors.text} />
         </Pressable>
       </View>
@@ -299,6 +302,7 @@ export default function AIChatScreen() {
           maxLength={2000}
           returnKeyType="default"
           editable={!isSending}
+          accessibilityLabel="Message to Coach"
         />
         <Pressable
           onPress={sendMessage}
@@ -307,6 +311,9 @@ export default function AIChatScreen() {
             { backgroundColor: inputText.trim() && !isSending ? colors.accent : colors.border },
           ]}
           disabled={!inputText.trim() || isSending}
+          accessibilityRole="button"
+          accessibilityLabel="Send message"
+          accessibilityState={{ disabled: !inputText.trim() || isSending }}
         >
           {isSending ? (
             <ActivityIndicator size="small" color="#fff" />

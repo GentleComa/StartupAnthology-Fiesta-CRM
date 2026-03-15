@@ -113,13 +113,13 @@ export default function CalendarScreen() {
       </View>
 
       <View style={styles.weekNav}>
-        <Pressable onPress={() => setWeekOffset((p) => p - 1)} hitSlop={10}>
+        <Pressable onPress={() => setWeekOffset((p) => p - 1)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Previous week">
           <Feather name="chevron-left" size={24} color={colors.text} />
         </Pressable>
-        <Pressable onPress={() => setWeekOffset(0)}>
+        <Pressable onPress={() => setWeekOffset(0)} accessibilityRole="button" accessibilityLabel={`Current week: ${weekLabel}. Tap to return to today`}>
           <Text style={[styles.weekLabel, { color: colors.text }]}>{weekLabel}</Text>
         </Pressable>
-        <Pressable onPress={() => setWeekOffset((p) => p + 1)} hitSlop={10}>
+        <Pressable onPress={() => setWeekOffset((p) => p + 1)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Next week">
           <Feather name="chevron-right" size={24} color={colors.text} />
         </Pressable>
       </View>
@@ -147,7 +147,14 @@ export default function CalendarScreen() {
                   <Text style={[styles.noEvents, { color: colors.textTertiary }]}>Nothing scheduled</Text>
                 ) : (
                   day.events.map((ev: any) => (
-                    <Pressable key={ev.id} style={[styles.eventCard, { backgroundColor: colors.surface }]} onPress={() => setSelectedEvent(ev)}>
+                    <Pressable
+                      key={ev.id}
+                      style={[styles.eventCard, { backgroundColor: colors.surface }]}
+                      onPress={() => setSelectedEvent(ev)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${ev.title}, ${formatTime(ev.startTime)}, ${ev.eventType}`}
+                      accessibilityHint="Double tap to view or edit this event"
+                    >
                       <View style={[styles.eventStripe, { backgroundColor: EVENT_TYPE_COLORS[ev.eventType] || colors.textTertiary }]} />
                       <View style={styles.eventBody}>
                         <View style={styles.eventTop}>
@@ -160,13 +167,13 @@ export default function CalendarScreen() {
                             <Text style={[styles.typeText, { color: EVENT_TYPE_COLORS[ev.eventType] || colors.textTertiary }]}>{ev.eventType}</Text>
                           </View>
                           {ev.leadId && (
-                            <Pressable onPress={() => router.push({ pathname: "/lead/[id]", params: { id: String(ev.leadId) } })} style={styles.linkBadge}>
+                            <Pressable onPress={() => router.push({ pathname: "/lead/[id]", params: { id: String(ev.leadId) } })} style={styles.linkBadge} accessibilityRole="link" accessibilityLabel={`Open lead: ${ev.leadName || `Lead #${ev.leadId}`}`}>
                               <Feather name="target" size={12} color={colors.info} />
                               <Text style={[styles.linkText, { color: colors.info }]}>{ev.leadName || `Lead #${ev.leadId}`}</Text>
                             </Pressable>
                           )}
                           {ev.contactId && (
-                            <Pressable onPress={() => router.push({ pathname: "/contact/[id]", params: { id: String(ev.contactId) } })} style={styles.linkBadge}>
+                            <Pressable onPress={() => router.push({ pathname: "/contact/[id]", params: { id: String(ev.contactId) } })} style={styles.linkBadge} accessibilityRole="link" accessibilityLabel={`Open contact: ${ev.contactName || `Contact #${ev.contactId}`}`}>
                               <Feather name="user" size={12} color={colors.info} />
                               <Text style={[styles.linkText, { color: colors.info }]}>{ev.contactName || `Contact #${ev.contactId}`}</Text>
                             </Pressable>
@@ -183,7 +190,7 @@ export default function CalendarScreen() {
         </ScrollView>
       )}
 
-      <Pressable style={[styles.fab, { backgroundColor: colors.primary }]} onPress={() => setShowCreate(true)}>
+      <Pressable style={[styles.fab, { backgroundColor: colors.primary }]} onPress={() => setShowCreate(true)} accessibilityRole="button" accessibilityLabel="Add event">
         <Feather name="plus" size={24} color={colors.onPrimary} />
       </Pressable>
 

@@ -54,6 +54,9 @@ function LeadCard({ lead, onSwipeLeft, onSwipeRight, colors }: { lead: any; onSw
       <Pressable
         onPress={() => router.push({ pathname: "/lead/[id]", params: { id: String(lead.id) } })}
         style={({ pressed }) => pressed && styles.pressed}
+        accessibilityRole="button"
+        accessibilityLabel={`${lead.name}, ${STATUS_LABELS[lead.status] ?? lead.status}`}
+        accessibilityHint="Double tap to view lead. Swipe left or right to move to adjacent stage."
       >
         <View style={styles.leadCardHeader}>
           <Text style={[styles.leadName, { color: colors.text }]} numberOfLines={1}>{lead.name}</Text>
@@ -167,6 +170,8 @@ export default function FunnelScreen() {
             }}
             style={[styles.syncBtn, { backgroundColor: colors.accent }]}
             disabled={horizonSyncMut.isPending}
+            accessibilityRole="button"
+            accessibilityLabel="Sync from Horizon"
           >
             {horizonSyncMut.isPending ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -185,6 +190,8 @@ export default function FunnelScreen() {
             onPress={() => setViewMode(viewMode === "kanban" ? "list" : "kanban")}
             style={[styles.viewToggle, { backgroundColor: colors.surfaceSecondary }]}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={viewMode === "kanban" ? "Switch to list view" : "Switch to kanban view"}
           >
             <Feather name={viewMode === "kanban" ? "list" : "columns"} size={20} color={colors.primary} />
           </Pressable>
@@ -259,6 +266,9 @@ export default function FunnelScreen() {
             <Pressable
               style={({ pressed }) => [styles.listCard, { backgroundColor: colors.surface }, pressed && styles.pressed]}
               onPress={() => router.push({ pathname: "/lead/[id]", params: { id: String(item.id) } })}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.name}, ${STATUS_LABELS[item.status] ?? item.status}`}
+              accessibilityHint="Double tap to view lead"
             >
               <View style={styles.listCardLeft}>
                 <Text style={[styles.leadName, { color: colors.text }]}>{item.name}</Text>
@@ -304,6 +314,8 @@ export default function FunnelScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           setShowAdd(true);
         }}
+        accessibilityRole="button"
+        accessibilityLabel="Add lead"
       >
         <Feather name="plus" size={24} color={colors.onPrimary} />
       </Pressable>

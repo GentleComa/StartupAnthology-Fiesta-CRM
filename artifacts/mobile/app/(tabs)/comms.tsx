@@ -51,7 +51,14 @@ export default function CommsScreen() {
 
       <View style={styles.tabs}>
         {(["templates", "sequences", "broadcasts"] as TabKey[]).map((t) => (
-          <Pressable key={t} style={[styles.tab, { backgroundColor: colors.surfaceSecondary }, tab === t && { backgroundColor: colors.primary }]} onPress={() => setTab(t)}>
+          <Pressable
+            key={t}
+            style={[styles.tab, { backgroundColor: colors.surfaceSecondary }, tab === t && { backgroundColor: colors.primary }]}
+            onPress={() => setTab(t)}
+            accessibilityRole="tab"
+            accessibilityLabel={t.charAt(0).toUpperCase() + t.slice(1)}
+            accessibilityState={{ selected: tab === t }}
+          >
             <Feather
               name={t === "templates" ? "file-text" : t === "sequences" ? "repeat" : "send" as any}
               size={14}
@@ -80,6 +87,9 @@ export default function CommsScreen() {
                 <Pressable
                   style={({ pressed }) => [styles.card, { backgroundColor: colors.surface }, pressed && styles.pressed]}
                   onPress={() => router.push({ pathname: "/template/[id]", params: { id: String(item.id) } })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.name} template`}
+                  accessibilityHint="Double tap to open template"
                 >
                   <View style={[styles.cardIcon, { backgroundColor: colors.primary + "15" }]}>
                     <Feather name="file-text" size={18} color={colors.primary} />
@@ -118,6 +128,9 @@ export default function CommsScreen() {
                 <Pressable
                   style={({ pressed }) => [styles.card, { backgroundColor: colors.surface }, pressed && styles.pressed]}
                   onPress={() => router.push({ pathname: "/sequence/[id]", params: { id: String(item.id) } })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.name} sequence`}
+                  accessibilityHint="Double tap to open sequence"
                 >
                   <View style={[styles.cardIcon, { backgroundColor: colors.info + "15" }]}>
                     <Feather name="repeat" size={18} color={colors.info} />
@@ -152,7 +165,13 @@ export default function CommsScreen() {
               contentContainerStyle={styles.listContent}
               refreshControl={<RefreshControl refreshing={false} onRefresh={onRefresh} tintColor={colors.primary} />}
               renderItem={({ item }) => (
-                <Pressable style={({ pressed }) => [styles.card, { backgroundColor: colors.surface }, pressed && styles.pressed]}>
+                <Pressable
+                  style={({ pressed }) => [styles.card, { backgroundColor: colors.surface }, pressed && styles.pressed]}
+                  onPress={() => router.push({ pathname: "/broadcast/[id]", params: { id: String(item.id) } })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.subject} broadcast`}
+                  accessibilityHint="Double tap to open broadcast"
+                >
                   <View style={[styles.cardIcon, { backgroundColor: colors.success + "15" }]}>
                     <Feather name="send" size={18} color={colors.success} />
                   </View>
@@ -165,6 +184,7 @@ export default function CommsScreen() {
                       {item.sentAt ? new Date(item.sentAt).toLocaleDateString() : "Draft"}
                     </Text>
                   </View>
+                  <Feather name="chevron-right" size={18} color={colors.textTertiary} />
                 </Pressable>
               )}
               ListEmptyComponent={
@@ -190,6 +210,8 @@ export default function CommsScreen() {
           else if (tab === "sequences") router.push("/sequence/new");
           else router.push("/broadcast/new");
         }}
+        accessibilityRole="button"
+        accessibilityLabel={tab === "templates" ? "New template" : tab === "sequences" ? "New sequence" : "New broadcast"}
       >
         <Feather name="plus" size={24} color={colors.onPrimary} />
       </Pressable>

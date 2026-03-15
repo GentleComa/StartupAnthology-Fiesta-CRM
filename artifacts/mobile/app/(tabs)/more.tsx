@@ -18,7 +18,7 @@ const saIconWhite = require("@/assets/images/sa-icon-white.png");
 
 const MENU_ITEMS = [
   { label: "Files", icon: "folder", route: "/files" },
-  { label: "Communications", icon: "mail", route: "/(tabs)/comms" },
+  { label: "Workflows", icon: "git-branch", route: "/comms" },
   { label: "AI Assistant", icon: "cpu", route: "/(tabs)/ai" },
   { label: "Settings", icon: "settings", route: "/settings" },
 ] as const;
@@ -40,9 +40,9 @@ export default function MoreScreen() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.title, { color: colors.text }]}>More</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Files, communications & settings.</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Files, workflows & settings.</Text>
         </View>
-        <Pressable onPress={() => router.push("/settings")} hitSlop={10}>
+        <Pressable onPress={() => router.push("/settings")} hitSlop={10} accessibilityRole="button" accessibilityLabel="Settings">
           <Feather name="settings" size={22} color={colors.text} />
         </Pressable>
       </View>
@@ -53,6 +53,8 @@ export default function MoreScreen() {
             key={item.label}
             style={[styles.menuItem, idx < MENU_ITEMS.length - 1 && [styles.menuItemBorder, { borderBottomColor: colors.border }]]}
             onPress={() => router.push(item.route as any)}
+            accessibilityRole="button"
+            accessibilityLabel={item.label}
           >
             <View style={[styles.menuIconWrap, { backgroundColor: colors.accent + "15" }]}>
               <Feather name={item.icon as any} size={20} color={colors.accent} />

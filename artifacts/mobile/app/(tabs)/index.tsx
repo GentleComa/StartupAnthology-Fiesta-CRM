@@ -106,6 +106,9 @@ export default function DashboardScreen() {
               key={contact.id}
               style={({ pressed }) => [styles.followUpCard, { backgroundColor: colors.surface }, pressed && styles.pressed]}
               onPress={() => router.push({ pathname: "/contact/[id]", params: { id: String(contact.id) } })}
+              accessibilityRole="button"
+              accessibilityLabel={`Follow up with ${contact.name}${contact.company ? `, ${contact.company}` : ""}`}
+              accessibilityHint="Double tap to view contact"
             >
               <View style={[styles.followUpAvatar, { backgroundColor: colors.primaryLight }]}>
                 <Text style={styles.avatarText}>{contact.name?.charAt(0)?.toUpperCase()}</Text>

@@ -102,6 +102,8 @@ export default function ContactsScreen() {
             }}
             style={[styles.syncBtn, { backgroundColor: colors.accent }]}
             disabled={horizonSyncMut.isPending}
+            accessibilityRole="button"
+            accessibilityLabel="Sync from Horizon"
           >
             {horizonSyncMut.isPending ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -117,10 +119,22 @@ export default function ContactsScreen() {
       </View>
 
       <View style={styles.tabs}>
-        <Pressable style={[styles.tab, { backgroundColor: colors.surfaceSecondary }, tab === "all" && { backgroundColor: colors.primary }]} onPress={() => setTab("all")}>
+        <Pressable
+          style={[styles.tab, { backgroundColor: colors.surfaceSecondary }, tab === "all" && { backgroundColor: colors.primary }]}
+          onPress={() => setTab("all")}
+          accessibilityRole="tab"
+          accessibilityLabel="All contacts"
+          accessibilityState={{ selected: tab === "all" }}
+        >
           <Text style={[styles.tabText, { color: colors.textSecondary }, tab === "all" && styles.tabTextActive, tab === "all" && { color: colors.onPrimary }]}>All</Text>
         </Pressable>
-        <Pressable style={[styles.tab, { backgroundColor: colors.surfaceSecondary }, tab === "followups" && { backgroundColor: colors.primary }]} onPress={() => setTab("followups")}>
+        <Pressable
+          style={[styles.tab, { backgroundColor: colors.surfaceSecondary }, tab === "followups" && { backgroundColor: colors.primary }]}
+          onPress={() => setTab("followups")}
+          accessibilityRole="tab"
+          accessibilityLabel={`Follow-ups${followUps.length > 0 ? `, ${followUps.length} due` : ""}`}
+          accessibilityState={{ selected: tab === "followups" }}
+        >
           <Feather name="clock" size={14} color={tab === "followups" ? colors.onPrimary : colors.textSecondary} />
           <Text style={[styles.tabText, { color: colors.textSecondary }, tab === "followups" && styles.tabTextActive, tab === "followups" && { color: colors.onPrimary }]}>Follow-ups</Text>
           {followUps.length > 0 && (
@@ -138,6 +152,9 @@ export default function ContactsScreen() {
           <Pressable
             style={({ pressed }) => [styles.contactCard, { backgroundColor: colors.surface }, pressed && styles.pressed]}
             onPress={() => router.push({ pathname: "/contact/[id]", params: { id: String(item.id) } })}
+            accessibilityRole="button"
+            accessibilityLabel={`${item.name}${item.company ? `, ${item.company}` : ""}`}
+            accessibilityHint="Double tap to view contact"
           >
             <View style={[styles.avatar, { backgroundColor: REL_COLORS[item.relationshipType] || colors.primary }]}>
               <Text style={styles.avatarText}>{item.name?.charAt(0)?.toUpperCase()}</Text>
@@ -163,6 +180,8 @@ export default function ContactsScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     markMut.mutate(item.id);
                   }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Mark ${item.name} as contacted`}
                 >
                   <Feather name="check" size={16} color={colors.success} />
                 </Pressable>
@@ -193,6 +212,8 @@ export default function ContactsScreen() {
 
       <Pressable
         style={({ pressed }) => [styles.fab, { backgroundColor: colors.primary }, pressed && { transform: [{ scale: 0.95 }] }]}
+        accessibilityRole="button"
+        accessibilityLabel="Add contact"
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           setShowAdd(true);
