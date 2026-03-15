@@ -212,11 +212,25 @@ async function handleRollback(req: Request, res: Response) {
       return res.status(404).json({ error: "Revision not found" });
     }
 
-    const snapshot = auditEntry.afterSnapshot ?? auditEntry.beforeSnapshot;
+    let snapshot: Record<string, unknown> | null = null;
+    switch (auditEntry.action) {
+      case "update":
+        snapshot = auditEntry.beforeSnapshot as Record<string, unknown> | null;
+        break;
+      case "delete":
+        snapshot = (auditEntry.afterSnapshot ?? auditEntry.beforeSnapshot) as Record<string, unknown> | null;
+        break;
+      case "create":
+        snapshot = auditEntry.afterSnapshot as Record<string, unknown> | null;
+        break;
+      case "rollback":
+        snapshot = auditEntry.afterSnapshot as Record<string, unknown> | null;
+        break;
+    }
     if (!snapshot) {
       return res.status(400).json({ error: "This revision cannot be used for rollback" });
     }
-    const restoreData = snapshot as Record<string, unknown>;
+    const restoreData = snapshot;
 
     const { id: _id, createdAt: _ca, updatedAt: _ua, userId: _uid, ...safeData } = restoreData;
 
