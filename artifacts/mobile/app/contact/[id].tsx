@@ -19,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AiAlertBanner from "@/components/AiAlertBanner";
 import ActivityDetailModal from "@/components/ActivityDetailModal";
 import ActivityList from "@/components/ActivityList";
 import EventDetailModal from "@/components/EventDetailModal";
@@ -242,6 +243,8 @@ export default function ContactDetailScreen() {
           <Feather name="trash-2" size={20} color={colors.error} />
         </Pressable>
       </View>
+
+      <AiAlertBanner contactId={contactId} />
 
       <View style={styles.profileSection}>
         <Pressable onPress={() => setShowPicModal(true)}>

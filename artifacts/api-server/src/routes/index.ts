@@ -17,6 +17,7 @@ import calendarRouter from "./calendar";
 import auditRouter from "./audit";
 import storageRouter from "./storage";
 import filesRouter from "./files";
+import aiRouter from "./ai";
 import gmailWebhookRouter from "./gmailWebhook";
 import horizonWebhookRouter from "./horizonWebhook";
 
@@ -44,5 +45,6 @@ router.use(calendarRouter);
 router.use(auditRouter);
 router.use(storageRouter);
 router.use(filesRouter);
+router.use(aiRouter);
 
 export default router;

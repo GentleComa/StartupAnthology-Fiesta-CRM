@@ -32,6 +32,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "envelope", selected: "envelope.fill" }} />
         <Label>Comms</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="ai">
+        <Icon sf={{ default: "bubble.left.and.text.bubble.right", selected: "bubble.left.and.text.bubble.right.fill" }} />
+        <Label>AI</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="more">
         <Icon sf={{ default: "ellipsis.circle", selected: "ellipsis.circle.fill" }} />
         <Label>More</Label>
@@ -134,6 +138,18 @@ function ClassicTabLayout() {
               <SymbolView name="envelope" tintColor={color} size={22} />
             ) : (
               <Feather name="mail" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="ai"
+        options={{
+          title: "AI",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="bubble.left.and.text.bubble.right" tintColor={color} size={22} />
+            ) : (
+              <Feather name="cpu" size={22} color={color} />
             ),
         }}
       />

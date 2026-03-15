@@ -1,6 +1,9 @@
 import app from "./app";
 import { seedDefaults } from "./lib/seed";
 import { startDripWorker } from "./lib/dripWorker";
+import { startInsightWorker } from "./lib/ai/insightWorker";
+import { seedAgentRegistry } from "./lib/ai/agentDefinitions";
+import { verifyModelAvailability } from "./lib/ai/orchestrator";
 
 const rawPort = process.env["PORT"];
 
@@ -23,5 +26,22 @@ app.listen(port, async () => {
   } catch (err) {
     console.error("Seed error:", err);
   }
+
+  try {
+    await seedAgentRegistry();
+    console.log("Agent registry seeded");
+  } catch (err) {
+    console.error("Agent registry seed error:", err);
+  }
+
+  verifyModelAvailability().then((available) => {
+    if (available) {
+      console.log("AI model availability verified");
+    } else {
+      console.warn("AI model availability check failed — AI features may not work");
+    }
+  });
+
   startDripWorker();
+  startInsightWorker();
 });

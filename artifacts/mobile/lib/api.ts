@@ -80,6 +80,67 @@ async function uploadFile(path: string, uri: string, fileName: string, mimeType:
   return res.json();
 }
 
+async function streamRequest(
+  path: string,
+  body: any,
+  onChunk: (data: { content?: string; done?: boolean; error?: string }) => void
+): Promise<{ conversationId: number | null }> {
+  const url = `${BASE}${path}`;
+  const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (res.status === 401) {
+    await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+    throw new Error("SESSION_EXPIRED");
+  }
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `API error ${res.status}`);
+  }
+
+  const convIdHeader = res.headers.get("x-conversation-id");
+  const conversationId = convIdHeader ? Number(convIdHeader) : null;
+
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error("No response body");
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        try {
+          const data = JSON.parse(line.slice(6));
+          onChunk(data);
+        } catch {}
+      }
+    }
+  }
+
+  return { conversationId };
+}
+
+export { streamRequest };
+
 export const api = {
   getDashboard: () => request("/dashboard"),
 
@@ -245,4 +306,24 @@ export const api = {
     request(`/contacts/${contactId}/files`, { method: "POST", body: JSON.stringify({ fileId }) }),
   removeContactFile: (contactId: number, fileId: number) =>
     request(`/contacts/${contactId}/files/${fileId}`, { method: "DELETE" }),
+
+  getAiConversations: () => request("/ai/conversations"),
+  getAiMessages: (conversationId: number) => request(`/ai/conversations/${conversationId}/messages`),
+  deleteAiConversation: (conversationId: number) =>
+    request(`/ai/conversations/${conversationId}`, { method: "DELETE" }),
+  getAiInsights: (params?: { leadId?: number; contactId?: number; status?: string }) => {
+    const sp = new URLSearchParams();
+    if (params?.leadId) sp.set("leadId", String(params.leadId));
+    if (params?.contactId) sp.set("contactId", String(params.contactId));
+    if (params?.status) sp.set("status", params.status);
+    const qs = sp.toString();
+    return request(`/ai/insights${qs ? `?${qs}` : ""}`);
+  },
+  dismissAiInsight: (id: number) =>
+    request(`/ai/insights/${id}/dismiss`, { method: "PATCH" }),
+  getOnboardingGreeting: () => request("/ai/onboarding-greeting"),
+  saveOnboardingProgress: (topic: string) =>
+    request("/ai/onboarding-progress", { method: "POST", body: JSON.stringify({ topic }) }),
+  generateAiInsights: () =>
+    request("/ai/generate-insights", { method: "POST" }),
 };

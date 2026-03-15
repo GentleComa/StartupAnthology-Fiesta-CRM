@@ -10,3 +10,8 @@ export * from "./auth";
 export * from "./calendarEvents";
 export * from "./auditLog";
 export * from "./files";
+export * from "./conversations";
+export * from "./messages";
+export * from "./aiInsights";
+export * from "./onboardingProgress";
+export * from "./agentRegistry";

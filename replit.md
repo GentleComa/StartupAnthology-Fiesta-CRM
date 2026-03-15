@@ -16,7 +16,7 @@ Mobile-first CRM app for a solo founder/small team. Built with Expo (React Nativ
 - **Validation**: Zod, `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **State management**: TanStack React Query
-- **Integrations**: Gmail (via googleapis), Notion (via @replit/connectors-sdk), Google Calendar (via googleapis)
+- **Integrations**: Gmail (via googleapis), Notion (via @replit/connectors-sdk), Google Calendar (via googleapis), OpenAI (via Replit AI proxy)
 - **Auth**: bcryptjs for password hashing, session-based auth with Bearer tokens
 
 ## Structure
@@ -25,7 +25,7 @@ Mobile-first CRM app for a solo founder/small team. Built with Expo (React Nativ
 artifacts-monorepo/
 ├── artifacts/
 │   ├── mobile/                # Expo React Native app (iOS-first)
-│   │   ├── app/(tabs)/        # Tab screens: Dashboard, Funnel, Contacts, Calendar, Comms
+│   │   ├── app/(tabs)/        # Tab screens: Dashboard, Funnel, Contacts, Calendar, Comms, AI
 │   │   ├── app/lead/[id].tsx  # Lead detail screen
 │   │   ├── app/contact/[id].tsx # Contact detail screen
 │   │   ├── app/compose-email.tsx # Email composer with template support
@@ -47,7 +47,7 @@ artifacts-monorepo/
 │   │   ├── lib/api.ts         # All API client methods (incl. profile, password, admin)
 │   │   └── lib/auth.tsx       # Auth provider with login/register/logout/refreshUser
 │   ├── api-server/            # Express API server
-│   │   ├── src/routes/        # leads, contacts, activities, templates, sequences, broadcasts, triggers, settings, dashboard, email, calendar, auth, admin
+│   │   ├── src/routes/        # leads, contacts, activities, templates, sequences, broadcasts, triggers, settings, dashboard, email, calendar, auth, admin, ai
 │   │   ├── src/middlewares/authMiddleware.ts  # Session auth + live DB user check
 │   │   ├── src/middlewares/requireAuth.ts     # Auth gate middleware
 │   │   ├── src/middlewares/requireAdmin.ts    # Admin role guard
@@ -58,6 +58,11 @@ artifacts-monorepo/
 │   │   ├── src/lib/calendar.ts # Google Calendar client via googleapis
 │   │   ├── src/lib/notion.ts  # Notion sync via connectors-sdk
 │   │   ├── src/lib/notionSync.ts # Fire-and-forget Notion sync helpers
+│   │   ├── src/lib/ai/          # AI agent team (Coach/Cleo/Miles)
+│   │   │   ├── agentDefinitions.ts  # Agent system prompts and tool schemas
+│   │   │   ├── orchestrator.ts      # Chat orchestration (classify→route→stream)
+│   │   │   ├── toolExecutor.ts      # CRM tool execution for agents
+│   │   │   └── insightWorker.ts     # Background daily insight generation
 │   │   ├── src/lib/dripWorker.ts # Background drip sequence email worker (60s interval, row-level locking)
 │   │   ├── src/lib/audit.ts   # Fire-and-forget audit trail logger
 │   │   ├── src/lib/seed.ts    # Per-user default settings seeder
@@ -94,6 +99,19 @@ artifacts-monorepo/
 - `tryLockEnrollment()` acquires lock; `unlockEnrollment()` releases it
 - Stale lock timeout: 5 minutes (LOCK_TIMEOUT_MS)
 - `isProcessing` flag as secondary guard against concurrent workers
+
+### AI Agent Team (Coach/Cleo/Miles)
+- Three-agent system using master/apprentice model via OpenAI (Replit proxy)
+- **Coach**: Main agent users interact with; orchestrates Cleo and Miles
+- **Cleo** (Relationship Manager): Handles contact/lead relationship queries via CRM tools
+- **Miles** (Strategy Advisor): Handles pipeline strategy, follow-up planning
+- Models: `gpt-5.2` (main agents), `gpt-5-nano` (routing classification), `gpt-5-mini` (insight framing)
+- Streaming SSE responses for chat; conversation history persisted in DB
+- Background insight worker runs daily, generates AI insights per user
+- Rate-limited insight generation endpoint (5min cooldown per user)
+- DB tables: `conversations`, `messages`, `ai_insights`, `onboarding_progress`
+- Mobile: AI chat tab, dashboard AiInsightCards, lead/contact detail AiAlertBanner
+- Agent branding accent color: `#BB935B`
 
 ### Mobile Shared Components
 - `ActivityDetailModal` — view/edit activity details (type, subject, body, notes) in a popup modal

@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AiInsightCards from "@/components/AiInsightCards";
 import { type ThemeColors } from "@/constants/colors";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
@@ -95,6 +96,8 @@ export default function DashboardScreen() {
         <StatCard label="Follow-ups" value={d.followUpsDueToday || 0} icon="clock" color={colors.warning} colors={colors} />
         <StatCard label="Beta filled" value={d.betaSlotsFilled || 0} icon="star" color={colors.accent} colors={colors} />
       </View>
+
+      <AiInsightCards />
 
       {(d.followUps?.length ?? 0) > 0 && (
         <View style={styles.section}>
