@@ -34,10 +34,11 @@ interface ActivityDetailModalProps {
   isSaving: boolean;
 }
 
-const TYPE_OPTIONS = ["email", "linkedin", "note", "call", "meeting", "status_change", "other"];
+const TYPE_OPTIONS = ["email", "linkedin", "note", "call", "meeting", "status_change", "ai_insight", "other"];
 
 const TYPE_LABELS: Record<string, string> = {
   status_change: "Status Change",
+  ai_insight: "AI Insight",
 };
 
 function getTypeLabel(type: string): string {
@@ -60,6 +61,7 @@ export default function ActivityDetailModal({
     call: "#34C759",
     meeting: "#AF52DE",
     status_change: "#FF9500",
+    ai_insight: colors.info,
     other: colors.textTertiary,
   }), [colors]);
   const insets = useSafeAreaInsets();

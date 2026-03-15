@@ -34,6 +34,7 @@ export default function ActivityList({
     call: "#34C759",
     meeting: "#AF52DE",
     status_change: "#FF9500",
+    ai_insight: colors.info,
   }), [colors]);
 
   if (activities.length === 0) {
@@ -62,12 +63,19 @@ export default function ActivityList({
           />
           <View style={styles.content}>
             <Text style={styles.type}>
-              {a.type === "status_change" ? "Status Change" : a.type}
+              {a.type === "status_change" ? "Status Change"
+                : a.type === "ai_insight" ? `AI Insight${a.note ? ` · ${a.note}` : ""}`
+                : a.type}
               {a.direction ? ` (${a.direction})` : ""}
             </Text>
             <Text style={styles.note} numberOfLines={2}>
               {a.subject || a.note || ""}
             </Text>
+            {a.type === "ai_insight" && a.body ? (
+              <Text style={[styles.note, { color: colors.textTertiary }]} numberOfLines={2}>
+                {a.body}
+              </Text>
+            ) : null}
             <Text style={styles.date}>{new Date(a.createdAt).toLocaleDateString()}</Text>
             {a.gmailLink && !onPress && <Text style={styles.gmailLink}>Open in Gmail →</Text>}
           </View>

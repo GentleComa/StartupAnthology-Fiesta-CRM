@@ -3,8 +3,9 @@ import {
   leadsTable,
   contactsTable,
   aiInsightsTable,
+  activitiesTable,
 } from "@workspace/db";
-import { eq, and, sql, lte, ne, isNull, or, lt, desc } from "drizzle-orm";
+import { eq, and, sql, lte, ne, isNull, or, lt, gte, desc } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { AGENT_DEFINITIONS } from "./agentDefinitions";
 
@@ -262,6 +263,39 @@ export async function generateInsightsForUser(userId: string): Promise<number> {
         contactId: insight.contactId || null,
       });
       totalInserts++;
+
+      if (insight.contactId || insight.leadId) {
+        try {
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+          const dedupConditions = [
+            eq(activitiesTable.userId, userId),
+            eq(activitiesTable.type, "ai_insight"),
+            eq(activitiesTable.subject, insight.title),
+            gte(activitiesTable.createdAt, thirtyDaysAgo),
+          ];
+          if (insight.contactId) dedupConditions.push(eq(activitiesTable.contactId, insight.contactId));
+          if (insight.leadId) dedupConditions.push(eq(activitiesTable.leadId, insight.leadId));
+
+          const existing = await db.select({ id: activitiesTable.id })
+            .from(activitiesTable)
+            .where(and(...dedupConditions))
+            .limit(1);
+
+          if (existing.length === 0) {
+            await db.insert(activitiesTable).values({
+              userId,
+              type: "ai_insight",
+              subject: insight.title,
+              body: insight.description,
+              note: `${result.agent === "cleo" ? "Cleo" : "Miles"} recommendation`,
+              contactId: insight.contactId || null,
+              leadId: insight.leadId || null,
+            });
+          }
+        } catch (err) {
+          console.error("Failed to create activity for AI insight:", err);
+        }
+      }
     }
   }
 
