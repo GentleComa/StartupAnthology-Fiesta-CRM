@@ -322,7 +322,13 @@ export default function LeadDetailScreen() {
       </View>
 
       <View style={styles.actionRow}>
-        <Pressable style={styles.actionBtn} onPress={() => lead.email && Linking.openURL(`mailto:${lead.email}`)}>
+        <Pressable style={styles.actionBtn} onPress={() => {
+          if (!lead.email) return;
+          api.createActivity({ leadId, type: "email", direction: "sent", subject: `Email to ${lead.email}` })
+            .then(() => qc.invalidateQueries({ queryKey: ["activities", "lead", id] }))
+            .catch(() => {});
+          Linking.openURL(`mailto:${lead.email}`);
+        }}>
           <Feather name="mail" size={18} color={Colors.primary} />
           <Text style={styles.actionText}>Email</Text>
         </Pressable>
