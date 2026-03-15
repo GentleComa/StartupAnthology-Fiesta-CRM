@@ -1,28 +1,159 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
+import { router } from "expo-router";
+import React from "react";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Colors from "@/constants/colors";
+import { api } from "@/lib/api";
 
-export default function TabOneScreen() {
+function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: string; color: string }) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Replit Agent is building...</Text>
-      <Text style={styles.text}>Your app will appear here once it's ready.</Text>
+    <View style={styles.statCard}>
+      <View style={[styles.statIcon, { backgroundColor: color + "15" }]}>
+        <Feather name={icon as any} size={18} color={color} />
+      </View>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
 
+export default function DashboardScreen() {
+  const insets = useSafeAreaInsets();
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: api.getDashboard,
+  });
+
+  const topPad = Platform.OS === "web" ? 67 : insets.top;
+
+  if (isLoading) {
+    return (
+      <View style={[styles.center, { paddingTop: topPad }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  const d = data || {};
+  const betaPercent = d.betaSlotsTotal ? Math.round((d.betaSlotsFilled / d.betaSlotsTotal) * 100) : 0;
+
+  return (
+    <ScrollView
+      style={[styles.container, { paddingTop: topPad }]}
+      contentContainerStyle={styles.content}
+      contentInsetAdjustmentBehavior="automatic"
+      refreshControl={<RefreshControl refreshing={false} onRefresh={refetch} tintColor={Colors.primary} />}
+    >
+      <Text style={styles.greeting}>Anthology CRM</Text>
+      <Text style={styles.subtitle}>Your business at a glance</Text>
+
+      <View style={styles.betaCard}>
+        <View style={styles.betaHeader}>
+          <Feather name="zap" size={16} color={Colors.accent} />
+          <Text style={styles.betaTitle}>Beta Slots</Text>
+          <Text style={styles.betaCount}>
+            {d.betaSlotsFilled || 0}/{d.betaSlotsTotal || 100}
+          </Text>
+        </View>
+        <View style={styles.progressBg}>
+          <View style={[styles.progressFill, { width: `${Math.min(betaPercent, 100)}%` }]} />
+        </View>
+      </View>
+
+      <View style={styles.statsGrid}>
+        <StatCard label="Total Leads" value={d.totalLeads || 0} icon="target" color={Colors.statusNew} />
+        <StatCard label="This Week" value={d.leadsThisWeek || 0} icon="trending-up" color={Colors.info} />
+        <StatCard label="Contacts" value={d.totalContacts || 0} icon="users" color={Colors.primary} />
+        <StatCard label="Emails Sent" value={d.emailsSentThisWeek || 0} icon="send" color={Colors.success} />
+        <StatCard label="Follow-ups" value={d.followUpsDueToday || 0} icon="clock" color={Colors.warning} />
+        <StatCard label="Beta Filled" value={d.betaSlotsFilled || 0} icon="star" color={Colors.accent} />
+      </View>
+
+      {(d.followUps?.length ?? 0) > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Follow-ups Due Today</Text>
+          {d.followUps.map((contact: any) => (
+            <Pressable
+              key={contact.id}
+              style={({ pressed }) => [styles.followUpCard, pressed && styles.pressed]}
+              onPress={() => router.push({ pathname: "/contact/[id]", params: { id: String(contact.id) } })}
+            >
+              <View style={styles.followUpAvatar}>
+                <Text style={styles.avatarText}>{contact.name?.charAt(0)?.toUpperCase()}</Text>
+              </View>
+              <View style={styles.followUpInfo}>
+                <Text style={styles.followUpName}>{contact.name}</Text>
+                <Text style={styles.followUpCompany}>{contact.company || contact.relationshipType}</Text>
+              </View>
+              <View style={[styles.priorityDot, { backgroundColor: contact.priority === "high" ? Colors.priorityHigh : contact.priority === "medium" ? Colors.priorityMedium : Colors.priorityLow }]} />
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      <View style={{ height: 100 }} />
+    </ScrollView>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1, backgroundColor: Colors.background },
+  content: { padding: 20 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background },
+  greeting: { fontSize: 28, fontFamily: "Inter_700Bold", color: Colors.text, marginBottom: 4 },
+  subtitle: { fontSize: 15, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginBottom: 20 },
+  betaCard: { backgroundColor: Colors.primary, borderRadius: 16, padding: 16, marginBottom: 20 },
+  betaHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+  betaTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#fff", flex: 1 },
+  betaCount: { fontSize: 16, fontFamily: "Inter_700Bold", color: Colors.accent },
+  progressBg: { height: 6, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 3 },
+  progressFill: { height: 6, backgroundColor: Colors.accent, borderRadius: 3 },
+  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 24 },
+  statCard: {
+    width: "47%" as any,
+    flexGrow: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    minWidth: 140,
+  },
+  statIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: "center", alignItems: "center", marginBottom: 10 },
+  statValue: { fontSize: 24, fontFamily: "Inter_700Bold", color: Colors.text },
+  statLabel: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 2 },
+  section: { marginBottom: 20 },
+  sectionTitle: { fontSize: 18, fontFamily: "Inter_600SemiBold", color: Colors.text, marginBottom: 12 },
+  followUpCard: {
+    flexDirection: "row",
     alignItems: "center",
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
+  },
+  pressed: { opacity: 0.7 },
+  followUpAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primaryLight,
     justifyContent: "center",
-    gap: 8,
+    alignItems: "center",
+    marginRight: 12,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  text: {
-    fontSize: 16,
-    textAlign: "center",
-    paddingHorizontal: 20,
-  },
+  avatarText: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#fff" },
+  followUpInfo: { flex: 1 },
+  followUpName: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: Colors.text },
+  followUpCompany: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.textSecondary },
+  priorityDot: { width: 10, height: 10, borderRadius: 5 },
 });

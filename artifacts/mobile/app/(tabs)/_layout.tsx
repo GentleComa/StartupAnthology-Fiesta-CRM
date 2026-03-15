@@ -1,21 +1,32 @@
 import { BlurView } from "expo-blur";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
+import { Icon, Label, Badge, NativeTabs } from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
 
-//IMPORTANT: iOS 26 Exists, feel free to use NativeTabs for native tabs with liquid glass support.
 function NativeTabLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Home</Label>
+        <Icon sf={{ default: "chart.bar", selected: "chart.bar.fill" }} />
+        <Label>Dashboard</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="funnel">
+        <Icon sf={{ default: "target", selected: "target" }} />
+        <Label>Funnel</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="contacts">
+        <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
+        <Label>Contacts</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="comms">
+        <Icon sf={{ default: "envelope", selected: "envelope.fill" }} />
+        <Label>Comms</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -23,6 +34,7 @@ function NativeTabLayout() {
 
 function ClassicTabLayout() {
   const colorScheme = useColorScheme();
+  const safeAreaInsets = useSafeAreaInsets();
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
@@ -30,9 +42,9 @@ function ClassicTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors.light.tint,
+        tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.light.tabIconDefault,
-        headerShown: true,
+        headerShown: false,
         tabBarStyle: {
           position: "absolute",
           backgroundColor: isIOS ? "transparent" : isDark ? "#000" : "#fff",
@@ -61,12 +73,48 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Dashboard",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
+              <SymbolView name="chart.bar" tintColor={color} size={22} />
             ) : (
-              <Feather name="home" size={22} color={color} />
+              <Feather name="bar-chart-2" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="funnel"
+        options={{
+          title: "Funnel",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="target" tintColor={color} size={22} />
+            ) : (
+              <Feather name="filter" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="contacts"
+        options={{
+          title: "Contacts",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="person.2" tintColor={color} size={22} />
+            ) : (
+              <Feather name="users" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="comms"
+        options={{
+          title: "Comms",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="envelope" tintColor={color} size={22} />
+            ) : (
+              <Feather name="mail" size={22} color={color} />
             ),
         }}
       />

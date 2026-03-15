@@ -1,8 +1,8 @@
-# Workspace
+# Anthology CRM
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+Mobile-first CRM app for a solo founder/small team. Built with Expo (React Native) for iOS, Express API server with PostgreSQL, integrated with Gmail (sending) and Notion (one-way sync).
 
 ## Stack
 
@@ -10,87 +10,114 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
+- **Mobile framework**: Expo SDK 54 with React Native
 - **API framework**: Express 5
 - **Database**: PostgreSQL + Drizzle ORM
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- **State management**: TanStack React Query
+- **Integrations**: Gmail (via googleapis), Notion (via @replit/connectors-sdk)
 
 ## Structure
 
 ```text
 artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+├── artifacts/
+│   ├── mobile/                # Expo React Native app (iOS-first)
+│   │   ├── app/(tabs)/        # Tab screens: Dashboard, Funnel, Contacts, Comms
+│   │   ├── app/lead/[id].tsx  # Lead detail screen
+│   │   ├── app/contact/[id].tsx # Contact detail screen
+│   │   ├── app/compose-email.tsx # Email composer with template support
+│   │   ├── app/template/[id].tsx # Template editor (create/edit)
+│   │   ├── app/sequence/[id].tsx # Drip sequence editor
+│   │   ├── app/broadcast/new.tsx # Broadcast wizard (4-step)
+│   │   ├── app/settings.tsx   # Settings + trigger rules
+│   │   ├── constants/colors.ts # Navy/gold theme (#1B2B4B, #D4A843)
+│   │   ├── constants/api.ts   # API base URL config
+│   │   └── lib/api.ts         # All API client methods
+│   ├── api-server/            # Express API server
+│   │   ├── src/routes/        # leads, contacts, activities, templates, sequences, broadcasts, triggers, settings, dashboard, email
+│   │   ├── src/lib/gmail.ts   # Gmail send via googleapis
+│   │   ├── src/lib/notion.ts  # Notion sync via connectors-sdk
+│   │   └── src/lib/seed.ts    # Default settings seeder
+│   └── mockup-sandbox/        # Component preview server
+├── lib/
+│   ├── api-spec/              # OpenAPI spec + Orval codegen
+│   ├── api-client-react/      # Generated React Query hooks
+│   ├── api-zod/               # Generated Zod schemas
+│   └── db/                    # Drizzle ORM schema + DB
+│       └── src/schema/        # leads, contacts, activities, emailTemplates, dripSequences, broadcasts, triggerRules, settings
+├── scripts/
+├── pnpm-workspace.yaml
+├── tsconfig.base.json
+└── package.json
 ```
 
-## TypeScript & Composite Projects
+## Key Features
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+### Horizon Funnel (Lead Tracking)
+- Kanban view (horizontal scroll) + list view toggle
+- Stages: new → contacted → interested → engaged → converted
+- Swipe gestures to advance/retreat status (PanResponder + haptics)
+- Beta tag (boolean) with counter showing filled/total (configurable in Settings)
+- Lead detail: status changes, beta toggle, notes, email composer, LinkedIn logging, sequence enrollment
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+### Business Connections (Contacts)
+- All contacts + follow-up queue tabs
+- Relationship types: investor, partner, advisor, vendor, press, other
+- Priority levels: high, medium, low
+- Mark as contacted (auto-schedules 7-day follow-up)
+- Contact detail: call, email, LinkedIn, activity history, sequence enrollment
 
-## Root Scripts
+### Communications Hub
+- **Templates**: Reusable email templates with merge tags ({{first_name}}, {{company_name}}, {{founder_name}})
+- **Sequences**: Multi-step drip email flows with configurable delays per step
+- **Broadcasts**: 4-step wizard (select segment → choose template → preview recipients → confirm & send)
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+### Dashboard
+- Stats: total leads, this week, contacts, emails sent, follow-ups due, beta filled
+- Beta slots progress bar (filled/total)
+- Follow-up queue quick access
 
-## Packages
+### Settings
+- General: app name, founder name, beta slot total
+- Integration status: Gmail + Notion
+- Trigger rules: auto-actions when lead status changes (enroll in sequence, schedule follow-up)
+- Merge tag reference
 
-### `artifacts/api-server` (`@workspace/api-server`)
+## Database Schema
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+Tables: leads (with is_beta), contacts, activities, email_templates, drip_sequences, drip_sequence_steps, drip_enrollments, broadcasts, trigger_rules, app_settings
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+## Design
 
-### `lib/db` (`@workspace/db`)
+- **Colors**: Navy primary (#1B2B4B), gold accent (#D4A843), light background (#F8F9FB)
+- **Typography**: Inter font family (400, 500, 600, 700 weights)
+- **Navigation**: NativeTabs with liquid glass on iOS 26+, classic blur tabs fallback
+- **Icons**: SF Symbols on iOS, Feather icons on web/Android
+- **Tab bar**: 4 tabs — Dashboard, Funnel, Contacts, Comms
 
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
+## API Endpoints
 
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
+All mounted at `/api`:
+- `GET/POST /leads`, `GET/PUT/DELETE /leads/:id`, `PATCH /leads/:id/status`
+- `GET/POST /contacts`, `GET /contacts/follow-ups`, `GET/PUT/DELETE /contacts/:id`, `POST /contacts/:id/mark-contacted`
+- `GET/POST /activities`
+- `GET/POST /templates`, `GET/PUT/DELETE /templates/:id`
+- `GET/POST /sequences`, `GET/PUT/DELETE /sequences/:id`, `POST /sequences/:id/steps`, `POST /sequences/:id/enroll`
+- `GET/POST /broadcasts`, `GET /broadcast-preview`
+- `GET/POST/DELETE /triggers`
+- `GET/PUT /settings`
+- `GET /dashboard`
+- `POST /email/send`
 
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
+## Gmail Integration
 
-### `lib/api-spec` (`@workspace/api-spec`)
+Connection ID: `conn_google-mail_01KKQYC5ZK0BWADJWDAWCZDHM0`
+Uses `getUncachableGmailClient()` pattern — never cache the OAuth client.
 
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
+## Notion Integration
 
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+Connection ID: `conn_notion_01KKQYFGA5AE7WTYAEPM4YNB09`
+Uses `connectors.proxy("notion", "/v1/...")` pattern from `@replit/connectors-sdk`.
+One-way sync: app → Notion for leads, contacts, and activities.

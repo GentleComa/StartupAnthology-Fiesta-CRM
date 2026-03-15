@@ -22,8 +22,15 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    <Stack screenOptions={{ headerBackTitle: "Back", headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="lead/[id]" />
+      <Stack.Screen name="contact/[id]" />
+      <Stack.Screen name="compose-email" options={{ presentation: "modal" }} />
+      <Stack.Screen name="template/[id]" options={{ presentation: "modal" }} />
+      <Stack.Screen name="sequence/[id]" options={{ presentation: "modal" }} />
+      <Stack.Screen name="broadcast/new" options={{ presentation: "modal" }} />
+      <Stack.Screen name="settings" />
     </Stack>
   );
 }

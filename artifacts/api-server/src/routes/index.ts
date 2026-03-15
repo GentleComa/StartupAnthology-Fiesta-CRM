@@ -1,8 +1,28 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
+import leadsRouter from "./leads";
+import contactsRouter from "./contacts";
+import activitiesRouter from "./activities";
+import templatesRouter from "./templates";
+import sequencesRouter from "./sequences";
+import broadcastsRouter from "./broadcasts";
+import triggersRouter from "./triggers";
+import settingsRouter from "./settings";
+import dashboardRouter from "./dashboard";
+import emailRouter from "./email";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(leadsRouter);
+router.use(contactsRouter);
+router.use(activitiesRouter);
+router.use(templatesRouter);
+router.use(sequencesRouter);
+router.use(broadcastsRouter);
+router.use(triggersRouter);
+router.use(settingsRouter);
+router.use(dashboardRouter);
+router.use(emailRouter);
 
 export default router;

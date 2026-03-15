@@ -1,0 +1,116 @@
+import { getApiBaseUrl } from "@/constants/api";
+
+const BASE = getApiBaseUrl();
+
+async function request(path: string, options?: RequestInit) {
+  const url = `${BASE}${path}`;
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`API error ${res.status}: ${text}`);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+export const api = {
+  getDashboard: () => request("/dashboard"),
+
+  getLeads: (params?: { status?: string; isBeta?: boolean }) => {
+    const sp = new URLSearchParams();
+    if (params?.status) sp.set("status", params.status);
+    if (params?.isBeta !== undefined) sp.set("isBeta", String(params.isBeta));
+    const qs = sp.toString();
+    return request(`/leads${qs ? `?${qs}` : ""}`);
+  },
+  createLead: (data: any) =>
+    request("/leads", { method: "POST", body: JSON.stringify(data) }),
+  getLead: (id: number) => request(`/leads/${id}`),
+  updateLead: (id: number, data: any) =>
+    request(`/leads/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteLead: (id: number) =>
+    request(`/leads/${id}`, { method: "DELETE" }),
+  updateLeadStatus: (id: number, status: string) =>
+    request(`/leads/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+
+  getContacts: (params?: { relationshipType?: string; priority?: string }) => {
+    const sp = new URLSearchParams();
+    if (params?.relationshipType) sp.set("relationshipType", params.relationshipType);
+    if (params?.priority) sp.set("priority", params.priority);
+    const qs = sp.toString();
+    return request(`/contacts${qs ? `?${qs}` : ""}`);
+  },
+  createContact: (data: any) =>
+    request("/contacts", { method: "POST", body: JSON.stringify(data) }),
+  getContact: (id: number) => request(`/contacts/${id}`),
+  updateContact: (id: number, data: any) =>
+    request(`/contacts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteContact: (id: number) =>
+    request(`/contacts/${id}`, { method: "DELETE" }),
+  markContacted: (id: number) =>
+    request(`/contacts/${id}/mark-contacted`, { method: "POST" }),
+  getFollowUps: () => request("/contacts/follow-ups"),
+
+  getActivities: (params?: { leadId?: number; contactId?: number }) => {
+    const sp = new URLSearchParams();
+    if (params?.leadId) sp.set("leadId", String(params.leadId));
+    if (params?.contactId) sp.set("contactId", String(params.contactId));
+    const qs = sp.toString();
+    return request(`/activities${qs ? `?${qs}` : ""}`);
+  },
+  createActivity: (data: any) =>
+    request("/activities", { method: "POST", body: JSON.stringify(data) }),
+
+  getTemplates: (audience?: string) => {
+    const qs = audience ? `?audience=${audience}` : "";
+    return request(`/templates${qs}`);
+  },
+  createTemplate: (data: any) =>
+    request("/templates", { method: "POST", body: JSON.stringify(data) }),
+  getTemplate: (id: number) => request(`/templates/${id}`),
+  updateTemplate: (id: number, data: any) =>
+    request(`/templates/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteTemplate: (id: number) =>
+    request(`/templates/${id}`, { method: "DELETE" }),
+
+  getSequences: () => request("/sequences"),
+  createSequence: (data: any) =>
+    request("/sequences", { method: "POST", body: JSON.stringify(data) }),
+  getSequence: (id: number) => request(`/sequences/${id}`),
+  updateSequence: (id: number, data: any) =>
+    request(`/sequences/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteSequence: (id: number) =>
+    request(`/sequences/${id}`, { method: "DELETE" }),
+  addSequenceStep: (id: number, data: any) =>
+    request(`/sequences/${id}/steps`, { method: "POST", body: JSON.stringify(data) }),
+  enrollInSequence: (id: number, data: { leadId?: number; contactId?: number }) =>
+    request(`/sequences/${id}/enroll`, { method: "POST", body: JSON.stringify(data) }),
+
+  getBroadcasts: () => request("/broadcasts"),
+  createBroadcast: (data: any) =>
+    request("/broadcasts", { method: "POST", body: JSON.stringify(data) }),
+  previewBroadcastRecipients: (segmentType: string, segmentValue: string) =>
+    request(`/broadcast-preview?segmentType=${segmentType}&segmentValue=${segmentValue}`),
+
+  getTriggerRules: () => request("/triggers"),
+  createTriggerRule: (data: any) =>
+    request("/triggers", { method: "POST", body: JSON.stringify(data) }),
+  deleteTriggerRule: (id: number) =>
+    request(`/triggers/${id}`, { method: "DELETE" }),
+
+  getSettings: () => request("/settings"),
+  updateSettings: (data: Record<string, string>) =>
+    request("/settings", { method: "PUT", body: JSON.stringify(data) }),
+
+  sendEmail: (data: { to: string; subject: string; body: string; leadId?: number; contactId?: number }) =>
+    request("/email/send", { method: "POST", body: JSON.stringify(data) }),
+};
