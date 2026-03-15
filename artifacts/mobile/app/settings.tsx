@@ -48,6 +48,16 @@ export default function SettingsScreen() {
   const [notionLeadsDb, setNotionLeadsDb] = useState("");
   const [notionContactsDb, setNotionContactsDb] = useState("");
   const [notionActivitiesDb, setNotionActivitiesDb] = useState("");
+
+  const [myLinkedin, setMyLinkedin] = useState("");
+  const [companyLinkedin, setCompanyLinkedin] = useState("");
+  const [calendarLink, setCalendarLink] = useState("");
+  const [customLabel1, setCustomLabel1] = useState("");
+  const [customUrl1, setCustomUrl1] = useState("");
+  const [customLabel2, setCustomLabel2] = useState("");
+  const [customUrl2, setCustomUrl2] = useState("");
+  const [customLabel3, setCustomLabel3] = useState("");
+  const [customUrl3, setCustomUrl3] = useState("");
   const [newTriggerStatus, setNewTriggerStatus] = useState("");
   const [newTriggerAction, setNewTriggerAction] = useState("");
   const [newTriggerSeqId, setNewTriggerSeqId] = useState<number | null>(null);
@@ -75,6 +85,15 @@ export default function SettingsScreen() {
       setNotionLeadsDb(settings.notion_leads_db || "");
       setNotionContactsDb(settings.notion_contacts_db || "");
       setNotionActivitiesDb(settings.notion_activities_db || "");
+      setMyLinkedin(settings.quick_link_my_linkedin || "");
+      setCompanyLinkedin(settings.quick_link_company_linkedin || "");
+      setCalendarLink(settings.quick_link_calendar || "");
+      setCustomLabel1(settings.quick_link_custom1_label || "");
+      setCustomUrl1(settings.quick_link_custom1_url || "");
+      setCustomLabel2(settings.quick_link_custom2_label || "");
+      setCustomUrl2(settings.quick_link_custom2_url || "");
+      setCustomLabel3(settings.quick_link_custom3_label || "");
+      setCustomUrl3(settings.quick_link_custom3_url || "");
     }
   }, [settings]);
 
@@ -347,6 +366,80 @@ export default function SettingsScreen() {
             onBlur={() => updateSettingsMut.mutate({ beta_slots_total: betaTotal })}
           />
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Quick Links</Text>
+        <Text style={styles.sectionSubtitle}>Store commonly used URLs for easy access.</Text>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>My LinkedIn</Text>
+          <TextInput
+            style={[styles.settingInput, { flex: 1, marginLeft: 8 }]}
+            value={myLinkedin}
+            onChangeText={setMyLinkedin}
+            placeholder="https://linkedin.com/in/..."
+            placeholderTextColor={Colors.textTertiary}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            onBlur={() => updateSettingsMut.mutate({ quick_link_my_linkedin: myLinkedin })}
+          />
+        </View>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>Company LinkedIn</Text>
+          <TextInput
+            style={[styles.settingInput, { flex: 1, marginLeft: 8 }]}
+            value={companyLinkedin}
+            onChangeText={setCompanyLinkedin}
+            placeholder="https://linkedin.com/company/..."
+            placeholderTextColor={Colors.textTertiary}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            onBlur={() => updateSettingsMut.mutate({ quick_link_company_linkedin: companyLinkedin })}
+          />
+        </View>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>Calendar Link</Text>
+          <TextInput
+            style={[styles.settingInput, { flex: 1, marginLeft: 8 }]}
+            value={calendarLink}
+            onChangeText={setCalendarLink}
+            placeholder="https://calendly.com/..."
+            placeholderTextColor={Colors.textTertiary}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            onBlur={() => updateSettingsMut.mutate({ quick_link_calendar: calendarLink })}
+          />
+        </View>
+        {[
+          { label: customLabel1, setLabel: setCustomLabel1, url: customUrl1, setUrl: setCustomUrl1, labelKey: "quick_link_custom1_label", urlKey: "quick_link_custom1_url" },
+          { label: customLabel2, setLabel: setCustomLabel2, url: customUrl2, setUrl: setCustomUrl2, labelKey: "quick_link_custom2_label", urlKey: "quick_link_custom2_url" },
+          { label: customLabel3, setLabel: setCustomLabel3, url: customUrl3, setUrl: setCustomUrl3, labelKey: "quick_link_custom3_label", urlKey: "quick_link_custom3_url" },
+        ].map((slot, idx) => (
+          <View key={idx} style={styles.customLinkRow}>
+            <TextInput
+              style={styles.customLinkLabel}
+              value={slot.label}
+              onChangeText={slot.setLabel}
+              placeholder={`Custom label ${idx + 1}`}
+              placeholderTextColor={Colors.textTertiary}
+              onBlur={() => updateSettingsMut.mutate({ [slot.labelKey]: slot.label })}
+            />
+            <TextInput
+              style={styles.customLinkUrl}
+              value={slot.url}
+              onChangeText={slot.setUrl}
+              placeholder="https://..."
+              placeholderTextColor={Colors.textTertiary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              onBlur={() => updateSettingsMut.mutate({ [slot.urlKey]: slot.url })}
+            />
+          </View>
+        ))}
       </View>
 
       <View style={styles.section}>
@@ -702,6 +795,9 @@ const styles = StyleSheet.create({
   mergeRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   mergeTag: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info, backgroundColor: Colors.info + "10", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
   mergeDesc: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary },
+  customLinkRow: { flexDirection: "row", gap: 8, marginTop: Layout.cardGap },
+  customLinkLabel: { flex: 1, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, paddingHorizontal: 10, paddingVertical: 10 },
+  customLinkUrl: { flex: 2, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, paddingHorizontal: 10, paddingVertical: 10 },
   notionDbRow: { backgroundColor: Colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
   notionDbLabel: { fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: Colors.textSecondary, marginBottom: 8, textTransform: "uppercase" },
   notionDbInput: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, backgroundColor: Colors.surfaceSecondary, borderRadius: Layout.badgeRadius, paddingHorizontal: 10, paddingVertical: 8 },
