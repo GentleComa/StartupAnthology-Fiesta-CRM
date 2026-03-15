@@ -10,7 +10,6 @@ import {
   deleteSession,
   SESSION_COOKIE,
   SESSION_TTL,
-  ISSUER_URL,
   type SessionData,
 } from "../lib/auth";
 import { seedDefaultSettings } from "../lib/seed";
@@ -279,7 +278,7 @@ router.put("/auth/profile", async (req: Request, res: Response) => {
 });
 
 router.post("/mobile-auth/token-exchange", async (req: Request, res: Response) => {
-  const { code, code_verifier, redirect_uri, state, nonce } = req.body;
+  const { code, code_verifier, redirect_uri, state, nonce, iss } = req.body;
 
   if (!code || !code_verifier || !redirect_uri || !state) {
     res.status(400).json({ error: "Missing required parameters" });
@@ -292,7 +291,11 @@ router.post("/mobile-auth/token-exchange", async (req: Request, res: Response) =
     const callbackUrl = new URL(redirect_uri);
     callbackUrl.searchParams.set("code", code);
     callbackUrl.searchParams.set("state", state);
-    callbackUrl.searchParams.set("iss", ISSUER_URL);
+    if (iss) {
+      callbackUrl.searchParams.set("iss", iss);
+    }
+
+    console.log("Mobile token exchange: redirect_uri =", redirect_uri, "| iss =", iss ?? "(none)");
 
     const tokens = await oidc.authorizationCodeGrant(config, callbackUrl, {
       pkceCodeVerifier: code_verifier,

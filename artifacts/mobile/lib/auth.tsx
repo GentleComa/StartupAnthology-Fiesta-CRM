@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (response?.type !== "success" || !request?.codeVerifier) return;
 
-    const { code, state } = response.params;
+    const { code, state, iss } = response.params;
 
     (async () => {
       try {
@@ -153,9 +153,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({
             code,
             code_verifier: request.codeVerifier,
-            redirect_uri: redirectUri,
+            redirect_uri: request.redirectUri,
             state,
             nonce: request.nonce,
+            ...(iss ? { iss } : {}),
           }),
         });
 
