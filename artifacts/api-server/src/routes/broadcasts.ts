@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { broadcastsTable, leadsTable, contactsTable, emailTemplatesTable, activitiesTable, settingsTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { sendGmailEmail } from "../lib/gmail";
 import { fireAndForgetActivitySync } from "../lib/notionSync";
 
@@ -9,7 +9,7 @@ const router = Router();
 
 router.get("/broadcasts", async (req: Request, res: Response) => {
   try {
-    const results = await db.select().from(broadcastsTable).orderBy(sql`${broadcastsTable.createdAt} desc`);
+    const results = await db.select().from(broadcastsTable).where(eq(broadcastsTable.userId, req.user!.id)).orderBy(sql`${broadcastsTable.createdAt} desc`);
     res.json(results);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -18,14 +18,15 @@ router.get("/broadcasts", async (req: Request, res: Response) => {
 
 router.get("/broadcast-preview", async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.id;
     const { segmentType, segmentValue } = req.query;
     let recipients: { name: string; email: string }[] = [];
 
     if (segmentType === "lead_status") {
-      const leads = await db.select().from(leadsTable).where(eq(leadsTable.status, segmentValue as string));
+      const leads = await db.select().from(leadsTable).where(and(eq(leadsTable.status, segmentValue as string), eq(leadsTable.userId, userId)));
       recipients = leads.map((l) => ({ name: l.name, email: l.email }));
     } else if (segmentType === "contact_type") {
-      const contacts = await db.select().from(contactsTable).where(eq(contactsTable.relationshipType, segmentValue as string));
+      const contacts = await db.select().from(contactsTable).where(and(eq(contactsTable.relationshipType, segmentValue as string), eq(contactsTable.userId, userId)));
       recipients = contacts.filter((c) => c.email).map((c) => ({ name: c.name, email: c.email! }));
     }
 
@@ -37,23 +38,24 @@ router.get("/broadcast-preview", async (req: Request, res: Response) => {
 
 router.post("/broadcasts", async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.id;
     const { subject, templateId, segmentType, segmentValue } = req.body;
 
     let recipients: { name: string; email: string; id: number; isLead: boolean; company?: string | null }[] = [];
     if (segmentType === "lead_status") {
-      const leads = await db.select().from(leadsTable).where(eq(leadsTable.status, segmentValue));
+      const leads = await db.select().from(leadsTable).where(and(eq(leadsTable.status, segmentValue), eq(leadsTable.userId, userId)));
       recipients = leads.map((l) => ({ name: l.name, email: l.email, id: l.id, isLead: true }));
     } else if (segmentType === "contact_type") {
-      const contacts = await db.select().from(contactsTable).where(eq(contactsTable.relationshipType, segmentValue));
+      const contacts = await db.select().from(contactsTable).where(and(eq(contactsTable.relationshipType, segmentValue), eq(contactsTable.userId, userId)));
       recipients = contacts.filter((c) => c.email).map((c) => ({ name: c.name, email: c.email!, id: c.id, isLead: false, company: c.company }));
     }
 
     let template: any = null;
     if (templateId) {
-      [template] = await db.select().from(emailTemplatesTable).where(eq(emailTemplatesTable.id, templateId));
+      [template] = await db.select().from(emailTemplatesTable).where(and(eq(emailTemplatesTable.id, templateId), eq(emailTemplatesTable.userId, userId)));
     }
 
-    const settingsRows = await db.select().from(settingsTable);
+    const settingsRows = await db.select().from(settingsTable).where(eq(settingsTable.userId, userId));
     const founderName = settingsRows.find((s) => s.key === "founder_name")?.value || "";
 
     const [broadcast] = await db.insert(broadcastsTable).values({
@@ -63,6 +65,7 @@ router.post("/broadcasts", async (req: Request, res: Response) => {
       segmentValue,
       recipientCount: recipients.length,
       status: "sending",
+      userId,
     }).returning();
 
     let sentCount = 0;
@@ -90,6 +93,7 @@ router.post("/broadcasts", async (req: Request, res: Response) => {
           direction: "sent",
           subject: emailSubject,
           body: emailBody,
+          userId,
         }).returning();
 
         fireAndForgetActivitySync(activity);

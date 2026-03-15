@@ -1,14 +1,16 @@
 import { type Request, type Response, type NextFunction } from "express";
-import type { AuthUser } from "@workspace/api-zod";
+import { eq } from "drizzle-orm";
+import { db, usersTable } from "@workspace/db";
 import {
   clearSession,
   getSessionId,
   getSession,
+  type SessionUser,
 } from "../lib/auth";
 
 declare global {
   namespace Express {
-    interface User extends AuthUser {}
+    interface User extends SessionUser {}
 
     interface Request {
       isAuthenticated(): this is AuthedRequest;
@@ -44,6 +46,32 @@ export async function authMiddleware(
     return;
   }
 
-  req.user = session.user;
+  const [dbUser] = await db
+    .select({
+      id: usersTable.id,
+      email: usersTable.email,
+      firstName: usersTable.firstName,
+      lastName: usersTable.lastName,
+      profileImageUrl: usersTable.profileImageUrl,
+      role: usersTable.role,
+      isActive: usersTable.isActive,
+    })
+    .from(usersTable)
+    .where(eq(usersTable.id, session.user.id));
+
+  if (!dbUser || !dbUser.isActive) {
+    await clearSession(res, sid);
+    next();
+    return;
+  }
+
+  req.user = {
+    id: dbUser.id,
+    email: dbUser.email,
+    firstName: dbUser.firstName,
+    lastName: dbUser.lastName,
+    profileImageUrl: dbUser.profileImageUrl,
+    role: dbUser.role,
+  };
   next();
 }

@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -12,6 +12,7 @@ export const calendarEventsTable = pgTable("calendar_events", {
   description: text("description"),
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
+  userId: varchar("user_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

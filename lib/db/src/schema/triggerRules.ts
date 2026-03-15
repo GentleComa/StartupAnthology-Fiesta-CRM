@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -8,6 +8,7 @@ export const triggerRulesTable = pgTable("trigger_rules", {
   actionType: text("action_type").notNull(),
   sequenceId: integer("sequence_id"),
   followUpDays: integer("follow_up_days"),
+  userId: varchar("user_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

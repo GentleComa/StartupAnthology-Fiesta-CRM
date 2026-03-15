@@ -9,6 +9,7 @@ const router = Router();
 
 router.post("/email/send", async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.id;
     const { to, subject, body, leadId, contactId, addToCalendar } = req.body;
 
     if (!to || !subject || !body) {
@@ -37,6 +38,7 @@ router.post("/email/send", async (req: Request, res: Response) => {
       direction: "sent",
       subject,
       body,
+      userId,
     }).returning();
 
     fireAndForgetActivitySync(activity);
@@ -64,6 +66,7 @@ router.post("/email/send", async (req: Request, res: Response) => {
         leadId: leadId || null,
         contactId: contactId || null,
         eventType: "email",
+        userId,
       });
     }
 

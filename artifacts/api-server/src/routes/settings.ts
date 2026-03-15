@@ -1,13 +1,14 @@
 import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { settingsTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 const router = Router();
 
 router.get("/settings", async (req: Request, res: Response) => {
   try {
-    const results = await db.select().from(settingsTable);
+    const userId = req.user!.id;
+    const results = await db.select().from(settingsTable).where(eq(settingsTable.userId, userId));
     const settings: Record<string, string> = {};
     for (const r of results) {
       settings[r.key] = r.value;
@@ -20,16 +21,17 @@ router.get("/settings", async (req: Request, res: Response) => {
 
 router.put("/settings", async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.id;
     const entries = Object.entries(req.body) as [string, string][];
     for (const [key, value] of entries) {
-      const existing = await db.select().from(settingsTable).where(eq(settingsTable.key, key));
+      const existing = await db.select().from(settingsTable).where(and(eq(settingsTable.key, key), eq(settingsTable.userId, userId)));
       if (existing.length > 0) {
-        await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(eq(settingsTable.key, key));
+        await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(and(eq(settingsTable.key, key), eq(settingsTable.userId, userId)));
       } else {
-        await db.insert(settingsTable).values({ key, value });
+        await db.insert(settingsTable).values({ key, value, userId });
       }
     }
-    const results = await db.select().from(settingsTable);
+    const results = await db.select().from(settingsTable).where(eq(settingsTable.userId, userId));
     const settings: Record<string, string> = {};
     for (const r of results) {
       settings[r.key] = r.value;

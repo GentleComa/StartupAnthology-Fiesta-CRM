@@ -2,13 +2,21 @@ import crypto from "crypto";
 import { type Request, type Response } from "express";
 import { db, sessionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import type { AuthUser } from "@workspace/api-zod";
 
 export const SESSION_COOKIE = "sid";
 export const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
 
+export interface SessionUser {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  role: string;
+}
+
 export interface SessionData {
-  user: AuthUser;
+  user: SessionUser;
 }
 
 export async function createSession(data: SessionData): Promise<string> {

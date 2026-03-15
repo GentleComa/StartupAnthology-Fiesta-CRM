@@ -2,7 +2,7 @@
 
 ## Overview
 
-Mobile-first CRM app for a solo founder/small team. Built with Expo (React Native) for iOS, Express API server with PostgreSQL, integrated with Gmail (sending) and Notion (one-way sync).
+Mobile-first CRM app for a solo founder/small team. Built with Expo (React Native) for iOS, Express API server with PostgreSQL, integrated with Gmail (sending) and Notion (one-way sync). Multi-user support with password authentication, role-based access, and admin user management.
 
 ## Stack
 
@@ -17,6 +17,7 @@ Mobile-first CRM app for a solo founder/small team. Built with Expo (React Nativ
 - **API codegen**: Orval (from OpenAPI spec)
 - **State management**: TanStack React Query
 - **Integrations**: Gmail (via googleapis), Notion (via @replit/connectors-sdk), Google Calendar (via googleapis)
+- **Auth**: bcryptjs for password hashing, session-based auth with Bearer tokens
 
 ## Structure
 
@@ -31,25 +32,31 @@ artifacts-monorepo/
 │   │   ├── app/template/[id].tsx # Template editor (create/edit)
 │   │   ├── app/sequence/[id].tsx # Drip sequence editor
 │   │   ├── app/broadcast/new.tsx # Broadcast wizard (4-step)
-│   │   ├── app/settings.tsx   # Settings + trigger rules
-│   │   ├── constants/colors.ts # Navy/gold theme (#1B2B4B, #D4A843)
+│   │   ├── app/settings.tsx   # Settings + profile + admin user management
+│   │   ├── constants/colors.ts # Brand colors (#000000 primary, #BB935B accent)
 │   │   ├── constants/api.ts   # API base URL config
-│   │   └── lib/api.ts         # All API client methods
+│   │   ├── lib/api.ts         # All API client methods (incl. profile, password, admin)
+│   │   ├── lib/auth.tsx       # Auth provider with login/register/logout/refreshUser
+│   │   └── components/LoginScreen.tsx # Login/Register screen with password
 │   ├── api-server/            # Express API server
-│   │   ├── src/routes/        # leads, contacts, activities, templates, sequences, broadcasts, triggers, settings, dashboard, email, calendar
+│   │   ├── src/routes/        # leads, contacts, activities, templates, sequences, broadcasts, triggers, settings, dashboard, email, calendar, auth, admin
+│   │   ├── src/middlewares/authMiddleware.ts  # Session auth + live DB user check
+│   │   ├── src/middlewares/requireAuth.ts     # Auth gate middleware
+│   │   ├── src/middlewares/requireAdmin.ts    # Admin role guard
 │   │   ├── src/lib/gmail.ts   # Gmail send via googleapis
 │   │   ├── src/lib/calendar.ts # Google Calendar client via googleapis
 │   │   ├── src/lib/notion.ts  # Notion sync via connectors-sdk
 │   │   ├── src/lib/notionSync.ts # Fire-and-forget Notion sync helpers
 │   │   ├── src/lib/dripWorker.ts # Background drip sequence email worker (60s interval)
-│   │   └── src/lib/seed.ts    # Default settings seeder
+│   │   ├── src/lib/seed.ts    # Per-user default settings seeder
+│   │   └── src/lib/auth.ts    # Session management (create/get/delete)
 │   └── mockup-sandbox/        # Component preview server
 ├── lib/
 │   ├── api-spec/              # OpenAPI spec + Orval codegen
 │   ├── api-client-react/      # Generated React Query hooks
 │   ├── api-zod/               # Generated Zod schemas
 │   └── db/                    # Drizzle ORM schema + DB
-│       └── src/schema/        # leads, contacts, activities, emailTemplates, dripSequences, broadcasts, triggerRules, settings, calendarEvents
+│       └── src/schema/        # leads, contacts, activities, emailTemplates, dripSequences, broadcasts, triggerRules, settings, calendarEvents, auth (users+sessions)
 ├── scripts/
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json
@@ -83,32 +90,54 @@ artifacts-monorepo/
 - Follow-up queue quick access
 
 ### Settings
-- General: app name, founder name, beta slot total
-- Integration status: Gmail + Notion
-- Notion Sync: configurable database IDs for leads, contacts, and activities
-- Trigger rules: auto-actions when lead status changes (enroll in sequence, schedule follow-up)
-- Merge tag reference
+- **Profile**: Edit first/last name, view email and role badge
+- **Change Password**: Current password required, min 6 characters
+- **General**: app name, founder name, beta slot total
+- **Integration status**: Gmail + Notion
+- **Notion Sync**: configurable database IDs for leads, contacts, and activities
+- **Trigger rules**: auto-actions when lead status changes (enroll in sequence, schedule follow-up)
+- **User Management** (admin only): List users, create users, toggle roles, enable/disable accounts
+- **Merge tag reference**
 
 ## Authentication
 
-- **Email-only login** — user enters email, server upserts user by email, creates session, returns token
-- No password, no OAuth, no OIDC — designed for solo-founder dev usage
-- Mobile flow: email input → `POST /api/auth/login` → session token stored in `expo-secure-store`
-- Auth middleware runs on every request, loads user from session
+- **Password-based auth** — email + password login and registration
+- Passwords hashed with bcryptjs (12 rounds)
+- Mobile flow: email + password → `POST /api/auth/login` → session token stored in `expo-secure-store`
+- Auth middleware checks live DB state on every request (role, isActive) — no stale sessions
+- `userId` stripped from all client payloads to prevent ownership tampering
 - `AuthProvider` wraps the app in `_layout.tsx`, `AuthGate` shows login screen if not authenticated
-- Login screen at `components/LoginScreen.tsx` — email input + submit button
-- Logout button in Settings screen with confirmation alert
-- Sessions stored in PostgreSQL (`sessions` table), users in `users` table
+- Login screen at `components/LoginScreen.tsx` — email/password inputs with login/register toggle
+- First registered user is a regular user — admin must be set via DB or existing admin
+- Sessions stored in PostgreSQL (`sessions` table), users in `users` table with passwordHash, role, isActive
 
 ### Auth Endpoints
 - `GET /api/auth/user` — current user state
-- `POST /api/auth/login` — email login (upserts user, creates session, returns `{ token }`)
+- `POST /api/auth/register` — create account (email + password, optional firstName/lastName)
+- `POST /api/auth/login` — password login (creates session, returns `{ token, user }`)
+- `PUT /api/auth/profile` — update firstName, lastName, profileImageUrl (refreshes session)
+- `PUT /api/auth/password` — change password (requires currentPassword if one exists)
 - `GET /api/logout` — clear session + redirect to `/`
 - `POST /api/mobile-auth/logout` — mobile logout
 
+### Admin Endpoints (admin role required)
+- `GET /api/admin/users` — list all users
+- `POST /api/admin/users` — create user (email, password, firstName, lastName, role)
+- `PUT /api/admin/users/:id` — update role/isActive (cannot self-demote or self-disable)
+
+### User Roles
+- `user` — standard access to own data
+- `admin` — full access + user management
+
+### Multi-User Data Scoping
+All CRM data is scoped by `userId` column:
+- leads, contacts, activities, email_templates, drip_sequences, broadcasts, trigger_rules, app_settings, calendar_events
+- Settings keyed by `(key, userId)` pair — no global unique constraint on key
+- Default settings seeded per-user on registration
+
 ## Database Schema
 
-Tables: leads (with is_beta), contacts, activities, email_templates, drip_sequences, drip_sequence_steps, drip_enrollments, broadcasts, trigger_rules, app_settings, sessions, users, calendar_events
+Tables: leads (with is_beta, userId), contacts (userId), activities (userId), email_templates (userId), drip_sequences (userId), drip_sequence_steps, drip_enrollments, broadcasts (userId), trigger_rules (userId), app_settings (key+userId), sessions, users (passwordHash, role, isActive), calendar_events (userId)
 
 ## Design
 
@@ -121,7 +150,7 @@ Tables: leads (with is_beta), contacts, activities, email_templates, drip_sequen
 
 ## API Endpoints
 
-All mounted at `/api`:
+All mounted at `/api`, all CRM endpoints require auth and scope by userId:
 - `GET/POST /leads`, `GET/PUT/DELETE /leads/:id`, `PATCH /leads/:id/status`
 - `GET/POST /contacts`, `GET /contacts/follow-ups`, `GET/PUT/DELETE /contacts/:id`, `POST /contacts/:id/mark-contacted`
 - `GET/POST /activities`
@@ -133,6 +162,8 @@ All mounted at `/api`:
 - `GET /dashboard`
 - `POST /email/send`
 - `GET/POST /calendar/events`, `DELETE /calendar/events/:id`
+- Auth: `POST /auth/register`, `POST /auth/login`, `PUT /auth/profile`, `PUT /auth/password`
+- Admin: `GET/POST /admin/users`, `PUT /admin/users/:id`
 
 ## Gmail Integration
 

@@ -13,8 +13,9 @@ function isValidISODate(str: string): boolean {
 
 router.get("/calendar/events", async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.id;
     const { startDate, endDate, leadId, contactId } = req.query;
-    const conditions = [];
+    const conditions = [eq(calendarEventsTable.userId, userId)];
 
     if (startDate) {
       if (!isValidISODate(startDate as string)) {
@@ -35,12 +36,7 @@ router.get("/calendar/events", async (req: Request, res: Response) => {
       conditions.push(eq(calendarEventsTable.contactId, Number(contactId)));
     }
 
-    let rows;
-    if (conditions.length > 0) {
-      rows = await db.select().from(calendarEventsTable).where(and(...conditions)).orderBy(sql`${calendarEventsTable.startTime} asc`);
-    } else {
-      rows = await db.select().from(calendarEventsTable).orderBy(sql`${calendarEventsTable.startTime} asc`);
-    }
+    const rows = await db.select().from(calendarEventsTable).where(and(...conditions)).orderBy(sql`${calendarEventsTable.startTime} asc`);
 
     const leadIds = [...new Set(rows.filter((r) => r.leadId).map((r) => r.leadId!))];
     const contactIds = [...new Set(rows.filter((r) => r.contactId).map((r) => r.contactId!))];
@@ -71,6 +67,7 @@ router.get("/calendar/events", async (req: Request, res: Response) => {
 
 router.post("/calendar/events", async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.id;
     const { title, description, startTime, endTime, leadId, contactId, eventType } = req.body;
 
     if (!title || !startTime || !endTime) {
@@ -104,6 +101,7 @@ router.post("/calendar/events", async (req: Request, res: Response) => {
       leadId: leadId || null,
       contactId: contactId || null,
       eventType: eventType || "other",
+      userId,
     }).returning();
 
     res.status(201).json(event);
@@ -119,7 +117,7 @@ router.delete("/calendar/events/:id", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid event id" });
     }
 
-    const [event] = await db.select().from(calendarEventsTable).where(eq(calendarEventsTable.id, id));
+    const [event] = await db.select().from(calendarEventsTable).where(and(eq(calendarEventsTable.id, id), eq(calendarEventsTable.userId, req.user!.id)));
 
     if (!event) {
       return res.status(404).json({ error: "Event not found" });

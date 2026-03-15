@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { requireAuth } from "../middlewares/requireAuth";
 import healthRouter from "./health";
 import authRouter from "./auth";
+import adminRouter from "./admin";
 import leadsRouter from "./leads";
 import contactsRouter from "./contacts";
 import activitiesRouter from "./activities";
@@ -21,6 +22,7 @@ router.use(authRouter);
 
 router.use(requireAuth);
 
+router.use(adminRouter);
 router.use(leadsRouter);
 router.use(contactsRouter);
 router.use(activitiesRouter);

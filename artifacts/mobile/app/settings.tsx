@@ -1,6 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
+import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
 import React, { useState, useEffect } from "react";
 import {
@@ -12,6 +13,8 @@ import {
   Text,
   TextInput,
   View,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Colors from "@/constants/colors";
@@ -24,12 +27,18 @@ const ACTION_TYPES = ["enroll_sequence", "schedule_followup"];
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const isAdmin = user?.role === "admin";
 
   const { data: settings = {} } = useQuery({ queryKey: ["settings"], queryFn: api.getSettings });
   const { data: triggers = [], refetch: refetchTriggers } = useQuery({ queryKey: ["triggers"], queryFn: api.getTriggerRules });
   const { data: sequences = [] } = useQuery({ queryKey: ["sequences"], queryFn: api.getSequences });
+  const { data: adminUsers = [], refetch: refetchAdminUsers } = useQuery({
+    queryKey: ["adminUsers"],
+    queryFn: api.getAdminUsers,
+    enabled: isAdmin,
+  });
 
   const [betaTotal, setBetaTotal] = useState("");
   const [founderName, setFounderName] = useState("");
@@ -42,6 +51,19 @@ export default function SettingsScreen() {
   const [newTriggerSeqId, setNewTriggerSeqId] = useState<number | null>(null);
   const [newTriggerDays, setNewTriggerDays] = useState("3");
 
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserFirstName, setNewUserFirstName] = useState("");
+  const [newUserLastName, setNewUserLastName] = useState("");
+  const [newUserRole, setNewUserRole] = useState("user");
+
   useEffect(() => {
     if (settings) {
       setBetaTotal(settings.beta_slots_total || "100");
@@ -53,6 +75,13 @@ export default function SettingsScreen() {
     }
   }, [settings]);
 
+  useEffect(() => {
+    if (user) {
+      setEditFirstName(user.firstName || "");
+      setEditLastName(user.lastName || "");
+    }
+  }, [user]);
+
   const updateSettingsMut = useMutation({
     mutationFn: (data: Record<string, string>) => api.updateSettings(data),
     onSuccess: () => {
@@ -61,6 +90,32 @@ export default function SettingsScreen() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
+
+  const updateProfileMut = useMutation({
+    mutationFn: (data: { firstName?: string; lastName?: string }) => api.updateProfile(data),
+    onSuccess: async (result) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (result?.token) {
+        await SecureStore.setItemAsync("auth_session_token", result.token);
+      }
+      await refreshUser();
+      Alert.alert("Saved", "Your profile has been updated.");
+    },
+    onError: (err: Error) => Alert.alert("Error", err.message),
+  });
+
+  const changePasswordMut = useMutation({
+    mutationFn: (data: { currentPassword?: string; newPassword: string }) => api.changePassword(data),
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      Alert.alert("Done", "Password changed successfully.");
+    },
+    onError: (err: Error) => Alert.alert("Error", err.message),
+  });
+
   const createTriggerMut = useMutation({
     mutationFn: () => api.createTriggerRule({
       triggerStatus: newTriggerStatus,
@@ -74,10 +129,72 @@ export default function SettingsScreen() {
       setNewTriggerAction("");
     },
   });
+
   const deleteTriggerMut = useMutation({
     mutationFn: (id: number) => api.deleteTriggerRule(id),
     onSuccess: () => refetchTriggers(),
   });
+
+  const createUserMut = useMutation({
+    mutationFn: () => api.createAdminUser({
+      email: newUserEmail.trim().toLowerCase(),
+      password: newUserPassword,
+      firstName: newUserFirstName.trim() || undefined,
+      lastName: newUserLastName.trim() || undefined,
+      role: newUserRole,
+    }),
+    onSuccess: () => {
+      refetchAdminUsers();
+      setShowAddUser(false);
+      setNewUserEmail("");
+      setNewUserPassword("");
+      setNewUserFirstName("");
+      setNewUserLastName("");
+      setNewUserRole("user");
+      Alert.alert("Done", "User created successfully.");
+    },
+    onError: (err: Error) => Alert.alert("Error", err.message),
+  });
+
+  const toggleUserActiveMut = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      api.updateAdminUser(id, { isActive }),
+    onSuccess: () => refetchAdminUsers(),
+    onError: (err: Error) => Alert.alert("Error", err.message),
+  });
+
+  const toggleUserRoleMut = useMutation({
+    mutationFn: ({ id, role }: { id: string; role: string }) =>
+      api.updateAdminUser(id, { role }),
+    onSuccess: () => refetchAdminUsers(),
+    onError: (err: Error) => Alert.alert("Error", err.message),
+  });
+
+  const handleSaveProfile = () => {
+    updateProfileMut.mutate({
+      firstName: editFirstName.trim() || undefined,
+      lastName: editLastName.trim() || undefined,
+    });
+  };
+
+  const handleChangePassword = () => {
+    if (!newPassword) {
+      Alert.alert("Required", "Please enter a new password.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert("Too short", "Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Mismatch", "Passwords do not match.");
+      return;
+    }
+    changePasswordMut.mutate({
+      currentPassword: currentPassword || undefined,
+      newPassword,
+    });
+  };
 
   return (
     <ScrollView style={[styles.container, { paddingTop: topPad }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -87,6 +204,97 @@ export default function SettingsScreen() {
         </Pressable>
         <Text style={styles.title}>Settings</Text>
         <View style={{ width: 22 }} />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Profile</Text>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>First Name</Text>
+          <TextInput
+            style={styles.settingInput}
+            value={editFirstName}
+            onChangeText={setEditFirstName}
+            placeholder="First name"
+            placeholderTextColor={Colors.textTertiary}
+          />
+        </View>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>Last Name</Text>
+          <TextInput
+            style={styles.settingInput}
+            value={editLastName}
+            onChangeText={setEditLastName}
+            placeholder="Last name"
+            placeholderTextColor={Colors.textTertiary}
+          />
+        </View>
+        {user?.email && (
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Email</Text>
+            <Text style={[styles.settingInput, { color: Colors.textSecondary }]}>{user.email}</Text>
+          </View>
+        )}
+        {user?.role && (
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Role</Text>
+            <View style={[styles.roleBadge, user.role === "admin" && styles.roleBadgeAdmin]}>
+              <Text style={[styles.roleBadgeText, user.role === "admin" && styles.roleBadgeTextAdmin]}>{user.role}</Text>
+            </View>
+          </View>
+        )}
+        <Pressable
+          style={[styles.saveBtn, updateProfileMut.isPending && { opacity: 0.6 }]}
+          onPress={handleSaveProfile}
+          disabled={updateProfileMut.isPending}
+        >
+          {updateProfileMut.isPending ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.saveBtnText}>Save Profile</Text>
+          )}
+        </Pressable>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Change Password</Text>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Current password"
+          placeholderTextColor={Colors.textTertiary}
+          value={currentPassword}
+          onChangeText={setCurrentPassword}
+          secureTextEntry
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="New password (min 6 characters)"
+          placeholderTextColor={Colors.textTertiary}
+          value={newPassword}
+          onChangeText={setNewPassword}
+          secureTextEntry
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Confirm new password"
+          placeholderTextColor={Colors.textTertiary}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          autoCapitalize="none"
+        />
+        <Pressable
+          style={[styles.saveBtn, changePasswordMut.isPending && { opacity: 0.6 }]}
+          onPress={handleChangePassword}
+          disabled={changePasswordMut.isPending}
+        >
+          {changePasswordMut.isPending ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.saveBtnText}>Update Password</Text>
+          )}
+        </Pressable>
       </View>
 
       <View style={styles.section}>
@@ -267,27 +475,84 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account</Text>
-        {user && (
-          <View style={styles.integrationRow}>
-            <View style={[styles.integrationIcon, { backgroundColor: Colors.primary }]}>
-              <Text style={{ color: Colors.accent, fontFamily: "Lato_700Bold", fontSize: 16 }}>
-                {(user.firstName?.[0] || user.email?.[0] || "?").toUpperCase()}
-              </Text>
-            </View>
-            <View style={styles.integrationInfo}>
-              <Text style={styles.integrationName}>
-                {[user.firstName, user.lastName].filter(Boolean).join(" ") || "User"}
-              </Text>
-              {user.email && (
-                <Text style={styles.integrationStatus}>{user.email}</Text>
+      {isAdmin && (
+        <View style={styles.section}>
+          <View style={styles.adminHeader}>
+            <Text style={styles.sectionTitle}>User Management</Text>
+            <Pressable style={styles.addUserBtn} onPress={() => setShowAddUser(true)}>
+              <Feather name="plus" size={16} color="#fff" />
+              <Text style={styles.addUserBtnText}>Add User</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.sectionSubtitle}>Manage users and permissions.</Text>
+
+          {adminUsers.map((u: any) => (
+            <View key={u.id} style={styles.userCard}>
+              <View style={styles.userAvatar}>
+                <Text style={styles.userAvatarText}>
+                  {(u.firstName?.[0] || u.email?.[0] || "?").toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.userInfo}>
+                <Text style={styles.userName}>
+                  {[u.firstName, u.lastName].filter(Boolean).join(" ") || u.email}
+                </Text>
+                <Text style={styles.userEmail}>{u.email}</Text>
+                <View style={styles.userMeta}>
+                  <View style={[styles.roleBadgeSmall, u.role === "admin" && styles.roleBadgeSmallAdmin]}>
+                    <Text style={[styles.roleBadgeSmallText, u.role === "admin" && styles.roleBadgeSmallTextAdmin]}>{u.role}</Text>
+                  </View>
+                  {!u.isActive && (
+                    <View style={styles.disabledBadge}>
+                      <Text style={styles.disabledBadgeText}>Disabled</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+              {u.id !== user?.id && (
+                <View style={styles.userActions}>
+                  <Pressable
+                    style={styles.userActionBtn}
+                    onPress={() => {
+                      const nextRole = u.role === "admin" ? "user" : "admin";
+                      Alert.alert(
+                        "Change Role",
+                        `Set ${u.firstName || u.email} as ${nextRole}?`,
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          { text: "Confirm", onPress: () => toggleUserRoleMut.mutate({ id: u.id, role: nextRole }) },
+                        ]
+                      );
+                    }}
+                  >
+                    <Feather name="shield" size={16} color={u.role === "admin" ? Colors.accent : Colors.textTertiary} />
+                  </Pressable>
+                  <Pressable
+                    style={styles.userActionBtn}
+                    onPress={() => {
+                      const action = u.isActive ? "Disable" : "Enable";
+                      Alert.alert(
+                        `${action} User`,
+                        `${action} ${u.firstName || u.email}?`,
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          { text: action, style: u.isActive ? "destructive" : "default", onPress: () => toggleUserActiveMut.mutate({ id: u.id, isActive: !u.isActive }) },
+                        ]
+                      );
+                    }}
+                  >
+                    <Feather name={u.isActive ? "user-check" : "user-x"} size={16} color={u.isActive ? Colors.success : Colors.error} />
+                  </Pressable>
+                </View>
               )}
             </View>
-          </View>
-        )}
+          ))}
+        </View>
+      )}
+
+      <View style={styles.section}>
         <Pressable
-          style={[styles.addBtn, { backgroundColor: Colors.error, marginTop: 12 }]}
+          style={[styles.addBtn, { backgroundColor: Colors.error }]}
           onPress={() => {
             Alert.alert("Log out?", "You'll need to sign in again.", [
               { text: "Stay", style: "cancel" },
@@ -300,6 +565,81 @@ export default function SettingsScreen() {
       </View>
 
       <View style={{ height: 40 }} />
+
+      <Modal visible={showAddUser} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add User</Text>
+              <Pressable onPress={() => setShowAddUser(false)}>
+                <Feather name="x" size={22} color={Colors.text} />
+              </Pressable>
+            </View>
+            <View style={styles.modalNameRow}>
+              <TextInput
+                style={[styles.modalInput, { flex: 1 }]}
+                placeholder="First name"
+                placeholderTextColor={Colors.textTertiary}
+                value={newUserFirstName}
+                onChangeText={setNewUserFirstName}
+                autoCapitalize="words"
+              />
+              <TextInput
+                style={[styles.modalInput, { flex: 1 }]}
+                placeholder="Last name"
+                placeholderTextColor={Colors.textTertiary}
+                value={newUserLastName}
+                onChangeText={setNewUserLastName}
+                autoCapitalize="words"
+              />
+            </View>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Email"
+              placeholderTextColor={Colors.textTertiary}
+              value={newUserEmail}
+              onChangeText={setNewUserEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Password (min 6 characters)"
+              placeholderTextColor={Colors.textTertiary}
+              value={newUserPassword}
+              onChangeText={setNewUserPassword}
+              secureTextEntry
+            />
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Role</Text>
+              <View style={styles.chipRow}>
+                {["user", "admin"].map((r) => (
+                  <Pressable key={r} style={[styles.chip, newUserRole === r && styles.chipActive]} onPress={() => setNewUserRole(r)}>
+                    <Text style={[styles.chipText, newUserRole === r && styles.chipTextActive]}>{r}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+            <Pressable
+              style={[styles.addBtn, createUserMut.isPending && { opacity: 0.6 }]}
+              onPress={() => {
+                if (!newUserEmail.trim() || !newUserPassword) {
+                  Alert.alert("Required", "Email and password are required.");
+                  return;
+                }
+                createUserMut.mutate();
+              }}
+              disabled={createUserMut.isPending}
+            >
+              {createUserMut.isPending ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.addBtnText}>Create User</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -338,6 +678,8 @@ const styles = StyleSheet.create({
   seqOptionText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
   addBtn: { backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 12, alignItems: "center" },
   addBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
+  saveBtn: { backgroundColor: Colors.accent, borderRadius: 12, paddingVertical: 12, alignItems: "center", marginTop: 12 },
+  saveBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
   mergeTagCard: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginTop: 8, gap: 8 },
   mergeRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   mergeTag: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info, backgroundColor: Colors.info + "10", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
@@ -345,4 +687,33 @@ const styles = StyleSheet.create({
   notionDbRow: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginTop: 8 },
   notionDbLabel: { fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: Colors.textSecondary, marginBottom: 6, textTransform: "uppercase" },
   notionDbInput: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, backgroundColor: Colors.surfaceSecondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  passwordInput: { backgroundColor: Colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, marginTop: 8 },
+  roleBadge: { backgroundColor: Colors.surfaceSecondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  roleBadgeAdmin: { backgroundColor: Colors.accent + "20" },
+  roleBadgeText: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary, textTransform: "capitalize" },
+  roleBadgeTextAdmin: { color: Colors.accent },
+  adminHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  addUserBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: Colors.accent, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+  addUserBtnText: { fontSize: 12, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
+  userCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginTop: 8 },
+  userAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center" },
+  userAvatarText: { color: Colors.accent, fontFamily: "Lato_700Bold", fontSize: 16 },
+  userInfo: { flex: 1 },
+  userName: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
+  userEmail: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary },
+  userMeta: { flexDirection: "row", gap: 6, marginTop: 4 },
+  roleBadgeSmall: { backgroundColor: Colors.surfaceSecondary, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  roleBadgeSmallAdmin: { backgroundColor: Colors.accent + "20" },
+  roleBadgeSmallText: { fontSize: 10, fontFamily: "SpaceGrotesk_500Medium", color: Colors.textSecondary, textTransform: "capitalize" },
+  roleBadgeSmallTextAdmin: { color: Colors.accent },
+  disabledBadge: { backgroundColor: Colors.error + "20", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  disabledBadgeText: { fontSize: 10, fontFamily: "SpaceGrotesk_500Medium", color: Colors.error },
+  userActions: { flexDirection: "row", gap: 8 },
+  userActionBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: Colors.surfaceSecondary, justifyContent: "center", alignItems: "center" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  modalContent: { backgroundColor: Colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
+  modalTitle: { fontSize: 18, fontFamily: "Lato_700Bold", color: Colors.text },
+  modalInput: { backgroundColor: Colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, marginBottom: 12 },
+  modalNameRow: { flexDirection: "row", gap: 10 },
 });
