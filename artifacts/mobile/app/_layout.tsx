@@ -55,7 +55,9 @@ function RootLayoutNav() {
       <Stack.Screen name="compose-email" options={{ presentation: "modal" }} />
       <Stack.Screen name="template/[id]" options={{ presentation: "modal" }} />
       <Stack.Screen name="sequence/[id]" options={{ presentation: "modal" }} />
+      <Stack.Screen name="broadcast/[id]" />
       <Stack.Screen name="broadcast/new" options={{ presentation: "modal" }} />
+      <Stack.Screen name="comms" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="admin" />
     </Stack>

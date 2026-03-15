@@ -155,7 +155,10 @@ export default function CommsScreen() {
               contentContainerStyle={styles.listContent}
               refreshControl={<RefreshControl refreshing={false} onRefresh={onRefresh} tintColor={colors.primary} />}
               renderItem={({ item }) => (
-                <Pressable style={({ pressed }) => [styles.card, { backgroundColor: colors.surface }, pressed && styles.pressed]}>
+                <Pressable
+                  style={({ pressed }) => [styles.card, { backgroundColor: colors.surface }, pressed && styles.pressed]}
+                  onPress={() => router.push({ pathname: "/broadcast/[id]", params: { id: String(item.id) } })}
+                >
                   <View style={[styles.cardIcon, { backgroundColor: colors.success + "15" }]}>
                     <Feather name="send" size={18} color={colors.success} />
                   </View>
@@ -168,6 +171,7 @@ export default function CommsScreen() {
                       {item.sentAt ? new Date(item.sentAt).toLocaleDateString() : "Draft"}
                     </Text>
                   </View>
+                  <Feather name="chevron-right" size={18} color={colors.textTertiary} />
                 </Pressable>
               )}
               ListEmptyComponent={

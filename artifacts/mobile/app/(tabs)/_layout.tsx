@@ -1,12 +1,11 @@
 import { BlurView } from "expo-blur";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
-import { Icon, Label, Badge, NativeTabs } from "expo-router/unstable-native-tabs";
+import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/lib/theme";
 
 function NativeTabLayout() {
@@ -32,9 +31,6 @@ function NativeTabLayout() {
         <Icon sf={{ default: "bubble.left.and.text.bubble.right", selected: "bubble.left.and.text.bubble.right.fill" }} />
         <Label>AI</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="comms" hidden>
-        <Label>Workflows</Label>
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="more" hidden>
         <Label>More</Label>
       </NativeTabs.Trigger>
@@ -44,7 +40,6 @@ function NativeTabLayout() {
 
 function ClassicTabLayout() {
   const { colors, isDark } = useTheme();
-  const safeAreaInsets = useSafeAreaInsets();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
 
@@ -138,10 +133,6 @@ function ClassicTabLayout() {
               <Feather name="cpu" size={22} color={color} />
             ),
         }}
-      />
-      <Tabs.Screen
-        name="comms"
-        options={{ href: null }}
       />
       <Tabs.Screen
         name="more"
