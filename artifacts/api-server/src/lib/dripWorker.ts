@@ -19,26 +19,32 @@ const LOCK_TIMEOUT_MS = 5 * 60 * 1000;
 function replaceMergeTags(
   text: string,
   recipient: { name: string; company?: string | null },
-  founderName: string
+  founderName: string,
+  userSettings: Record<string, string> = {}
 ): string {
   const firstName = recipient.name.split(" ")[0];
   return text
     .replace(/\{\{first_name\}\}/g, firstName)
     .replace(/\{\{company_name\}\}/g, recipient.company || "")
-    .replace(/\{\{founder_name\}\}/g, founderName);
+    .replace(/\{\{founder_name\}\}/g, founderName)
+    .replace(/\{\{my_linkedin\}\}/g, userSettings.quick_link_my_linkedin || "")
+    .replace(/\{\{company_linkedin\}\}/g, userSettings.quick_link_company_linkedin || "")
+    .replace(/\{\{calendar_link\}\}/g, userSettings.quick_link_calendar || "")
+    .replace(/\{\{custom_link_1\}\}/g, userSettings.quick_link_custom1_url || "")
+    .replace(/\{\{custom_link_2\}\}/g, userSettings.quick_link_custom2_url || "")
+    .replace(/\{\{custom_link_3\}\}/g, userSettings.quick_link_custom3_url || "");
 }
 
-async function getFounderNameForUser(userId: string): Promise<string> {
+async function getUserSettings(userId: string): Promise<Record<string, string>> {
   const rows = await db
     .select()
     .from(settingsTable)
-    .where(
-      and(
-        eq(settingsTable.key, "founder_name"),
-        eq(settingsTable.userId, userId)
-      )
-    );
-  return rows[0]?.value || "";
+    .where(eq(settingsTable.userId, userId));
+  const settings: Record<string, string> = {};
+  for (const r of rows) {
+    settings[r.key] = r.value;
+  }
+  return settings;
 }
 
 async function getSequenceOwnerId(sequenceId: number): Promise<string | null> {
@@ -110,7 +116,8 @@ async function processEnrollments() {
           continue;
         }
 
-        const founderName = await getFounderNameForUser(ownerId);
+        const userSettings = await getUserSettings(ownerId);
+        const founderName = userSettings.founder_name || "";
 
         const steps = await db
           .select()
@@ -198,9 +205,10 @@ async function processEnrollments() {
         const subject = replaceMergeTags(
           template.subject,
           recipient,
-          founderName
+          founderName,
+          userSettings
         );
-        const body = replaceMergeTags(template.body, recipient, founderName);
+        const body = replaceMergeTags(template.body, recipient, founderName, userSettings);
 
         await sendGmailEmail(recipient.email, subject, body);
 

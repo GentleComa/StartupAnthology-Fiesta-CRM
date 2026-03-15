@@ -583,6 +583,12 @@ export default function SettingsScreen() {
           <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{first_name}}"}</Text><Text style={styles.mergeDesc}>Their first name</Text></View>
           <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{company_name}}"}</Text><Text style={styles.mergeDesc}>Their company</Text></View>
           <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{founder_name}}"}</Text><Text style={styles.mergeDesc}>Your name</Text></View>
+          <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{my_linkedin}}"}</Text><Text style={styles.mergeDesc}>Your LinkedIn URL</Text></View>
+          <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{company_linkedin}}"}</Text><Text style={styles.mergeDesc}>Company LinkedIn URL</Text></View>
+          <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{calendar_link}}"}</Text><Text style={styles.mergeDesc}>Your calendar link</Text></View>
+          <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{custom_link_1}}"}</Text><Text style={styles.mergeDesc}>Custom link 1</Text></View>
+          <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{custom_link_2}}"}</Text><Text style={styles.mergeDesc}>Custom link 2</Text></View>
+          <View style={styles.mergeRow}><Text style={styles.mergeTag}>{"{{custom_link_3}}"}</Text><Text style={styles.mergeDesc}>Custom link 3</Text></View>
         </View>
       </View>
 

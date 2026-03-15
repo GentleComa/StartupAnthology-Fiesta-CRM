@@ -133,7 +133,7 @@ export default function TemplateDetailScreen() {
 
       <View style={styles.mergeTagInfo}>
         <Feather name="info" size={14} color={Colors.textTertiary} />
-        <Text style={styles.mergeTagText}>Tags you can use: {"{{first_name}}"}, {"{{company_name}}"}, {"{{founder_name}}"}</Text>
+        <Text style={styles.mergeTagText}>Tags you can use: {"{{first_name}}"}, {"{{company_name}}"}, {"{{founder_name}}"}, {"{{my_linkedin}}"}, {"{{company_linkedin}}"}, {"{{calendar_link}}"}, {"{{custom_link_1}}"}, {"{{custom_link_2}}"}, {"{{custom_link_3}}"}</Text>
       </View>
 
       <View style={{ height: 40 }} />

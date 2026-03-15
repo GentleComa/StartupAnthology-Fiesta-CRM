@@ -59,7 +59,11 @@ router.post("/broadcasts", async (req: Request, res: Response, next: NextFunctio
     }
 
     const settingsRows = await db.select().from(settingsTable).where(eq(settingsTable.userId, userId));
-    const founderName = settingsRows.find((s) => s.key === "founder_name")?.value || "";
+    const userSettings: Record<string, string> = {};
+    for (const r of settingsRows) {
+      userSettings[r.key] = r.value;
+    }
+    const founderName = userSettings.founder_name || "";
 
     const [broadcast] = await db.insert(broadcastsTable).values({
       subject: template?.subject || subject,
@@ -81,11 +85,23 @@ router.post("/broadcasts", async (req: Request, res: Response, next: NextFunctio
         emailSubject = emailSubject
           .replace(/\{\{first_name\}\}/g, firstName)
           .replace(/\{\{company_name\}\}/g, recipient.company || "")
-          .replace(/\{\{founder_name\}\}/g, founderName);
+          .replace(/\{\{founder_name\}\}/g, founderName)
+          .replace(/\{\{my_linkedin\}\}/g, userSettings.quick_link_my_linkedin || "")
+          .replace(/\{\{company_linkedin\}\}/g, userSettings.quick_link_company_linkedin || "")
+          .replace(/\{\{calendar_link\}\}/g, userSettings.quick_link_calendar || "")
+          .replace(/\{\{custom_link_1\}\}/g, userSettings.quick_link_custom1_url || "")
+          .replace(/\{\{custom_link_2\}\}/g, userSettings.quick_link_custom2_url || "")
+          .replace(/\{\{custom_link_3\}\}/g, userSettings.quick_link_custom3_url || "");
         emailBody = emailBody
           .replace(/\{\{first_name\}\}/g, firstName)
           .replace(/\{\{company_name\}\}/g, recipient.company || "")
-          .replace(/\{\{founder_name\}\}/g, founderName);
+          .replace(/\{\{founder_name\}\}/g, founderName)
+          .replace(/\{\{my_linkedin\}\}/g, userSettings.quick_link_my_linkedin || "")
+          .replace(/\{\{company_linkedin\}\}/g, userSettings.quick_link_company_linkedin || "")
+          .replace(/\{\{calendar_link\}\}/g, userSettings.quick_link_calendar || "")
+          .replace(/\{\{custom_link_1\}\}/g, userSettings.quick_link_custom1_url || "")
+          .replace(/\{\{custom_link_2\}\}/g, userSettings.quick_link_custom2_url || "")
+          .replace(/\{\{custom_link_3\}\}/g, userSettings.quick_link_custom3_url || "");
 
         await sendGmailEmail(recipient.email, emailSubject, emailBody);
         sentCount++;
