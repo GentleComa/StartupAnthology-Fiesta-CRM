@@ -175,7 +175,10 @@ All mounted at `/api`, all CRM endpoints require auth and scope by userId:
 - `GET/POST /calendar/events`, `DELETE /calendar/events/:id`
 - Auth: `POST /auth/register`, `POST /auth/login`, `PUT /auth/profile`, `PUT /auth/password`
 - Admin: `GET/POST /admin/users`, `PUT /admin/users/:id`
-- Audit: `GET /history/:entityType/:entityId`, `POST /history/:entityType/:entityId/rollback/:revisionId`
+- Audit History: `GET /history/:entityType/:entityId` (also `GET /:entityType/:id/history`)
+- Audit Rollback: `POST /history/:entityType/:entityId/rollback/:revisionId` (also `POST /:entityType/:id/rollback/:revisionId`)
+- Canonical entityType values: lead, contact, template, sequence, sequence_step, calendar_event, trigger, broadcast, setting (plural aliases also accepted)
+- Audit action values: create, update, delete, rollback
 
 ## Gmail Integration
 
