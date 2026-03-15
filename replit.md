@@ -135,9 +135,20 @@ All CRM data is scoped by `userId` column:
 - Settings keyed by `(key, userId)` pair — no global unique constraint on key
 - Default settings seeded per-user on registration
 
+## Audit Trail & Revision History
+
+- **audit_log** table stores every CUD operation with: entityType, entityId, action, userId, beforeSnapshot (JSONB), afterSnapshot (JSONB), createdAt
+- Indexed on (entityType, entityId), userId, and createdAt for fast lookups
+- Fire-and-forget `logAudit()` helper in `src/lib/audit.ts` — non-blocking, catches its own errors
+- Every create/update/delete in leads, contacts, templates, sequences, calendar events, settings, triggers, and broadcasts logs an audit entry
+- Updates/deletes capture the before-state by reading the record first
+- History API: `GET /api/history/:entityType/:entityId` — returns audit entries with user names, supports limit/offset pagination
+- Rollback API: `POST /api/history/:entityType/:entityId/rollback/:revisionId` — restores record to pre-change state, logs the rollback itself as a new audit entry
+- Mobile: Lead and contact detail screens have a clock icon to open a History modal showing the revision timeline; tapping an entry reveals before/after snapshots; "Restore this version" button with confirmation alert
+
 ## Database Schema
 
-Tables: leads (with is_beta, userId), contacts (userId), activities (userId), email_templates (userId), drip_sequences (userId), drip_sequence_steps, drip_enrollments, broadcasts (userId), trigger_rules (userId), app_settings (key+userId), sessions, users (passwordHash, role, isActive), calendar_events (userId)
+Tables: leads (with is_beta, userId), contacts (userId), activities (userId), email_templates (userId), drip_sequences (userId), drip_sequence_steps, drip_enrollments, broadcasts (userId), trigger_rules (userId), app_settings (key+userId), sessions, users (passwordHash, role, isActive, needsPasswordReset), calendar_events (userId), audit_log
 
 ## Design
 
@@ -164,6 +175,7 @@ All mounted at `/api`, all CRM endpoints require auth and scope by userId:
 - `GET/POST /calendar/events`, `DELETE /calendar/events/:id`
 - Auth: `POST /auth/register`, `POST /auth/login`, `PUT /auth/profile`, `PUT /auth/password`
 - Admin: `GET/POST /admin/users`, `PUT /admin/users/:id`
+- Audit: `GET /history/:entityType/:entityId`, `POST /history/:entityType/:entityId/rollback/:revisionId`
 
 ## Gmail Integration
 

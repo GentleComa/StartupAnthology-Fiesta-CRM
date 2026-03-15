@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { calendarEventsTable, leadsTable, contactsTable } from "@workspace/db";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { createCalendarEvent, deleteCalendarEvent } from "../lib/calendar";
+import { logAudit } from "../lib/audit";
 
 const router = Router();
 
@@ -113,6 +114,7 @@ router.post("/calendar/events", async (req: Request, res: Response) => {
       userId,
     }).returning();
 
+    logAudit("calendar_event", event.id, "create", userId, null, event as Record<string, unknown>);
     res.status(201).json(event);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -121,12 +123,13 @@ router.post("/calendar/events", async (req: Request, res: Response) => {
 
 router.delete("/calendar/events/:id", async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.id;
     const id = Number(req.params.id);
     if (isNaN(id)) {
       return res.status(400).json({ error: "Invalid event id" });
     }
 
-    const [event] = await db.select().from(calendarEventsTable).where(and(eq(calendarEventsTable.id, id), eq(calendarEventsTable.userId, req.user!.id)));
+    const [event] = await db.select().from(calendarEventsTable).where(and(eq(calendarEventsTable.id, id), eq(calendarEventsTable.userId, userId)));
 
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
@@ -141,6 +144,7 @@ router.delete("/calendar/events/:id", async (req: Request, res: Response) => {
     }
 
     await db.delete(calendarEventsTable).where(eq(calendarEventsTable.id, id));
+    logAudit("calendar_event", id, "delete", userId, event as Record<string, unknown>, null);
     res.status(204).send();
   } catch (err: any) {
     res.status(500).json({ error: err.message });

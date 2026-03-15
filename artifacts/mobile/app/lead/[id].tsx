@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -24,12 +25,17 @@ const STATUSES = ["new", "contacted", "interested", "engaged", "converted"];
 const STATUS_LABELS: Record<string, string> = { new: "New", contacted: "Contacted", interested: "Interested", engaged: "Engaged", converted: "Converted" };
 const STATUS_COLORS: Record<string, string> = { new: Colors.statusNew, contacted: Colors.statusContacted, interested: Colors.statusInterested, engaged: Colors.statusEngaged, converted: Colors.statusConverted };
 
+const ACTION_LABELS: Record<string, string> = { create: "Created", update: "Updated", delete: "Deleted", rollback: "Rolled back" };
+const ACTION_COLORS: Record<string, string> = { create: Colors.success, update: Colors.info, delete: Colors.error, rollback: Colors.warning };
+
 export default function LeadDetailScreen() {
   const { id } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [editNotes, setEditNotes] = useState("");
+  const [historyVisible, setHistoryVisible] = useState(false);
+  const [selectedRevision, setSelectedRevision] = useState<any>(null);
 
   const { data: lead, isLoading } = useQuery({
     queryKey: ["lead", id],
@@ -44,6 +50,11 @@ export default function LeadDetailScreen() {
     queryFn: () => api.getCalendarEvents({ leadId: Number(id) }),
   });
   const { data: sequences = [] } = useQuery({ queryKey: ["sequences"], queryFn: api.getSequences });
+  const { data: history = [], refetch: refetchHistory } = useQuery({
+    queryKey: ["history", "lead", id],
+    queryFn: () => api.getHistory("lead", Number(id)),
+    enabled: historyVisible,
+  });
 
   const updateMut = useMutation({
     mutationFn: (data: any) => api.updateLead(Number(id), data),
@@ -65,6 +76,17 @@ export default function LeadDetailScreen() {
     mutationFn: (data: any) => api.createActivity(data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["activities", "lead", id] }); },
   });
+  const rollbackMut = useMutation({
+    mutationFn: (revisionId: number) => api.rollback("lead", Number(id), revisionId),
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      qc.invalidateQueries({ queryKey: ["lead", id] });
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      refetchHistory();
+      setSelectedRevision(null);
+    },
+    onError: (err: Error) => Alert.alert("Rollback failed", err.message),
+  });
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -79,6 +101,9 @@ export default function LeadDetailScreen() {
           <Feather name="arrow-left" size={22} color={Colors.text} />
         </Pressable>
         <View style={{ flex: 1 }} />
+        <Pressable style={styles.historyBtn} onPress={() => setHistoryVisible(true)}>
+          <Feather name="clock" size={20} color={Colors.info} />
+        </Pressable>
         <Pressable style={styles.deleteBtn} onPress={() => { Alert.alert("Delete this lead?", "This can't be undone.", [{ text: "Keep", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => deleteMut.mutate() }]); }}>
           <Feather name="trash-2" size={20} color={Colors.error} />
         </Pressable>
@@ -203,6 +228,77 @@ export default function LeadDetailScreen() {
       </View>
 
       <View style={{ height: 40 }} />
+
+      <Modal visible={historyVisible} animationType="slide" presentationStyle="pageSheet">
+        <View style={[styles.modalContainer, { paddingTop: insets.top + 10 }]}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Change History</Text>
+            <Pressable onPress={() => { setHistoryVisible(false); setSelectedRevision(null); }}>
+              <Feather name="x" size={24} color={Colors.text} />
+            </Pressable>
+          </View>
+          <ScrollView style={styles.modalScroll} contentContainerStyle={{ paddingBottom: 40 }}>
+            {history.length === 0 ? (
+              <Text style={styles.emptyActivity}>No changes recorded yet.</Text>
+            ) : (
+              history.map((entry: any) => (
+                <Pressable
+                  key={entry.id}
+                  style={[styles.historyEntry, selectedRevision?.id === entry.id && styles.historyEntrySelected]}
+                  onPress={() => setSelectedRevision(selectedRevision?.id === entry.id ? null : entry)}
+                >
+                  <View style={styles.historyEntryHeader}>
+                    <View style={[styles.actionBadge, { backgroundColor: (ACTION_COLORS[entry.action] || Colors.textTertiary) + "20" }]}>
+                      <Text style={[styles.actionBadgeText, { color: ACTION_COLORS[entry.action] || Colors.textTertiary }]}>
+                        {ACTION_LABELS[entry.action] || entry.action}
+                      </Text>
+                    </View>
+                    <Text style={styles.historyMeta}>
+                      {entry.userName || "Unknown"} · {new Date(entry.createdAt).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                    </Text>
+                  </View>
+                  {selectedRevision?.id === entry.id && (
+                    <View style={styles.snapshotContainer}>
+                      {entry.beforeSnapshot && (
+                        <View style={styles.snapshotBox}>
+                          <Text style={styles.snapshotLabel}>Before</Text>
+                          <Text style={styles.snapshotText}>{JSON.stringify(entry.beforeSnapshot, null, 2)}</Text>
+                        </View>
+                      )}
+                      {entry.afterSnapshot && (
+                        <View style={styles.snapshotBox}>
+                          <Text style={styles.snapshotLabel}>After</Text>
+                          <Text style={styles.snapshotText}>{JSON.stringify(entry.afterSnapshot, null, 2)}</Text>
+                        </View>
+                      )}
+                      {(entry.action === "update" || entry.action === "rollback") && entry.beforeSnapshot && (
+                        <Pressable
+                          style={styles.rollbackBtn}
+                          onPress={() => {
+                            Alert.alert(
+                              "Restore this version?",
+                              "The lead will be reverted to the state before this change.",
+                              [
+                                { text: "Cancel", style: "cancel" },
+                                { text: "Restore", onPress: () => rollbackMut.mutate(entry.id) },
+                              ]
+                            );
+                          }}
+                        >
+                          <Feather name="rotate-ccw" size={16} color="#fff" />
+                          <Text style={styles.rollbackBtnText}>
+                            {rollbackMut.isPending ? "Restoring..." : "Restore this version"}
+                          </Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  )}
+                </Pressable>
+              ))
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -213,6 +309,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background },
   topBar: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
   backBtn: { padding: 10, marginLeft: -10 },
+  historyBtn: { padding: 10 },
   deleteBtn: { padding: 10, marginRight: -10 },
   profileSection: { alignItems: "center", marginBottom: 24 },
   avatar: { width: 64, height: 64, borderRadius: 32, justifyContent: "center", alignItems: "center", marginBottom: 12 },
@@ -246,4 +343,20 @@ const styles = StyleSheet.create({
   activityType: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, textTransform: "capitalize" },
   activityNote: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },
   activityDate: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, marginTop: 2 },
+  modalContainer: { flex: 1, backgroundColor: Colors.background, padding: 20 },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontFamily: "Lato_700Bold", color: Colors.text },
+  modalScroll: { flex: 1 },
+  historyEntry: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginBottom: 10 },
+  historyEntrySelected: { borderWidth: 1, borderColor: Colors.info },
+  historyEntryHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
+  actionBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  actionBadgeText: { fontSize: 11, fontFamily: "LeagueSpartan_600SemiBold", textTransform: "uppercase" },
+  historyMeta: { flex: 1, fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
+  snapshotContainer: { marginTop: 12, gap: 10 },
+  snapshotBox: { backgroundColor: Colors.background, borderRadius: 8, padding: 10 },
+  snapshotLabel: { fontSize: 11, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.textTertiary, marginBottom: 4, textTransform: "uppercase" },
+  snapshotText: { fontSize: 11, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary },
+  rollbackBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: Colors.warning, borderRadius: 10, paddingVertical: 10, marginTop: 4 },
+  rollbackBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
 });

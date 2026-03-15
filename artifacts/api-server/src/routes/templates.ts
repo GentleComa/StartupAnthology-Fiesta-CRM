@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { emailTemplatesTable } from "@workspace/db";
 import { eq, sql, and } from "drizzle-orm";
+import { logAudit } from "../lib/audit";
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.post("/templates", async (req: Request, res: Response) => {
   try {
     const { userId: _, ...body } = req.body;
     const [template] = await db.insert(emailTemplatesTable).values({ ...body, userId: req.user!.id }).returning();
+    logAudit("template", template.id, "create", req.user!.id, null, template as Record<string, unknown>);
     res.status(201).json(template);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -41,9 +43,14 @@ router.get("/templates/:id", async (req: Request, res: Response) => {
 
 router.put("/templates/:id", async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.id;
+    const templateId = Number(req.params.id);
+    const [before] = await db.select().from(emailTemplatesTable).where(and(eq(emailTemplatesTable.id, templateId), eq(emailTemplatesTable.userId, userId)));
+    if (!before) return res.status(404).json({ error: "Not found" });
+
     const { userId: _u, ...body } = req.body;
-    const [template] = await db.update(emailTemplatesTable).set({ ...body, updatedAt: new Date() }).where(and(eq(emailTemplatesTable.id, Number(req.params.id)), eq(emailTemplatesTable.userId, req.user!.id))).returning();
-    if (!template) return res.status(404).json({ error: "Not found" });
+    const [template] = await db.update(emailTemplatesTable).set({ ...body, updatedAt: new Date() }).where(and(eq(emailTemplatesTable.id, templateId), eq(emailTemplatesTable.userId, userId))).returning();
+    logAudit("template", templateId, "update", userId, before as Record<string, unknown>, template as Record<string, unknown>);
     res.json(template);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -52,8 +59,13 @@ router.put("/templates/:id", async (req: Request, res: Response) => {
 
 router.delete("/templates/:id", async (req: Request, res: Response) => {
   try {
-    const result = await db.delete(emailTemplatesTable).where(and(eq(emailTemplatesTable.id, Number(req.params.id)), eq(emailTemplatesTable.userId, req.user!.id))).returning();
-    if (result.length === 0) return res.status(404).json({ error: "Not found" });
+    const userId = req.user!.id;
+    const templateId = Number(req.params.id);
+    const [before] = await db.select().from(emailTemplatesTable).where(and(eq(emailTemplatesTable.id, templateId), eq(emailTemplatesTable.userId, userId)));
+    if (!before) return res.status(404).json({ error: "Not found" });
+
+    await db.delete(emailTemplatesTable).where(eq(emailTemplatesTable.id, templateId));
+    logAudit("template", templateId, "delete", userId, before as Record<string, unknown>, null);
     res.status(204).send();
   } catch (err: any) {
     res.status(500).json({ error: err.message });

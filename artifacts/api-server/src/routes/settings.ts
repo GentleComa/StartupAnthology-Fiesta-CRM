@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { settingsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
+import { logAudit } from "../lib/audit";
 
 const router = Router();
 
@@ -26,9 +27,12 @@ router.put("/settings", async (req: Request, res: Response) => {
     for (const [key, value] of entries) {
       const existing = await db.select().from(settingsTable).where(and(eq(settingsTable.key, key), eq(settingsTable.userId, userId)));
       if (existing.length > 0) {
+        const before = { key, value: existing[0].value };
         await db.update(settingsTable).set({ value, updatedAt: new Date() }).where(and(eq(settingsTable.key, key), eq(settingsTable.userId, userId)));
+        logAudit("setting", existing[0].id, "update", userId, before as Record<string, unknown>, { key, value } as Record<string, unknown>);
       } else {
-        await db.insert(settingsTable).values({ key, value, userId });
+        const [inserted] = await db.insert(settingsTable).values({ key, value, userId }).returning();
+        logAudit("setting", inserted.id, "create", userId, null, { key, value } as Record<string, unknown>);
       }
     }
     const results = await db.select().from(settingsTable).where(eq(settingsTable.userId, userId));

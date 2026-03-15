@@ -4,6 +4,7 @@ import { contactsTable, calendarEventsTable } from "@workspace/db";
 import { eq, sql, and, lte, isNotNull } from "drizzle-orm";
 import { fireAndForgetContactSync } from "../lib/notionSync";
 import { createCalendarEvent } from "../lib/calendar";
+import { logAudit } from "../lib/audit";
 
 const router = Router();
 
@@ -37,6 +38,7 @@ router.post("/contacts", async (req: Request, res: Response) => {
   try {
     const { userId: _, ...body } = req.body;
     const [contact] = await db.insert(contactsTable).values({ ...body, userId: req.user!.id }).returning();
+    logAudit("contact", contact.id, "create", req.user!.id, null, contact as Record<string, unknown>);
     fireAndForgetContactSync(contact);
     res.status(201).json(contact);
   } catch (err: any) {
@@ -56,9 +58,14 @@ router.get("/contacts/:id", async (req: Request, res: Response) => {
 
 router.put("/contacts/:id", async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.id;
+    const contactId = Number(req.params.id);
+    const [before] = await db.select().from(contactsTable).where(and(eq(contactsTable.id, contactId), eq(contactsTable.userId, userId)));
+    if (!before) return res.status(404).json({ error: "Not found" });
+
     const { userId: _u, ...body } = req.body;
-    const [contact] = await db.update(contactsTable).set({ ...body, updatedAt: new Date() }).where(and(eq(contactsTable.id, Number(req.params.id)), eq(contactsTable.userId, req.user!.id))).returning();
-    if (!contact) return res.status(404).json({ error: "Not found" });
+    const [contact] = await db.update(contactsTable).set({ ...body, updatedAt: new Date() }).where(and(eq(contactsTable.id, contactId), eq(contactsTable.userId, userId))).returning();
+    logAudit("contact", contactId, "update", userId, before as Record<string, unknown>, contact as Record<string, unknown>);
     fireAndForgetContactSync(contact);
     res.json(contact);
   } catch (err: any) {
@@ -68,8 +75,13 @@ router.put("/contacts/:id", async (req: Request, res: Response) => {
 
 router.delete("/contacts/:id", async (req: Request, res: Response) => {
   try {
-    const result = await db.delete(contactsTable).where(and(eq(contactsTable.id, Number(req.params.id)), eq(contactsTable.userId, req.user!.id))).returning();
-    if (result.length === 0) return res.status(404).json({ error: "Not found" });
+    const userId = req.user!.id;
+    const contactId = Number(req.params.id);
+    const [before] = await db.select().from(contactsTable).where(and(eq(contactsTable.id, contactId), eq(contactsTable.userId, userId)));
+    if (!before) return res.status(404).json({ error: "Not found" });
+
+    await db.delete(contactsTable).where(eq(contactsTable.id, contactId));
+    logAudit("contact", contactId, "delete", userId, before as Record<string, unknown>, null);
     res.status(204).send();
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -79,13 +91,17 @@ router.delete("/contacts/:id", async (req: Request, res: Response) => {
 router.post("/contacts/:id/mark-contacted", async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
+    const contactId = Number(req.params.id);
+    const [before] = await db.select().from(contactsTable).where(and(eq(contactsTable.id, contactId), eq(contactsTable.userId, userId)));
+    if (!before) return res.status(404).json({ error: "Not found" });
+
     const now = new Date();
     const followUp = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     const [contact] = await db.update(contactsTable)
       .set({ lastContactedAt: now, nextFollowUpAt: followUp, updatedAt: now })
-      .where(and(eq(contactsTable.id, Number(req.params.id)), eq(contactsTable.userId, userId)))
+      .where(and(eq(contactsTable.id, contactId), eq(contactsTable.userId, userId)))
       .returning();
-    if (!contact) return res.status(404).json({ error: "Not found" });
+    logAudit("contact", contactId, "update", userId, before as Record<string, unknown>, contact as Record<string, unknown>);
 
     if (req.body.addToCalendar !== false) {
       const followUpEnd = new Date(followUp.getTime() + 30 * 60000);

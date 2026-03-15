@@ -4,6 +4,7 @@ import { broadcastsTable, leadsTable, contactsTable, emailTemplatesTable, activi
 import { eq, sql, and } from "drizzle-orm";
 import { sendGmailEmail } from "../lib/gmail";
 import { fireAndForgetActivitySync } from "../lib/notionSync";
+import { logAudit } from "../lib/audit";
 
 const router = Router();
 
@@ -50,9 +51,10 @@ router.post("/broadcasts", async (req: Request, res: Response) => {
       recipients = contacts.filter((c) => c.email).map((c) => ({ name: c.name, email: c.email!, id: c.id, isLead: false, company: c.company }));
     }
 
-    let template: any = null;
+    let template: { subject: string; body: string } | null = null;
     if (templateId) {
-      [template] = await db.select().from(emailTemplatesTable).where(and(eq(emailTemplatesTable.id, templateId), eq(emailTemplatesTable.userId, userId)));
+      const [t] = await db.select().from(emailTemplatesTable).where(and(eq(emailTemplatesTable.id, templateId), eq(emailTemplatesTable.userId, userId)));
+      if (t) template = t;
     }
 
     const settingsRows = await db.select().from(settingsTable).where(eq(settingsTable.userId, userId));
@@ -67,6 +69,7 @@ router.post("/broadcasts", async (req: Request, res: Response) => {
       status: "sending",
       userId,
     }).returning();
+    logAudit("broadcast", broadcast.id, "create", userId, null, broadcast as Record<string, unknown>);
 
     let sentCount = 0;
     for (const recipient of recipients) {

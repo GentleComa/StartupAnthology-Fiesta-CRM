@@ -168,4 +168,14 @@ export const api = {
     request("/admin/users", { method: "POST", body: JSON.stringify(data) }),
   updateAdminUser: (id: string, data: { role?: string; isActive?: boolean }) =>
     request(`/admin/users/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+
+  getHistory: (entityType: string, entityId: number, params?: { limit?: number; offset?: number }) => {
+    const sp = new URLSearchParams();
+    if (params?.limit) sp.set("limit", String(params.limit));
+    if (params?.offset) sp.set("offset", String(params.offset));
+    const qs = sp.toString();
+    return request(`/history/${entityType}/${entityId}${qs ? `?${qs}` : ""}`);
+  },
+  rollback: (entityType: string, entityId: number, revisionId: number) =>
+    request(`/history/${entityType}/${entityId}/rollback/${revisionId}`, { method: "POST" }),
 };

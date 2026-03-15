@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { dripSequencesTable, dripSequenceStepsTable, dripEnrollmentsTable, calendarEventsTable, leadsTable, contactsTable } from "@workspace/db";
 import { eq, sql, and } from "drizzle-orm";
 import { createCalendarEvent } from "../lib/calendar";
+import { logAudit } from "../lib/audit";
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.post("/sequences", async (req: Request, res: Response) => {
   try {
     const { userId: _, ...body } = req.body;
     const [sequence] = await db.insert(dripSequencesTable).values({ ...body, userId: req.user!.id }).returning();
+    logAudit("sequence", sequence.id, "create", req.user!.id, null, sequence as Record<string, unknown>);
     res.status(201).json(sequence);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -42,9 +44,14 @@ router.get("/sequences/:id", async (req: Request, res: Response) => {
 
 router.put("/sequences/:id", async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.id;
+    const seqId = Number(req.params.id);
+    const [before] = await db.select().from(dripSequencesTable).where(and(eq(dripSequencesTable.id, seqId), eq(dripSequencesTable.userId, userId)));
+    if (!before) return res.status(404).json({ error: "Not found" });
+
     const { userId: _u, ...body } = req.body;
-    const [sequence] = await db.update(dripSequencesTable).set({ ...body, updatedAt: new Date() }).where(and(eq(dripSequencesTable.id, Number(req.params.id)), eq(dripSequencesTable.userId, req.user!.id))).returning();
-    if (!sequence) return res.status(404).json({ error: "Not found" });
+    const [sequence] = await db.update(dripSequencesTable).set({ ...body, updatedAt: new Date() }).where(and(eq(dripSequencesTable.id, seqId), eq(dripSequencesTable.userId, userId))).returning();
+    logAudit("sequence", seqId, "update", userId, before as Record<string, unknown>, sequence as Record<string, unknown>);
     res.json(sequence);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -53,13 +60,15 @@ router.put("/sequences/:id", async (req: Request, res: Response) => {
 
 router.delete("/sequences/:id", async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.id;
     const id = Number(req.params.id);
-    const [sequence] = await db.select().from(dripSequencesTable).where(and(eq(dripSequencesTable.id, id), eq(dripSequencesTable.userId, req.user!.id)));
-    if (!sequence) return res.status(404).json({ error: "Not found" });
+    const [before] = await db.select().from(dripSequencesTable).where(and(eq(dripSequencesTable.id, id), eq(dripSequencesTable.userId, userId)));
+    if (!before) return res.status(404).json({ error: "Not found" });
 
     await db.delete(dripSequenceStepsTable).where(eq(dripSequenceStepsTable.sequenceId, id));
     await db.delete(dripEnrollmentsTable).where(eq(dripEnrollmentsTable.sequenceId, id));
     await db.delete(dripSequencesTable).where(eq(dripSequencesTable.id, id));
+    logAudit("sequence", id, "delete", userId, before as Record<string, unknown>, null);
     res.status(204).send();
   } catch (err: any) {
     res.status(500).json({ error: err.message });

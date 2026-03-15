@@ -14,6 +14,7 @@ import settingsRouter from "./settings";
 import dashboardRouter from "./dashboard";
 import emailRouter from "./email";
 import calendarRouter from "./calendar";
+import auditRouter from "./audit";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(settingsRouter);
 router.use(dashboardRouter);
 router.use(emailRouter);
 router.use(calendarRouter);
+router.use(auditRouter);
 
 export default router;

@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { triggerRulesTable, dripSequencesTable } from "@workspace/db";
 import { eq, sql, and } from "drizzle-orm";
+import { logAudit } from "../lib/audit";
 
 const router = Router();
 
@@ -25,6 +26,7 @@ router.post("/triggers", async (req: Request, res: Response) => {
     }
 
     const [rule] = await db.insert(triggerRulesTable).values({ ...body, userId }).returning();
+    logAudit("trigger", rule.id, "create", userId, null, rule as Record<string, unknown>);
     res.status(201).json(rule);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -33,8 +35,13 @@ router.post("/triggers", async (req: Request, res: Response) => {
 
 router.delete("/triggers/:id", async (req: Request, res: Response) => {
   try {
-    const result = await db.delete(triggerRulesTable).where(and(eq(triggerRulesTable.id, Number(req.params.id)), eq(triggerRulesTable.userId, req.user!.id))).returning();
-    if (result.length === 0) return res.status(404).json({ error: "Not found" });
+    const userId = req.user!.id;
+    const triggerId = Number(req.params.id);
+    const [before] = await db.select().from(triggerRulesTable).where(and(eq(triggerRulesTable.id, triggerId), eq(triggerRulesTable.userId, userId)));
+    if (!before) return res.status(404).json({ error: "Not found" });
+
+    await db.delete(triggerRulesTable).where(eq(triggerRulesTable.id, triggerId));
+    logAudit("trigger", triggerId, "delete", userId, before as Record<string, unknown>, null);
     res.status(204).send();
   } catch (err: any) {
     res.status(500).json({ error: err.message });
