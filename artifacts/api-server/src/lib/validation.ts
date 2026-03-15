@@ -153,6 +153,25 @@ export const updateStatusSchema = z.object({
   status: z.string().min(1),
 });
 
+export const horizonLeadSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  status: z.string().optional(),
+  notes: z.string().nullish(),
+  linkedinUrl: z.string().nullish(),
+  profilePictureUrl: z.string().nullish(),
+  isBeta: z.boolean().optional(),
+});
+
+export const horizonContactSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().nullish(),
+  company: z.string().nullish(),
+  message: z.string().nullish(),
+  notes: z.string().nullish(),
+});
+
 export class ValidationError extends Error {
   public statusCode = 400;
   constructor(issues: string) {

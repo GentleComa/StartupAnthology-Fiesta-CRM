@@ -18,12 +18,14 @@ import auditRouter from "./audit";
 import storageRouter from "./storage";
 import filesRouter from "./files";
 import gmailWebhookRouter from "./gmailWebhook";
+import horizonWebhookRouter from "./horizonWebhook";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
 router.use(gmailWebhookRouter);
+router.use(horizonWebhookRouter);
 
 router.use(requireAuth);
 

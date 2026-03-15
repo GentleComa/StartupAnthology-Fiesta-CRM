@@ -21,6 +21,8 @@ tags:
   - name: calendar
   - name: Auth
     description: Browser and mobile authentication endpoints.
+  - name: webhooks
+    description: Inbound webhook endpoints for external integrations.
 
 paths:
   /healthz:
@@ -909,6 +911,106 @@ paths:
               schema:
                 $ref: '#/components/schemas/LogoutSuccess'
 
+  /webhooks/horizon/lead:
+    post:
+      operationId: horizonLeadWebhook
+      tags: [webhooks]
+      summary: Receive a lead from Horizon
+      description: Creates or updates a lead from Horizon. Secured with x-api-key header.
+      parameters:
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HorizonLeadPayload"
+      responses:
+        "201":
+          description: Lead created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HorizonLeadResponse"
+        "200":
+          description: Lead updated (duplicate email)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HorizonLeadResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: Webhook not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /webhooks/horizon/contact:
+    post:
+      operationId: horizonContactWebhook
+      tags: [webhooks]
+      summary: Receive a contact form submission from Horizon
+      description: Creates or updates a contact from Horizon. Secured with x-api-key header.
+      parameters:
+        - name: x-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HorizonContactPayload"
+      responses:
+        "201":
+          description: Contact created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HorizonContactResponse"
+        "200":
+          description: Contact updated (duplicate email)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HorizonContactResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: Webhook not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
 components:
   parameters:
     AuthorizationSessionHeader:
@@ -1516,3 +1618,59 @@ components:
       properties:
         error:
           type: string
+    HorizonLeadPayload:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+        notes:
+          type: [string, "null"]
+        linkedinUrl:
+          type: [string, "null"]
+        profilePictureUrl:
+          type: [string, "null"]
+        isBeta:
+          type: boolean
+    HorizonLeadResponse:
+      type: object
+      required: [action, lead]
+      properties:
+        action:
+          type: string
+          enum: [created, updated]
+        lead:
+          type: object
+    HorizonContactPayload:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        phone:
+          type: [string, "null"]
+        company:
+          type: [string, "null"]
+        message:
+          type: [string, "null"]
+        notes:
+          type: [string, "null"]
+    HorizonContactResponse:
+      type: object
+      required: [action, contact]
+      properties:
+        action:
+          type: string
+          enum: [created, updated]
+        contact:
+          type: object
