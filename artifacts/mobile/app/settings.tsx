@@ -80,6 +80,10 @@ export default function SettingsScreen() {
   const [newUserFirstName, setNewUserFirstName] = useState("");
   const [newUserLastName, setNewUserLastName] = useState("");
   const [newUserRole, setNewUserRole] = useState("user");
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [diagData, setDiagData] = useState<any>(null);
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [recentData, setRecentData] = useState<any>(null);
 
   useEffect(() => {
     if (settings) {
@@ -217,6 +221,21 @@ export default function SettingsScreen() {
     onSuccess: () => refetchAdminUsers(),
     onError: (err: Error) => Alert.alert("Error", err.message),
   });
+
+  const runDiagnostics = async () => {
+    setDiagLoading(true);
+    setDiagData(null);
+    setRecentData(null);
+    try {
+      const [diag, recent] = await Promise.all([api.getDiagnostics(), api.getRecentErrors()]);
+      setDiagData(diag);
+      setRecentData(recent);
+    } catch (err: any) {
+      Alert.alert("Diagnostics Error", err.message || "Failed to load diagnostics");
+    } finally {
+      setDiagLoading(false);
+    }
+  };
 
   const handleSaveProfile = () => {
     updateProfileMut.mutate({
@@ -737,6 +756,130 @@ export default function SettingsScreen() {
         </View>
       )}
 
+      {isAdmin && (
+        <View style={styles.section}>
+          <Pressable
+            style={styles.diagToggle}
+            onPress={() => {
+              setShowDiagnostics(!showDiagnostics);
+              if (!showDiagnostics && !diagData) runDiagnostics();
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Feather name="activity" size={18} color={colors.accent} />
+              <Text style={styles.sectionTitle}>System Diagnostics</Text>
+            </View>
+            <Feather name={showDiagnostics ? "chevron-up" : "chevron-down"} size={20} color={colors.textSecondary} />
+          </Pressable>
+          {showDiagnostics && (
+            <View style={{ marginTop: 12 }}>
+              <Pressable
+                style={[styles.addBtn, { backgroundColor: colors.accent, marginBottom: 14 }]}
+                onPress={runDiagnostics}
+                disabled={diagLoading}
+              >
+                {diagLoading ? (
+                  <ActivityIndicator color={colors.onPrimary} size="small" />
+                ) : (
+                  <Text style={styles.addBtnText}>Run Diagnostics</Text>
+                )}
+              </Pressable>
+
+              {diagData && (
+                <>
+                  <Text style={[styles.diagSectionLabel, { color: colors.text }]}>Service Health</Text>
+                  <View style={[styles.diagCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <DiagRow label="Database" value={diagData.database?.status} latency={diagData.database?.latencyMs} colors={colors} />
+                    <DiagRow label="AI Model" value={diagData.ai?.status} latency={diagData.ai?.latencyMs} colors={colors} />
+                    <DiagRow label="Horizon" value={diagData.horizon?.status} latency={diagData.horizon?.latencyMs} colors={colors} />
+                  </View>
+
+                  <Text style={[styles.diagSectionLabel, { color: colors.text }]}>Integrations</Text>
+                  <View style={[styles.diagCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <DiagRow label="Gmail" value={diagData.integrations?.gmail} colors={colors} />
+                    <DiagRow label="Google Calendar" value={diagData.integrations?.googleCalendar} colors={colors} />
+                    <DiagRow label="Notion" value={diagData.integrations?.notion} colors={colors} />
+                  </View>
+
+                  <Text style={[styles.diagSectionLabel, { color: colors.text }]}>Environment</Text>
+                  <View style={[styles.diagCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <DiagRow label="Mode" value={diagData.environment?.nodeEnv} colors={colors} />
+                    <DiagRow label="Uptime" value={formatUptime(diagData.environment?.uptimeSeconds)} colors={colors} />
+                    <DiagRow label="Memory" value={`${diagData.environment?.memoryMb} MB`} colors={colors} />
+                  </View>
+
+                  {diagData.tables && (
+                    <>
+                      <Text style={[styles.diagSectionLabel, { color: colors.text }]}>Database Tables</Text>
+                      <View style={[styles.diagCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                        {diagData.tables.map((t: any) => (
+                          <DiagRow key={t.name} label={t.name} value={`~${t.rowEstimate} rows`} colors={colors} />
+                        ))}
+                      </View>
+                    </>
+                  )}
+                </>
+              )}
+
+              {recentData && (
+                <>
+                  <Text style={[styles.diagSectionLabel, { color: colors.text }]}>Last 24h Activity</Text>
+                  <View style={[styles.diagCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    {recentData.last24hActivity?.length > 0 ? (
+                      recentData.last24hActivity.map((a: any, i: number) => (
+                        <DiagRow key={i} label={`${a.entity_type} / ${a.action}`} value={`${a.count}x`} colors={colors} />
+                      ))
+                    ) : (
+                      <Text style={{ color: colors.textTertiary, fontSize: 13, fontFamily: "SpaceGrotesk_400Regular" }}>No activity in last 24 hours</Text>
+                    )}
+                  </View>
+
+                  <Text style={[styles.diagSectionLabel, { color: colors.text }]}>Recent AI Conversations</Text>
+                  <View style={[styles.diagCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    {recentData.recentConversations?.length > 0 ? (
+                      recentData.recentConversations.map((c: any) => (
+                        <View key={c.id} style={styles.diagConvRow}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[styles.diagConvTitle, { color: colors.text }]} numberOfLines={1}>{c.title}</Text>
+                            <Text style={[styles.diagConvMeta, { color: colors.textTertiary }]}>
+                              {c.user_email} · {c.message_count} msgs · {c.agents_involved}
+                            </Text>
+                          </View>
+                          <Text style={[styles.diagConvMeta, { color: colors.textTertiary }]}>
+                            {new Date(c.updated_at).toLocaleDateString()}
+                          </Text>
+                        </View>
+                      ))
+                    ) : (
+                      <Text style={{ color: colors.textTertiary, fontSize: 13, fontFamily: "SpaceGrotesk_400Regular" }}>No conversations yet</Text>
+                    )}
+                  </View>
+
+                  <Text style={[styles.diagSectionLabel, { color: colors.text }]}>Recent Audit Log</Text>
+                  <View style={[styles.diagCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    {recentData.recentAuditLog?.slice(0, 15).map((a: any, i: number) => (
+                      <View key={i} style={styles.diagAuditRow}>
+                        <View style={[styles.diagAuditAction, { backgroundColor: a.action === "create" ? colors.success + "20" : a.action === "delete" ? colors.error + "20" : colors.accent + "20" }]}>
+                          <Text style={{ fontSize: 10, fontFamily: "LeagueSpartan_600SemiBold", color: a.action === "create" ? colors.success : a.action === "delete" ? colors.error : colors.accent }}>
+                            {a.action.toUpperCase()}
+                          </Text>
+                        </View>
+                        <Text style={[styles.diagAuditText, { color: colors.text }]} numberOfLines={1}>
+                          {a.entity_type} #{a.entity_id}
+                        </Text>
+                        <Text style={[styles.diagConvMeta, { color: colors.textTertiary }]}>
+                          {new Date(a.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              )}
+            </View>
+          )}
+        </View>
+      )}
+
       <View style={styles.section}>
         <Pressable
           style={[styles.addBtn, { backgroundColor: colors.error, marginTop: 14 }]}
@@ -831,6 +974,41 @@ export default function SettingsScreen() {
   );
 }
 
+function formatUptime(seconds: number | undefined): string {
+  if (!seconds) return "N/A";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function statusColor(value: string | undefined, colors: ThemeColors): string {
+  if (!value) return colors.textTertiary;
+  const v = value.toLowerCase();
+  if (v === "connected" || v === "available" || v === "configured") return colors.success;
+  if (v.includes("error") || v === "unavailable" || v === "not configured") return colors.error;
+  return colors.accent;
+}
+
+function DiagRow({ label, value, latency, colors }: { label: string; value?: string; latency?: number; colors: ThemeColors }) {
+  return (
+    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 6 }}>
+      <Text style={{ fontSize: 13, fontFamily: "SpaceGrotesk_500Medium", color: colors.text }}>{label}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        {latency !== undefined && (
+          <Text style={{ fontSize: 11, fontFamily: "SpaceGrotesk_400Regular", color: colors.textTertiary }}>{latency}ms</Text>
+        )}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: statusColor(value, colors) }} />
+          <Text style={{ fontSize: 12, fontFamily: "LeagueSpartan_600SemiBold", color: statusColor(value, colors) }}>
+            {value || "unknown"}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: Layout.screenPadding },
@@ -908,4 +1086,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   modalTitle: { fontSize: 18, fontFamily: "Lato_700Bold", color: colors.text },
   modalInput: { backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.text, marginBottom: 12 },
   modalNameRow: { flexDirection: "row", gap: 10 },
+  diagToggle: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  diagSectionLabel: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", marginTop: 12, marginBottom: 6 },
+  diagCard: { borderRadius: 10, borderWidth: 1, padding: 12, marginBottom: 4 },
+  diagConvRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 5 },
+  diagConvTitle: { fontSize: 13, fontFamily: "SpaceGrotesk_500Medium" },
+  diagConvMeta: { fontSize: 11, fontFamily: "SpaceGrotesk_400Regular" },
+  diagAuditRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 4 },
+  diagAuditAction: { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, minWidth: 52, alignItems: "center" as const },
+  diagAuditText: { flex: 1, fontSize: 12, fontFamily: "SpaceGrotesk_500Medium" },
 });

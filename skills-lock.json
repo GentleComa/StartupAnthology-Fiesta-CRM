@@ -116,6 +116,11 @@
       "sourceType": "github",
       "computedHash": "41e8ca055bbde13d240776a14a076a59614057200340c243130a76ba4e64cac8"
     },
+    "landing-page-design": {
+      "source": "skill-zero/s",
+      "sourceType": "github",
+      "computedHash": "63fb730c8eb97e5847100ab67c760d63b442b19f3d33968106ddddb0daaeaf22"
+    },
     "llm-evaluation": {
       "source": "wshobson/agents",
       "sourceType": "github",
@@ -135,6 +140,16 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "computedHash": "f9a0f18d522b307981b6f188b8501c9c9326adeb8aca5b46b679731dc69681ae"
+    },
+    "react-native-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f75e8c7bd9ffd77a29b74eece63806ff87f8723c30744c5cb90f8baab388d18e"
+    },
+    "responsive-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "0977c17696ab66ea613ce5b83c856bc7cd01332d98ae237dac7539840fe96187"
     },
     "skill-creator": {
       "source": "anthropics/skills",

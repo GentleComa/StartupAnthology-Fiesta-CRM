@@ -328,4 +328,6 @@ export const api = {
     request("/ai/generate-insights", { method: "POST" }),
   syncFromHorizon: () =>
     request("/horizon/sync", { method: "POST" }),
+  getDiagnostics: () => request("/admin/diagnostics"),
+  getRecentErrors: () => request("/admin/recent-errors"),
 };
