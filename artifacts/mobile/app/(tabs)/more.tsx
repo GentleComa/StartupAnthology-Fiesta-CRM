@@ -19,6 +19,7 @@ const saIconWhite = require("@/assets/images/sa-icon-white.png");
 const MENU_ITEMS = [
   { label: "Files", icon: "folder", route: "/files" },
   { label: "Communications", icon: "mail", route: "/(tabs)/comms" },
+  { label: "AI Assistant", icon: "cpu", route: "/(tabs)/ai" },
   { label: "Settings", icon: "settings", route: "/settings" },
 ] as const;
 

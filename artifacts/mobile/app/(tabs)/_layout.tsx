@@ -28,17 +28,15 @@ function NativeTabLayout() {
         <Icon sf={{ default: "calendar", selected: "calendar" }} />
         <Label>Calendar</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="comms">
-        <Icon sf={{ default: "envelope", selected: "envelope.fill" }} />
-        <Label>Comms</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="ai">
-        <Icon sf={{ default: "bubble.left.and.text.bubble.right", selected: "bubble.left.and.text.bubble.right.fill" }} />
-        <Label>AI</Label>
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="more">
         <Icon sf={{ default: "ellipsis.circle", selected: "ellipsis.circle.fill" }} />
         <Label>More</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="comms" hidden>
+        <Label>Comms</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="ai" hidden>
+        <Label>AI</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -130,30 +128,6 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
-        name="comms"
-        options={{
-          title: "Comms",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="envelope" tintColor={color} size={22} />
-            ) : (
-              <Feather name="mail" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="ai"
-        options={{
-          title: "AI",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="bubble.left.and.text.bubble.right" tintColor={color} size={22} />
-            ) : (
-              <Feather name="cpu" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
         name="more"
         options={{
           title: "More",
@@ -163,6 +137,18 @@ function ClassicTabLayout() {
             ) : (
               <Feather name="more-horizontal" size={22} color={color} />
             ),
+        }}
+      />
+      <Tabs.Screen
+        name="comms"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="ai"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
