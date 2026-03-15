@@ -20,6 +20,7 @@ import filesRouter from "./files";
 import aiRouter from "./ai";
 import gmailWebhookRouter from "./gmailWebhook";
 import horizonWebhookRouter from "./horizonWebhook";
+import horizonSyncRouter from "./horizonSync";
 
 const router: IRouter = Router();
 
@@ -46,5 +47,6 @@ router.use(auditRouter);
 router.use(storageRouter);
 router.use(filesRouter);
 router.use(aiRouter);
+router.use(horizonSyncRouter);
 
 export default router;

@@ -252,6 +252,7 @@ All mounted at `/api`, all CRM endpoints require auth and scope by userId:
 - `GET/POST/DELETE /leads/:id/files`, `GET/POST/DELETE /contacts/:id/files`
 - `POST /storage/uploads/request-url`, `GET /storage/objects/*`, `GET /storage/public-objects/*`
 - `POST /gmail/webhook`, `POST /gmail/watch`, `GET /gmail/profile`
+- `POST /horizon/sync` (pull sync from Horizon — imports users as leads, contact submissions as contacts)
 - `GET/POST /calendar/events`, `DELETE /calendar/events/:id`
 - Auth: `POST /auth/register`, `POST /auth/login`, `PUT /auth/profile`, `PUT /auth/password`
 - Admin: `GET/POST /admin/users`, `PUT /admin/users/:id`

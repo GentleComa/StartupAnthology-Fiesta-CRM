@@ -190,6 +190,27 @@ export default function SettingsScreen() {
     onError: (err: Error) => Alert.alert("Error", err.message),
   });
 
+  const horizonSyncMut = useMutation({
+    mutationFn: () => api.syncFromHorizon(),
+    onSuccess: (result) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["contacts"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      const { leads, contacts } = result;
+      const parts: string[] = [];
+      if (leads.created > 0 || leads.updated > 0)
+        parts.push(`Leads: ${leads.created} created, ${leads.updated} updated`);
+      if (contacts.created > 0 || contacts.updated > 0)
+        parts.push(`Contacts: ${contacts.created} created, ${contacts.updated} updated`);
+      if (parts.length === 0) parts.push("Everything is up to date");
+      const allErrors = [...(leads.errors || []), ...(contacts.errors || [])];
+      if (allErrors.length > 0) parts.push(`${allErrors.length} error(s)`);
+      Alert.alert("Horizon Sync Complete", parts.join("\n"));
+    },
+    onError: (err: Error) => Alert.alert("Sync Failed", err.message),
+  });
+
   const toggleUserRoleMut = useMutation({
     mutationFn: ({ id, role }: { id: string; role: string }) =>
       api.updateAdminUser(id, { role }),
@@ -483,6 +504,35 @@ export default function SettingsScreen() {
             <Text style={styles.integrationStatus}>Connected</Text>
           </View>
           <View style={styles.connectedDot} />
+        </View>
+        <View style={styles.integrationRow}>
+          <View style={styles.integrationIcon}>
+            <Feather name="refresh-cw" size={18} color={colors.accent} />
+          </View>
+          <View style={styles.integrationInfo}>
+            <Text style={styles.integrationName}>Horizon</Text>
+            <Text style={styles.integrationStatus}>Pull sync</Text>
+          </View>
+          <Pressable
+            style={[styles.horizonSyncBtn, horizonSyncMut.isPending && { opacity: 0.6 }]}
+            onPress={() => {
+              Alert.alert(
+                "Sync from Horizon",
+                "This will import all users and contact submissions from Horizon. Existing records will be updated.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  { text: "Sync Now", onPress: () => horizonSyncMut.mutate() },
+                ]
+              );
+            }}
+            disabled={horizonSyncMut.isPending}
+          >
+            {horizonSyncMut.isPending ? (
+              <ActivityIndicator color={colors.onPrimary} size="small" />
+            ) : (
+              <Text style={styles.horizonSyncBtnText}>Sync Now</Text>
+            )}
+          </Pressable>
         </View>
       </View>
 
@@ -798,6 +848,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   integrationName: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text },
   integrationStatus: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: colors.success },
   connectedDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success },
+  horizonSyncBtn: { backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, minWidth: 80, alignItems: "center" as const },
+  horizonSyncBtnText: { fontSize: 12, fontFamily: "LeagueSpartan_600SemiBold", color: colors.onPrimary },
   triggerCard: { flexDirection: "row", alignItems: "center", backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
   triggerInfo: { flex: 1 },
   triggerText: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.text },

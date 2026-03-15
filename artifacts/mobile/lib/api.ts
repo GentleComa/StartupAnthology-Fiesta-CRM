@@ -326,4 +326,6 @@ export const api = {
     request("/ai/onboarding-progress", { method: "POST", body: JSON.stringify({ topic }) }),
   generateAiInsights: () =>
     request("/ai/generate-insights", { method: "POST" }),
+  syncFromHorizon: () =>
+    request("/horizon/sync", { method: "POST" }),
 };
