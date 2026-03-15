@@ -1,7 +1,7 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import { broadcastsTable, leadsTable, contactsTable, emailTemplatesTable, activitiesTable, settingsTable } from "@workspace/db";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, inArray } from "drizzle-orm";
 import { sendGmailEmail } from "../lib/gmail";
 import { fireAndForgetActivitySync } from "../lib/notionSync";
 import { logAudit } from "../lib/audit";
@@ -21,18 +21,24 @@ router.get("/broadcasts", async (req: Request, res: Response, next: NextFunction
 router.get("/broadcast-preview", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const { segmentType, segmentValue } = req.query;
+    const leadStatusesRaw = req.query.leadStatuses as string | undefined;
+    const contactTypesRaw = req.query.contactTypes as string | undefined;
+    const leadStatuses = leadStatusesRaw ? leadStatusesRaw.split(",").filter(Boolean) : [];
+    const contactTypes = contactTypesRaw ? contactTypesRaw.split(",").filter(Boolean) : [];
+
     let recipients: { name: string; email: string }[] = [];
 
-    if (segmentType === "lead_status") {
-      const leads = await db.select().from(leadsTable).where(and(eq(leadsTable.status, segmentValue as string), eq(leadsTable.userId, userId)));
-      recipients = leads.map((l) => ({ name: l.name, email: l.email }));
-    } else if (segmentType === "contact_type") {
-      const contacts = await db.select().from(contactsTable).where(and(eq(contactsTable.relationshipType, segmentValue as string), eq(contactsTable.userId, userId)));
-      recipients = contacts.filter((c) => c.email).map((c) => ({ name: c.name, email: c.email! }));
+    if (leadStatuses.length > 0) {
+      const leads = await db.select().from(leadsTable).where(and(inArray(leadsTable.status, leadStatuses), eq(leadsTable.userId, userId)));
+      recipients.push(...leads.map((l) => ({ name: l.name, email: l.email })));
+    }
+    if (contactTypes.length > 0) {
+      const contacts = await db.select().from(contactsTable).where(and(inArray(contactsTable.relationshipType, contactTypes), eq(contactsTable.userId, userId)));
+      recipients.push(...contacts.filter((c) => c.email).map((c) => ({ name: c.name, email: c.email! })));
     }
 
-    res.json({ count: recipients.length, recipients });
+    const uniqueRecipients = Array.from(new Map(recipients.map((r) => [r.email, r])).values());
+    res.json({ count: uniqueRecipients.length, recipients: uniqueRecipients });
   } catch (err) {
     next(err);
   }
@@ -41,16 +47,29 @@ router.get("/broadcast-preview", async (req: Request, res: Response, next: NextF
 router.post("/broadcasts", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const { subject, templateId, segmentType, segmentValue } = validate(createBroadcastSchema, req.body);
+    const { subject, templateId, leadStatuses, contactTypes } = validate(createBroadcastSchema, req.body);
 
     let recipients: { name: string; email: string; id: number; isLead: boolean; company?: string | null }[] = [];
-    if (segmentType === "lead_status") {
-      const leads = await db.select().from(leadsTable).where(and(eq(leadsTable.status, segmentValue), eq(leadsTable.userId, userId)));
-      recipients = leads.map((l) => ({ name: l.name, email: l.email, id: l.id, isLead: true }));
-    } else if (segmentType === "contact_type") {
-      const contacts = await db.select().from(contactsTable).where(and(eq(contactsTable.relationshipType, segmentValue), eq(contactsTable.userId, userId)));
-      recipients = contacts.filter((c) => c.email).map((c) => ({ name: c.name, email: c.email!, id: c.id, isLead: false, company: c.company }));
+    if (leadStatuses.length > 0) {
+      const leads = await db.select().from(leadsTable).where(and(inArray(leadsTable.status, leadStatuses), eq(leadsTable.userId, userId)));
+      recipients.push(...leads.map((l) => ({ name: l.name, email: l.email, id: l.id, isLead: true })));
     }
+    if (contactTypes.length > 0) {
+      const contacts = await db.select().from(contactsTable).where(and(inArray(contactsTable.relationshipType, contactTypes), eq(contactsTable.userId, userId)));
+      recipients.push(...contacts.filter((c) => c.email).map((c) => ({ name: c.name, email: c.email!, id: c.id, isLead: false, company: c.company })));
+    }
+    const seenEmails = new Set<string>();
+    recipients = recipients.filter((r) => {
+      if (seenEmails.has(r.email)) return false;
+      seenEmails.add(r.email);
+      return true;
+    });
+
+    const segmentType = [
+      ...(leadStatuses.length > 0 ? ["lead_status"] : []),
+      ...(contactTypes.length > 0 ? ["contact_type"] : []),
+    ].join(",") || "none";
+    const segmentValue = JSON.stringify({ leadStatuses, contactTypes });
 
     let template: { subject: string; body: string } | null = null;
     if (templateId) {

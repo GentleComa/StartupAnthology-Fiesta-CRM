@@ -161,8 +161,12 @@ export const api = {
   getBroadcasts: () => request("/broadcasts"),
   createBroadcast: (data: any) =>
     request("/broadcasts", { method: "POST", body: JSON.stringify(data) }),
-  previewBroadcastRecipients: (segmentType: string, segmentValue: string) =>
-    request(`/broadcast-preview?segmentType=${segmentType}&segmentValue=${segmentValue}`),
+  previewBroadcastRecipients: (leadStatuses: string[], contactTypes: string[]) => {
+    const params = new URLSearchParams();
+    if (leadStatuses.length > 0) params.set("leadStatuses", leadStatuses.join(","));
+    if (contactTypes.length > 0) params.set("contactTypes", contactTypes.join(","));
+    return request(`/broadcast-preview?${params.toString()}`);
+  },
 
   getTriggerRules: () => request("/triggers"),
   createTriggerRule: (data: any) =>

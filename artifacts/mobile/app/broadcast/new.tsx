@@ -31,18 +31,38 @@ export default function BroadcastNewScreen() {
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
-  const [segmentType, setSegmentType] = useState("");
-  const [segmentValue, setSegmentValue] = useState("");
+  const [selectedLeadStatuses, setSelectedLeadStatuses] = useState<string[]>([]);
+  const [selectedContactTypes, setSelectedContactTypes] = useState<string[]>([]);
   const [templateId, setTemplateId] = useState<number | null>(null);
+
+  const hasSelection = selectedLeadStatuses.length > 0 || selectedContactTypes.length > 0;
+
+  const toggleChip = (type: string, value: string) => {
+    if (type === "lead_status") {
+      setSelectedLeadStatuses((prev) =>
+        prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+      );
+    } else {
+      setSelectedContactTypes((prev) =>
+        prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+      );
+    }
+  };
+
+  const isChipActive = (type: string, value: string) => {
+    return type === "lead_status"
+      ? selectedLeadStatuses.includes(value)
+      : selectedContactTypes.includes(value);
+  };
 
   const { data: templates = [] } = useQuery({
     queryKey: ["templates"],
     queryFn: () => api.getTemplates(),
   });
   const { data: preview, isLoading: previewLoading } = useQuery({
-    queryKey: ["broadcastPreview", segmentType, segmentValue],
-    queryFn: () => api.previewBroadcastRecipients(segmentType, segmentValue),
-    enabled: !!segmentType && !!segmentValue && step >= 2,
+    queryKey: ["broadcastPreview", selectedLeadStatuses, selectedContactTypes],
+    queryFn: () => api.previewBroadcastRecipients(selectedLeadStatuses, selectedContactTypes),
+    enabled: hasSelection && step >= 2,
   });
 
   const sendMut = useMutation({
@@ -50,8 +70,8 @@ export default function BroadcastNewScreen() {
       const tmpl = templates.find((t: any) => t.id === templateId);
       return api.createBroadcast({
         subject: tmpl?.subject || "Broadcast",
-        segmentType,
-        segmentValue,
+        leadStatuses: selectedLeadStatuses,
+        contactTypes: selectedContactTypes,
         templateId,
       });
     },
@@ -65,6 +85,11 @@ export default function BroadcastNewScreen() {
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const selectedTemplate = templates.find((t: any) => t.id === templateId);
+
+  const segmentSummary = [
+    ...selectedLeadStatuses.map((s) => s.replace("_", " ")),
+    ...selectedContactTypes.map((s) => s.replace("_", " ")),
+  ].join(", ");
 
   return (
     <KeyboardAwareScrollViewCompat style={[styles.container, { paddingTop: topPad }]} contentContainerStyle={styles.content}>
@@ -92,19 +117,19 @@ export default function BroadcastNewScreen() {
                 {seg.values.map((v) => (
                   <Pressable
                     key={v}
-                    style={[styles.chip, segmentType === seg.type && segmentValue === v && styles.chipActive]}
-                    onPress={() => { setSegmentType(seg.type); setSegmentValue(v); }}
+                    style={[styles.chip, isChipActive(seg.type, v) && styles.chipActive]}
+                    onPress={() => toggleChip(seg.type, v)}
                   >
-                    <Text style={[styles.chipText, segmentType === seg.type && segmentValue === v && styles.chipTextActive]}>{v.replace("_", " ")}</Text>
+                    <Text style={[styles.chipText, isChipActive(seg.type, v) && styles.chipTextActive]}>{v.replace("_", " ")}</Text>
                   </Pressable>
                 ))}
               </View>
             </View>
           ))}
           <Pressable
-            style={[styles.nextBtn, (!segmentType || !segmentValue) && { opacity: 0.4 }]}
-            onPress={() => segmentType && segmentValue && setStep(1)}
-            disabled={!segmentType || !segmentValue}
+            style={[styles.nextBtn, !hasSelection && { opacity: 0.4 }]}
+            onPress={() => hasSelection && setStep(1)}
+            disabled={!hasSelection}
           >
             <Text style={styles.nextBtnText}>Next</Text>
           </Pressable>
@@ -135,7 +160,7 @@ export default function BroadcastNewScreen() {
         <View>
           <Text style={styles.stepTitle}>Review your list</Text>
           <View style={styles.previewInfo}>
-            <Text style={styles.previewLabel}>Segment: {segmentType.replace("_", " ")} = {segmentValue}</Text>
+            <Text style={styles.previewLabel}>Segments: {segmentSummary}</Text>
             <Text style={styles.previewLabel}>Template: {selectedTemplate?.name}</Text>
           </View>
           {previewLoading ? (
@@ -163,8 +188,8 @@ export default function BroadcastNewScreen() {
           <Text style={styles.stepTitle}>Ready to send</Text>
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Segment</Text>
-              <Text style={styles.summaryValue}>{segmentValue}</Text>
+              <Text style={styles.summaryLabel}>Segments</Text>
+              <Text style={styles.summaryValue}>{segmentSummary}</Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Template</Text>
@@ -229,7 +254,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   summaryCard: { backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginBottom: Layout.sectionSpacing, gap: 14 },
   summaryRow: { flexDirection: "row", justifyContent: "space-between" },
   summaryLabel: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: colors.textSecondary },
-  summaryValue: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text, textTransform: "capitalize" },
+  summaryValue: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: colors.text, textTransform: "capitalize", flexShrink: 1, textAlign: "right" },
   sendBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.success, borderRadius: Layout.inputRadius, paddingVertical: 16 },
   sendBtnText: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: colors.onPrimary },
 });

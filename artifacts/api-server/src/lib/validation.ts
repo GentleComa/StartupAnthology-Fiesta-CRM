@@ -135,9 +135,12 @@ export const sendEmailSchema = z.object({
 export const createBroadcastSchema = z.object({
   subject: z.string().min(1),
   templateId: z.number().int().positive().nullish(),
-  segmentType: z.string().min(1),
-  segmentValue: z.string().min(1),
-});
+  leadStatuses: z.array(z.string().min(1)).optional().default([]),
+  contactTypes: z.array(z.string().min(1)).optional().default([]),
+}).refine(
+  (data) => data.leadStatuses.length > 0 || data.contactTypes.length > 0,
+  { message: "At least one lead status or contact type must be selected" }
+);
 
 export const createCalendarEventSchema = z.object({
   title: z.string().min(1),
