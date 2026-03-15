@@ -148,7 +148,7 @@ export default function SettingsScreen() {
           <View key={t.id} style={styles.triggerCard}>
             <View style={styles.triggerInfo}>
               <Text style={styles.triggerText}>
-                When lead → <Text style={{ fontFamily: "Inter_600SemiBold" }}>{t.triggerStatus}</Text>
+                When lead → <Text style={{ fontFamily: "LeagueSpartan_600SemiBold" }}>{t.triggerStatus}</Text>
               </Text>
               <Text style={styles.triggerAction}>
                 {t.actionType === "enroll_sequence" ? `Enroll in sequence #${t.sequenceId}` : `Schedule follow-up in ${t.followUpDays} days`}
@@ -222,7 +222,7 @@ export default function SettingsScreen() {
         {user && (
           <View style={styles.integrationRow}>
             <View style={[styles.integrationIcon, { backgroundColor: Colors.primary }]}>
-              <Text style={{ color: Colors.accent, fontFamily: "Inter_700Bold", fontSize: 16 }}>
+              <Text style={{ color: Colors.accent, fontFamily: "Lato_700Bold", fontSize: 16 }}>
                 {(user.firstName?.[0] || user.email?.[0] || "?").toUpperCase()}
               </Text>
             </View>
@@ -258,38 +258,38 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 20 },
   topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
-  title: { fontSize: 20, fontFamily: "Inter_700Bold", color: Colors.text },
+  title: { fontSize: 20, fontFamily: "Lato_700Bold", color: Colors.text },
   section: { marginBottom: 28 },
-  sectionTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold", color: Colors.text, marginBottom: 4 },
-  sectionSubtitle: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.textTertiary, marginBottom: 12 },
+  sectionTitle: { fontSize: 16, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 4 },
+  sectionSubtitle: { fontSize: 13, fontFamily: "Montserrat_400Regular", color: Colors.textTertiary, marginBottom: 12 },
   settingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginTop: 8 },
-  settingLabel: { fontSize: 14, fontFamily: "Inter_500Medium", color: Colors.text },
-  settingInput: { fontSize: 14, fontFamily: "Inter_400Regular", color: Colors.text, backgroundColor: Colors.surfaceSecondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, minWidth: 120 },
+  settingLabel: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
+  settingInput: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, backgroundColor: Colors.surfaceSecondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, minWidth: 120 },
   integrationRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginTop: 8 },
   integrationIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surfaceSecondary, justifyContent: "center", alignItems: "center" },
   integrationInfo: { flex: 1 },
-  integrationName: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: Colors.text },
-  integrationStatus: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.success },
+  integrationName: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text },
+  integrationStatus: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.success },
   connectedDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.success },
   triggerCard: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginTop: 8 },
   triggerInfo: { flex: 1 },
-  triggerText: { fontSize: 14, fontFamily: "Inter_400Regular", color: Colors.text },
-  triggerAction: { fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.textSecondary, marginTop: 2 },
+  triggerText: { fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
+  triggerAction: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary, marginTop: 2 },
   addTrigger: { backgroundColor: Colors.surfaceSecondary, borderRadius: 14, padding: 16, marginTop: 12 },
-  addTriggerTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: Colors.text, marginBottom: 12 },
+  addTriggerTitle: { fontSize: 15, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.text, marginBottom: 12 },
   formGroup: { marginBottom: 14 },
-  label: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: Colors.textSecondary, marginBottom: 6, textTransform: "uppercase" },
+  label: { fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: Colors.textSecondary, marginBottom: 6, textTransform: "uppercase" },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
   chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.text, textTransform: "capitalize" },
+  chipText: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text, textTransform: "capitalize" },
   chipTextActive: { color: "#fff" },
   seqOption: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, backgroundColor: Colors.surface, marginBottom: 6 },
-  seqOptionText: { fontSize: 14, fontFamily: "Inter_500Medium", color: Colors.text },
+  seqOptionText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
   addBtn: { backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 12, alignItems: "center" },
-  addBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#fff" },
+  addBtnText: { fontSize: 14, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
   mergeTagCard: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginTop: 8, gap: 8 },
   mergeRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  mergeTag: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: Colors.info, backgroundColor: Colors.info + "10", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
-  mergeDesc: { fontSize: 13, fontFamily: "Inter_400Regular", color: Colors.textSecondary },
+  mergeTag: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info, backgroundColor: Colors.info + "10", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
+  mergeDesc: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary },
 });

@@ -108,13 +108,13 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     color: colors.primary,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Lato_700Bold",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     color: colors.textSecondary,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Montserrat_500Medium",
     textAlign: "center",
   },
   features: {
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   featureText: {
     fontSize: 15,
     color: colors.text,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "SpaceGrotesk_500Medium",
   },
   loginButton: {
     width: "100%",
@@ -148,12 +148,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "600",
     color: colors.primary,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "LeagueSpartan_600SemiBold",
   },
   footerText: {
     marginTop: 16,
     fontSize: 13,
     color: colors.textTertiary,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Montserrat_400Regular",
   },
 });
