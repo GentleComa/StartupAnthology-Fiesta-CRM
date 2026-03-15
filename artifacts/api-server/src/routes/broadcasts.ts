@@ -1,8 +1,9 @@
 import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { broadcastsTable, leadsTable, contactsTable, emailTemplatesTable, activitiesTable } from "@workspace/db";
+import { broadcastsTable, leadsTable, contactsTable, emailTemplatesTable, activitiesTable, settingsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { sendGmailEmail } from "../lib/gmail";
+import { fireAndForgetActivitySync } from "../lib/notionSync";
 
 const router = Router();
 
@@ -38,19 +39,22 @@ router.post("/broadcasts", async (req: Request, res: Response) => {
   try {
     const { subject, templateId, segmentType, segmentValue } = req.body;
 
-    let recipients: { name: string; email: string; id: number; isLead: boolean }[] = [];
+    let recipients: { name: string; email: string; id: number; isLead: boolean; company?: string | null }[] = [];
     if (segmentType === "lead_status") {
       const leads = await db.select().from(leadsTable).where(eq(leadsTable.status, segmentValue));
       recipients = leads.map((l) => ({ name: l.name, email: l.email, id: l.id, isLead: true }));
     } else if (segmentType === "contact_type") {
       const contacts = await db.select().from(contactsTable).where(eq(contactsTable.relationshipType, segmentValue));
-      recipients = contacts.filter((c) => c.email).map((c) => ({ name: c.name, email: c.email!, id: c.id, isLead: false }));
+      recipients = contacts.filter((c) => c.email).map((c) => ({ name: c.name, email: c.email!, id: c.id, isLead: false, company: c.company }));
     }
 
     let template: any = null;
     if (templateId) {
       [template] = await db.select().from(emailTemplatesTable).where(eq(emailTemplatesTable.id, templateId));
     }
+
+    const settingsRows = await db.select().from(settingsTable);
+    const founderName = settingsRows.find((s) => s.key === "founder_name")?.value || "";
 
     const [broadcast] = await db.insert(broadcastsTable).values({
       subject: template?.subject || subject,
@@ -67,20 +71,28 @@ router.post("/broadcasts", async (req: Request, res: Response) => {
         let emailSubject = template?.subject || subject;
         let emailBody = template?.body || subject;
         const firstName = recipient.name.split(" ")[0];
-        emailSubject = emailSubject.replace(/\{\{first_name\}\}/g, firstName);
-        emailBody = emailBody.replace(/\{\{first_name\}\}/g, firstName);
+        emailSubject = emailSubject
+          .replace(/\{\{first_name\}\}/g, firstName)
+          .replace(/\{\{company_name\}\}/g, recipient.company || "")
+          .replace(/\{\{founder_name\}\}/g, founderName);
+        emailBody = emailBody
+          .replace(/\{\{first_name\}\}/g, firstName)
+          .replace(/\{\{company_name\}\}/g, recipient.company || "")
+          .replace(/\{\{founder_name\}\}/g, founderName);
 
         await sendGmailEmail(recipient.email, emailSubject, emailBody);
         sentCount++;
 
-        await db.insert(activitiesTable).values({
+        const [activity] = await db.insert(activitiesTable).values({
           leadId: recipient.isLead ? recipient.id : null,
           contactId: !recipient.isLead ? recipient.id : null,
           type: "email",
           direction: "sent",
           subject: emailSubject,
           body: emailBody,
-        });
+        }).returning();
+
+        fireAndForgetActivitySync(activity);
       } catch (err) {
         console.error(`Failed to send to ${recipient.email}:`, err);
       }

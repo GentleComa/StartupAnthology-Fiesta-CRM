@@ -1,5 +1,6 @@
 import app from "./app";
 import { seedDefaults } from "./lib/seed";
+import { startDripWorker } from "./lib/dripWorker";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,5 @@ app.listen(port, async () => {
   } catch (err) {
     console.error("Seed error:", err);
   }
+  startDripWorker();
 });

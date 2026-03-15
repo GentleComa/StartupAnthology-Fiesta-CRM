@@ -34,6 +34,9 @@ export default function SettingsScreen() {
   const [betaTotal, setBetaTotal] = useState("");
   const [founderName, setFounderName] = useState("");
   const [appName, setAppName] = useState("");
+  const [notionLeadsDb, setNotionLeadsDb] = useState("");
+  const [notionContactsDb, setNotionContactsDb] = useState("");
+  const [notionActivitiesDb, setNotionActivitiesDb] = useState("");
   const [newTriggerStatus, setNewTriggerStatus] = useState("");
   const [newTriggerAction, setNewTriggerAction] = useState("");
   const [newTriggerSeqId, setNewTriggerSeqId] = useState<number | null>(null);
@@ -44,6 +47,9 @@ export default function SettingsScreen() {
       setBetaTotal(settings.beta_slots_total || "100");
       setFounderName(settings.founder_name || "");
       setAppName(settings.app_name || "Anthology CRM");
+      setNotionLeadsDb(settings.notion_leads_db || "");
+      setNotionContactsDb(settings.notion_contacts_db || "");
+      setNotionActivitiesDb(settings.notion_activities_db || "");
     }
   }, [settings]);
 
@@ -138,6 +144,50 @@ export default function SettingsScreen() {
             <Text style={styles.integrationStatus}>Connected</Text>
           </View>
           <View style={styles.connectedDot} />
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Notion Sync</Text>
+        <Text style={styles.sectionSubtitle}>Paste your Notion database IDs to sync data automatically.</Text>
+        <View style={styles.notionDbRow}>
+          <Text style={styles.notionDbLabel}>Leads DB</Text>
+          <TextInput
+            style={styles.notionDbInput}
+            value={notionLeadsDb}
+            onChangeText={setNotionLeadsDb}
+            placeholder="Notion database ID"
+            placeholderTextColor={Colors.textTertiary}
+            autoCapitalize="none"
+            autoCorrect={false}
+            onBlur={() => updateSettingsMut.mutate({ notion_leads_db: notionLeadsDb })}
+          />
+        </View>
+        <View style={styles.notionDbRow}>
+          <Text style={styles.notionDbLabel}>Contacts DB</Text>
+          <TextInput
+            style={styles.notionDbInput}
+            value={notionContactsDb}
+            onChangeText={setNotionContactsDb}
+            placeholder="Notion database ID"
+            placeholderTextColor={Colors.textTertiary}
+            autoCapitalize="none"
+            autoCorrect={false}
+            onBlur={() => updateSettingsMut.mutate({ notion_contacts_db: notionContactsDb })}
+          />
+        </View>
+        <View style={styles.notionDbRow}>
+          <Text style={styles.notionDbLabel}>Activities DB</Text>
+          <TextInput
+            style={styles.notionDbInput}
+            value={notionActivitiesDb}
+            onChangeText={setNotionActivitiesDb}
+            placeholder="Notion database ID"
+            placeholderTextColor={Colors.textTertiary}
+            autoCapitalize="none"
+            autoCorrect={false}
+            onBlur={() => updateSettingsMut.mutate({ notion_activities_db: notionActivitiesDb })}
+          />
         </View>
       </View>
 
@@ -292,4 +342,7 @@ const styles = StyleSheet.create({
   mergeRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   mergeTag: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold", color: Colors.info, backgroundColor: Colors.info + "10", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
   mergeDesc: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textSecondary },
+  notionDbRow: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, marginTop: 8 },
+  notionDbLabel: { fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: Colors.textSecondary, marginBottom: 6, textTransform: "uppercase" },
+  notionDbInput: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, backgroundColor: Colors.surfaceSecondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
 });

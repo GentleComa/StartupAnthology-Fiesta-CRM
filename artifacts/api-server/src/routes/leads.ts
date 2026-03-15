@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { leadsTable, triggerRulesTable, dripEnrollmentsTable, contactsTable, settingsTable } from "@workspace/db";
 import { eq, sql, and, lte } from "drizzle-orm";
 import { syncLeadToNotion } from "../lib/notion";
+import { fireAndForgetLeadSync } from "../lib/notionSync";
 
 const router = Router();
 
@@ -60,6 +61,9 @@ router.put("/leads/:id", async (req: Request, res: Response) => {
   try {
     const [lead] = await db.update(leadsTable).set({ ...req.body, updatedAt: new Date() }).where(eq(leadsTable.id, Number(req.params.id))).returning();
     if (!lead) return res.status(404).json({ error: "Not found" });
+
+    fireAndForgetLeadSync(lead);
+
     res.json(lead);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -80,6 +84,8 @@ router.patch("/leads/:id/status", async (req: Request, res: Response) => {
     const { status } = req.body;
     const [lead] = await db.update(leadsTable).set({ status, updatedAt: new Date() }).where(eq(leadsTable.id, Number(req.params.id))).returning();
     if (!lead) return res.status(404).json({ error: "Not found" });
+
+    fireAndForgetLeadSync(lead);
 
     const triggers = await db.select().from(triggerRulesTable).where(eq(triggerRulesTable.triggerStatus, status));
     for (const trigger of triggers) {

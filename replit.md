@@ -39,6 +39,8 @@ artifacts-monorepo/
 │   │   ├── src/routes/        # leads, contacts, activities, templates, sequences, broadcasts, triggers, settings, dashboard, email
 │   │   ├── src/lib/gmail.ts   # Gmail send via googleapis
 │   │   ├── src/lib/notion.ts  # Notion sync via connectors-sdk
+│   │   ├── src/lib/notionSync.ts # Fire-and-forget Notion sync helpers
+│   │   ├── src/lib/dripWorker.ts # Background drip sequence email worker (60s interval)
 │   │   └── src/lib/seed.ts    # Default settings seeder
 │   └── mockup-sandbox/        # Component preview server
 ├── lib/
@@ -82,6 +84,7 @@ artifacts-monorepo/
 ### Settings
 - General: app name, founder name, beta slot total
 - Integration status: Gmail + Notion
+- Notion Sync: configurable database IDs for leads, contacts, and activities
 - Trigger rules: auto-actions when lead status changes (enroll in sequence, schedule follow-up)
 - Merge tag reference
 
@@ -140,3 +143,14 @@ Uses `getUncachableGmailClient()` pattern — never cache the OAuth client.
 Connection ID: `conn_notion_01KKQYFGA5AE7WTYAEPM4YNB09`
 Uses `connectors.proxy("notion", "/v1/...")` pattern from `@replit/connectors-sdk`.
 One-way sync: app → Notion for leads, contacts, and activities.
+Sync is fire-and-forget (non-blocking) via `notionSync.ts` helpers.
+Triggered on: lead create/update/status-change, contact create/update, activity create, email send, broadcast send.
+Notion database IDs configured in Settings: `notion_leads_db`, `notion_contacts_db`, `notion_activities_db`.
+
+## Drip Sequence Worker
+
+Background `setInterval` worker (60s) in `dripWorker.ts`.
+Processes active enrollments where `nextSendAt <= now`.
+Looks up sequence step → template → recipient, performs merge tag replacement, sends via Gmail, logs activity, advances enrollment.
+Marks enrollment `completed` when all steps done, `error` if recipient/template missing.
+Started automatically on server boot.

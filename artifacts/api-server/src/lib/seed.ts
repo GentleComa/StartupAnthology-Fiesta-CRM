@@ -7,6 +7,9 @@ export async function seedDefaults() {
     beta_slots_total: "100",
     app_name: "Anthology CRM",
     founder_name: "",
+    notion_leads_db: "",
+    notion_contacts_db: "",
+    notion_activities_db: "",
   };
 
   for (const [key, value] of Object.entries(defaults)) {

@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { activitiesTable } from "@workspace/db";
 import { sendGmailEmail } from "../lib/gmail";
+import { fireAndForgetActivitySync } from "../lib/notionSync";
 
 const router = Router();
 
@@ -20,14 +21,16 @@ router.post("/email/send", async (req: Request, res: Response) => {
 
     await sendGmailEmail(to, subject, body);
 
-    await db.insert(activitiesTable).values({
+    const [activity] = await db.insert(activitiesTable).values({
       leadId: leadId || null,
       contactId: contactId || null,
       type: "email",
       direction: "sent",
       subject,
       body,
-    });
+    }).returning();
+
+    fireAndForgetActivitySync(activity);
 
     res.json({ success: true });
   } catch (err: any) {

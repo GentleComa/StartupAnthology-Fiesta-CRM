@@ -1,7 +1,9 @@
 import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { contactsTable } from "@workspace/db";
+import { contactsTable, settingsTable } from "@workspace/db";
 import { eq, sql, and, lte, isNotNull } from "drizzle-orm";
+import { syncContactToNotion } from "../lib/notion";
+import { fireAndForgetContactSync } from "../lib/notionSync";
 
 const router = Router();
 
@@ -38,6 +40,16 @@ router.get("/contacts/follow-ups", async (req: Request, res: Response) => {
 router.post("/contacts", async (req: Request, res: Response) => {
   try {
     const [contact] = await db.insert(contactsTable).values(req.body).returning();
+
+    const settingsRows = await db.select().from(settingsTable);
+    const notionDbId = settingsRows.find((s) => s.key === "notion_contacts_db")?.value;
+    if (notionDbId) {
+      const pageId = await syncContactToNotion(contact, notionDbId);
+      if (pageId && !contact.notionPageId) {
+        await db.update(contactsTable).set({ notionPageId: pageId }).where(eq(contactsTable.id, contact.id));
+      }
+    }
+
     res.status(201).json(contact);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
@@ -58,6 +70,9 @@ router.put("/contacts/:id", async (req: Request, res: Response) => {
   try {
     const [contact] = await db.update(contactsTable).set({ ...req.body, updatedAt: new Date() }).where(eq(contactsTable.id, Number(req.params.id))).returning();
     if (!contact) return res.status(404).json({ error: "Not found" });
+
+    fireAndForgetContactSync(contact);
+
     res.json(contact);
   } catch (err: any) {
     res.status(400).json({ error: err.message });
