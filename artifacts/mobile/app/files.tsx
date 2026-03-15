@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
@@ -89,7 +90,10 @@ export default function FilesScreen() {
   return (
     <View style={[styles.container, { paddingTop: topPad, backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.text }]}>File Library</Text>
+        <Pressable onPress={() => router.back()} hitSlop={10}>
+          <Feather name="arrow-left" size={22} color={colors.text} />
+        </Pressable>
+        <Text style={[styles.title, { color: colors.text, flex: 1 }]}>File Library</Text>
         <Pressable style={[styles.uploadBtn, { backgroundColor: colors.primary }]} onPress={() => uploadMut.mutate()} disabled={uploadMut.isPending}>
           {uploadMut.isPending ? (
             <ActivityIndicator size="small" color={colors.onPrimary} />
@@ -124,7 +128,7 @@ export default function FilesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, gap: 12 },
   title: { fontSize: 22, fontFamily: "LeagueSpartan_700Bold" },
   uploadBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
   uploadText: { fontSize: 14, fontFamily: "SpaceGrotesk_600SemiBold", color: "#fff" },

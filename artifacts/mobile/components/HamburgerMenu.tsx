@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/lib/theme";
 
 const MENU_ITEMS = [
-  { label: "Workflows", icon: "send" as const, route: "/(tabs)/comms" },
+  { label: "Workflows", icon: "send" as const, route: "/comms" },
   { label: "Files", icon: "folder" as const, route: "/files" },
   { label: "Settings", icon: "settings" as const, route: "/settings" },
 ];
@@ -47,7 +47,9 @@ export function HamburgerMenu() {
                 ]}
                 onPress={() => {
                   setOpen(false);
-                  router.push(item.route as any);
+                  setTimeout(() => {
+                    router.push(item.route as any);
+                  }, 100);
                 }}
               >
                 <Feather name={item.icon} size={18} color={colors.accent} />
