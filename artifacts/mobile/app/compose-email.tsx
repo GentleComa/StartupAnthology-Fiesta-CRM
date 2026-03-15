@@ -10,13 +10,14 @@ import {
   Modal,
   Platform,
   Pressable,
-  ScrollView,
+  ScrollView as RNScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import Colors from "@/constants/colors";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
@@ -119,7 +120,7 @@ export default function ComposeEmailScreen() {
         </Pressable>
       </View>
 
-      <ScrollView style={styles.form} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+      <KeyboardAwareScrollViewCompat style={styles.form} keyboardShouldPersistTaps="handled">
         <View style={styles.fieldRow}>
           <Text style={styles.fieldLabel}>To</Text>
           <View style={styles.toValue}>
@@ -207,7 +208,7 @@ export default function ComposeEmailScreen() {
           multiline
           textAlignVertical="top"
         />
-      </ScrollView>
+      </KeyboardAwareScrollViewCompat>
     </KeyboardAvoidingView>
   );
 }

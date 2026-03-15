@@ -8,7 +8,7 @@ import {
   Alert,
   Platform,
   Pressable,
-  ScrollView,
+  ScrollView as RNScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -17,6 +17,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import Colors from "@/constants/colors";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
@@ -201,7 +202,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { paddingTop: topPad }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <KeyboardAwareScrollViewCompat style={[styles.container, { paddingTop: topPad }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()}>
           <Feather name="arrow-left" size={22} color={Colors.text} />
@@ -657,7 +658,7 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </KeyboardAwareScrollViewCompat>
   );
 }
 

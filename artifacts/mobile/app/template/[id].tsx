@@ -7,13 +7,14 @@ import {
   Alert,
   Platform,
   Pressable,
-  ScrollView,
+  ScrollView as RNScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import Colors from "@/constants/colors";
 import Layout from "@/constants/layout";
 import { api } from "@/lib/api";
@@ -78,7 +79,7 @@ export default function TemplateDetailScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   return (
-    <ScrollView style={[styles.container, { paddingTop: topPad }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <KeyboardAwareScrollViewCompat style={[styles.container, { paddingTop: topPad }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()}>
           <Text style={styles.cancelText}>Cancel</Text>
@@ -136,7 +137,7 @@ export default function TemplateDetailScreen() {
       </View>
 
       <View style={{ height: 40 }} />
-    </ScrollView>
+    </KeyboardAwareScrollViewCompat>
   );
 }
 

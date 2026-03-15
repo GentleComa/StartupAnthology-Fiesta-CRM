@@ -12,7 +12,7 @@ import {
   Linking,
   Platform,
   Pressable,
-  ScrollView,
+  ScrollView as RNScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -24,6 +24,7 @@ import ActivityList from "@/components/ActivityList";
 import HistoryModal from "@/components/HistoryModal";
 import LinkedInLogModal from "@/components/LinkedInLogModal";
 import ProfilePicModal from "@/components/ProfilePicModal";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import Colors from "@/constants/colors";
 import { LEAD_STATUSES, STATUS_LABELS, STATUS_COLORS } from "@/constants/crm";
 import Layout from "@/constants/layout";
@@ -195,7 +196,7 @@ export default function LeadDetailScreen() {
   const hasProfilePic = !!lead.profilePictureUrl;
 
   return (
-    <ScrollView style={[styles.container, { paddingTop: topPad }]} contentContainerStyle={styles.content}>
+    <KeyboardAwareScrollViewCompat style={[styles.container, { paddingTop: topPad }]} contentContainerStyle={styles.content}>
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color={Colors.text} />
@@ -276,7 +277,7 @@ export default function LeadDetailScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Status</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statusRow}>
+        <RNScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statusRow}>
           {LEAD_STATUSES.map((s) => (
             <Pressable
               key={s}
@@ -286,7 +287,7 @@ export default function LeadDetailScreen() {
               <Text style={[styles.statusChipText, lead.status === s && { color: "#fff" }]}>{STATUS_LABELS[s]}</Text>
             </Pressable>
           ))}
-        </ScrollView>
+        </RNScrollView>
       </View>
 
       <View style={styles.section}>
@@ -410,7 +411,7 @@ export default function LeadDetailScreen() {
         onUpload={handleProfilePicUpload}
         onUrlSet={handleProfilePicUrl}
       />
-    </ScrollView>
+    </KeyboardAwareScrollViewCompat>
   );
 }
 

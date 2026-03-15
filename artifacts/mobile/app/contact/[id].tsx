@@ -12,7 +12,7 @@ import {
   Linking,
   Platform,
   Pressable,
-  ScrollView,
+  ScrollView as RNScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -23,6 +23,7 @@ import ActivityList from "@/components/ActivityList";
 import HistoryModal from "@/components/HistoryModal";
 import LinkedInLogModal from "@/components/LinkedInLogModal";
 import ProfilePicModal from "@/components/ProfilePicModal";
+import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import Colors from "@/constants/colors";
 import { REL_TYPES, REL_COLORS, PRIORITIES, PRIORITY_COLORS } from "@/constants/crm";
 import Layout from "@/constants/layout";
@@ -205,7 +206,7 @@ export default function ContactDetailScreen() {
   const hasProfilePic = !!contact.profilePictureUrl;
 
   return (
-    <ScrollView style={[styles.container, { paddingTop: topPad }]} contentContainerStyle={styles.content}>
+    <KeyboardAwareScrollViewCompat style={[styles.container, { paddingTop: topPad }]} contentContainerStyle={styles.content}>
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color={Colors.text} />
@@ -300,7 +301,7 @@ export default function ContactDetailScreen() {
             ))}
             <View style={styles.editFieldRow}>
               <Text style={styles.editFieldLabel}>Type</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+              <RNScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
                 {REL_TYPES.map((r) => (
                   <Pressable
                     key={r}
@@ -310,11 +311,11 @@ export default function ContactDetailScreen() {
                     <Text style={[styles.chipSmallText, editFields.relationshipType === r && { color: "#fff" }]}>{r}</Text>
                   </Pressable>
                 ))}
-              </ScrollView>
+              </RNScrollView>
             </View>
             <View style={styles.editFieldRow}>
               <Text style={styles.editFieldLabel}>Priority</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+              <RNScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
                 {PRIORITIES.map((p) => (
                   <Pressable
                     key={p}
@@ -324,7 +325,7 @@ export default function ContactDetailScreen() {
                     <Text style={[styles.chipSmallText, editFields.priority === p && { color: "#fff" }]}>{p}</Text>
                   </Pressable>
                 ))}
-              </ScrollView>
+              </RNScrollView>
             </View>
           </View>
         ) : (
@@ -446,7 +447,7 @@ export default function ContactDetailScreen() {
         onUpload={handleProfilePicUpload}
         onUrlSet={handleProfilePicUrl}
       />
-    </ScrollView>
+    </KeyboardAwareScrollViewCompat>
   );
 }
 
