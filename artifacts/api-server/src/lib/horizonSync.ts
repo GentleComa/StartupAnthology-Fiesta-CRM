@@ -30,10 +30,10 @@ interface SyncSummary {
 }
 
 function getHorizonConfig() {
-  const apiKey = process.env.HORIZON_API_KEY;
+  const apiKey = process.env.CRM_API_KEY;
   const baseUrl = process.env.HORIZON_BASE_URL;
   if (!apiKey || !baseUrl) {
-    throw new Error("Horizon sync not configured: HORIZON_API_KEY and HORIZON_BASE_URL are required");
+    throw new Error("Horizon sync not configured: CRM_API_KEY and HORIZON_BASE_URL are required");
   }
   return { apiKey, baseUrl: baseUrl.replace(/\/+$/, "") };
 }

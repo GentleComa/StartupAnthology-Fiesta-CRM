@@ -410,47 +410,56 @@ export async function processChat(
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  await persistMessage(conversationId, "user", userMessage, null);
+  try {
+    await persistMessage(conversationId, "user", userMessage, null);
 
-  const history = await getCoachHistory(conversationId);
-  const { route, isOnboarding } = await classifyIntent(userMessage);
+    const history = await getCoachHistory(conversationId);
+    const { route, isOnboarding } = await classifyIntent(userMessage);
 
-  let fullResponse = "";
-  let agentsUsed: AgentName[] = ["coach"];
-  let totalTokens: number | null = null;
+    let fullResponse = "";
+    let agentsUsed: AgentName[] = ["coach"];
+    let totalTokens: number | null = null;
 
-  if (isOnboarding || route.includes("coach")) {
-    const result = await handleCoachDirect(userMessage, history, conversationId, userId, res);
-    fullResponse = result.response;
-    totalTokens = result.tokens;
-    agentsUsed = ["coach"];
-  } else if (route.length === 1) {
-    const result = await handleSingleAgent(route[0], userMessage, history, conversationId, userId, res);
-    fullResponse = result.response;
-    totalTokens = result.tokens;
-    agentsUsed = result.agentsUsed;
-  } else {
-    const result = await handleDualAgent(userMessage, history, conversationId, userId, res);
-    fullResponse = result.response;
-    totalTokens = result.tokens;
-    agentsUsed = result.agentsUsed;
+    if (isOnboarding || route.includes("coach")) {
+      const result = await handleCoachDirect(userMessage, history, conversationId, userId, res);
+      fullResponse = result.response;
+      totalTokens = result.tokens;
+      agentsUsed = ["coach"];
+    } else if (route.length === 1) {
+      const result = await handleSingleAgent(route[0], userMessage, history, conversationId, userId, res);
+      fullResponse = result.response;
+      totalTokens = result.tokens;
+      agentsUsed = result.agentsUsed;
+    } else {
+      const result = await handleDualAgent(userMessage, history, conversationId, userId, res);
+      fullResponse = result.response;
+      totalTokens = result.tokens;
+      agentsUsed = result.agentsUsed;
+    }
+
+    await persistMessage(conversationId, "assistant", fullResponse, "coach", totalTokens);
+
+    await db.update(conversations)
+      .set({
+        agentsInvolved: agentsUsed.join(","),
+        updatedAt: new Date(),
+      })
+      .where(eq(conversations.id, conversationId));
+
+    if (isOnboarding || route.includes("coach")) {
+      detectAndTrackOnboarding(userId, userMessage, fullResponse).catch(() => {});
+    }
+
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+  } catch (err: any) {
+    console.error("processChat error:", err?.message || err, err?.stack || "");
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ error: "An error occurred while processing your message." })}\n\n`);
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.end();
+    }
   }
-
-  await persistMessage(conversationId, "assistant", fullResponse, "coach", totalTokens);
-
-  await db.update(conversations)
-    .set({
-      agentsInvolved: agentsUsed.join(","),
-      updatedAt: new Date(),
-    })
-    .where(eq(conversations.id, conversationId));
-
-  if (isOnboarding || route.includes("coach")) {
-    detectAndTrackOnboarding(userId, userMessage, fullResponse).catch(() => {});
-  }
-
-  res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-  res.end();
 }
 
 export async function getOnboardingGreeting(userId: string): Promise<string> {

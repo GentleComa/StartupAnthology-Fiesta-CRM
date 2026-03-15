@@ -117,6 +117,17 @@ export default function AIChatScreen() {
         "/ai/chat",
         { message: text, conversationId },
         (data) => {
+          if (data.error) {
+            console.error("AI SSE error:", data.error);
+            setChatMessages(prev =>
+              prev.map(m =>
+                m.id === assistantMsg.id
+                  ? { ...m, content: "Sorry, something went wrong. Please try again.", isStreaming: false }
+                  : m
+              )
+            );
+            return;
+          }
           if (data.content) {
             streamedContent += data.content;
             setChatMessages(prev =>
@@ -145,6 +156,7 @@ export default function AIChatScreen() {
 
       refetchConversations();
     } catch (err: any) {
+      console.error("AI chat error:", err?.message || err);
       setChatMessages(prev =>
         prev.map(m =>
           m.id === assistantMsg.id
