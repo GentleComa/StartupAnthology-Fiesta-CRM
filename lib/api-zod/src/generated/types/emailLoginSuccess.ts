@@ -6,8 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type HandleBrowserLoginCallbackParams = {
-  code?: string;
-  state?: string;
-  iss?: string;
-};
+export interface EmailLoginSuccess {
+  token: string;
+}

@@ -864,89 +864,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthUserEnvelope'
-  /login:
-    get:
-      tags: [Auth]
-      operationId: beginBrowserLogin
-      summary: Start the browser OIDC login flow
-      parameters:
-        - name: returnTo
-          in: query
-          required: false
-          description: Relative path to redirect to after login (must start with `/`). Defaults to `/`.
-          schema:
-            type: string
-      responses:
-        '302':
-          description: Redirect to the OIDC authorization endpoint.
-  /callback:
-    get:
-      tags: [Auth]
-      operationId: handleBrowserLoginCallback
-      summary: Complete the browser OIDC login flow
-      parameters:
-        - name: code
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: state
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: iss
-          in: query
-          required: false
-          schema:
-            type: string
-            format: uri
-      responses:
-        '302':
-          description: Redirect to the `returnTo` path on success (defaults to `/`) or `/api/login` on failure.
-  /logout:
-    get:
-      tags: [Auth]
-      operationId: logoutBrowserSession
-      summary: Clear the session and begin OIDC logout
-      parameters:
-        - $ref: '#/components/parameters/AuthorizationSessionHeader'
-        - $ref: '#/components/parameters/SessionCookie'
-      responses:
-        '302':
-          description: Redirect to the OIDC provider logout URL.
-  /mobile-auth/token-exchange:
+  /auth/login:
     post:
       tags: [Auth]
-      operationId: exchangeMobileAuthorizationCode
-      summary: Exchange a mobile OIDC code for a session token
+      operationId: emailLogin
+      summary: Log in with an email address (creates user if needed)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MobileTokenExchangeRequest'
+              $ref: '#/components/schemas/EmailLoginRequest'
       responses:
         '200':
           description: Session created successfully.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MobileTokenExchangeSuccess'
+                $ref: '#/components/schemas/EmailLoginSuccess'
         '400':
-          description: Missing or invalid required fields.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorEnvelope'
-        '401':
-          description: Token did not contain usable claims.
+          description: Missing or invalid email.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
         '500':
-          description: Token exchange failed.
+          description: Login failed.
           content:
             application/json:
               schema:
@@ -1546,27 +1489,15 @@ components:
           oneOf:
             - $ref: '#/components/schemas/AuthUser'
             - type: 'null'
-    MobileTokenExchangeRequest:
+    EmailLoginRequest:
       type: object
-      required: [code, code_verifier, redirect_uri, state]
+      required: [email]
       properties:
-        code:
+        email:
           type: string
+          format: email
           minLength: 1
-        code_verifier:
-          type: string
-          minLength: 1
-        redirect_uri:
-          type: string
-          minLength: 1
-          format: uri
-        state:
-          type: string
-          minLength: 1
-        nonce:
-          type: string
-          minLength: 1
-    MobileTokenExchangeSuccess:
+    EmailLoginSuccess:
       type: object
       required: [token]
       properties:

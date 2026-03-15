@@ -269,20 +269,12 @@ export interface AuthUserEnvelope {
   user: AuthUser | null;
 }
 
-export interface MobileTokenExchangeRequest {
+export interface EmailLoginRequest {
   /** @minLength 1 */
-  code: string;
-  /** @minLength 1 */
-  code_verifier: string;
-  /** @minLength 1 */
-  redirect_uri: string;
-  /** @minLength 1 */
-  state: string;
-  /** @minLength 1 */
-  nonce?: string;
+  email: string;
 }
 
-export interface MobileTokenExchangeSuccess {
+export interface EmailLoginSuccess {
   token: string;
 }
 
@@ -368,17 +360,4 @@ export type GetCalendarEventsParams = {
   endDate?: string;
   leadId?: number;
   contactId?: number;
-};
-
-export type BeginBrowserLoginParams = {
-  /**
-   * Relative path to redirect to after login (must start with `/`). Defaults to `/`.
-   */
-  returnTo?: string;
-};
-
-export type HandleBrowserLoginCallbackParams = {
-  code?: string;
-  state?: string;
-  iss?: string;
 };

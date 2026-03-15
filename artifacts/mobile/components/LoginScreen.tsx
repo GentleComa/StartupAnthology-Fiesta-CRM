@@ -2,10 +2,12 @@ import React from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   Image,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth";
@@ -15,12 +17,21 @@ const saIconWhite = require("@/assets/images/sa-icon-white.png");
 
 export function LoginScreen() {
   const { login, isLoading } = useAuth();
+  const [email, setEmail] = React.useState("");
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
 
   const handleLogin = async () => {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      Alert.alert("Email required", "Please enter your email address.");
+      return;
+    }
     setIsLoggingIn(true);
     try {
-      await login();
+      await login(trimmed);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong.";
+      Alert.alert("Login failed", message);
     } finally {
       setIsLoggingIn(false);
     }
@@ -45,6 +56,21 @@ export function LoginScreen() {
           <FeatureItem icon="📧" text="Reach out without the busywork" />
           <FeatureItem icon="🎯" text="Track what matters to your launch" />
         </View>
+
+        <TextInput
+          style={styles.emailInput}
+          placeholder="you@example.com"
+          placeholderTextColor={colors.textTertiary}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="email"
+          editable={!isLoggingIn && !isLoading}
+          returnKeyType="go"
+          onSubmitEditing={handleLogin}
+        />
 
         <TouchableOpacity
           style={styles.loginButton}
@@ -119,7 +145,7 @@ const styles = StyleSheet.create({
   },
   features: {
     width: "100%",
-    marginBottom: 48,
+    marginBottom: 32,
     gap: 16,
   },
   featureItem: {
@@ -134,6 +160,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.text,
     fontFamily: "SpaceGrotesk_500Medium",
+  },
+  emailInput: {
+    width: "100%",
+    height: 56,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: colors.text,
+    fontFamily: "SpaceGrotesk_400Regular",
+    backgroundColor: colors.surface,
+    marginBottom: 12,
   },
   loginButton: {
     width: "100%",

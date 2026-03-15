@@ -91,20 +91,19 @@ artifacts-monorepo/
 
 ## Authentication
 
-- **Replit Auth** via OpenID Connect with PKCE
-- Mobile flow: `expo-auth-session` → OIDC provider → auth code → token exchange via `POST /api/mobile-auth/token-exchange` → session token stored in `expo-secure-store`
+- **Email-only login** — user enters email, server upserts user by email, creates session, returns token
+- No password, no OAuth, no OIDC — designed for solo-founder dev usage
+- Mobile flow: email input → `POST /api/auth/login` → session token stored in `expo-secure-store`
 - Auth middleware runs on every request, loads user from session
 - `AuthProvider` wraps the app in `_layout.tsx`, `AuthGate` shows login screen if not authenticated
-- Login screen at `components/LoginScreen.tsx`
+- Login screen at `components/LoginScreen.tsx` — email input + submit button
 - Logout button in Settings screen with confirmation alert
 - Sessions stored in PostgreSQL (`sessions` table), users in `users` table
 
 ### Auth Endpoints
 - `GET /api/auth/user` — current user state
-- `GET /api/login` — browser OIDC login flow
-- `GET /api/callback` — OIDC callback
-- `GET /api/logout` — clear session + OIDC logout
-- `POST /api/mobile-auth/token-exchange` — mobile auth code exchange
+- `POST /api/auth/login` — email login (upserts user, creates session, returns `{ token }`)
+- `GET /api/logout` — clear session + redirect to `/`
 - `POST /api/mobile-auth/logout` — mobile logout
 
 ## Database Schema
