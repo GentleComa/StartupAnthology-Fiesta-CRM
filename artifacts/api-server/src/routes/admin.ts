@@ -38,6 +38,10 @@ router.post("/admin/users", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Password must be at least 6 characters" });
     }
 
+    if (role && !["admin", "user"].includes(role)) {
+      return res.status(400).json({ error: "Role must be 'admin' or 'user'" });
+    }
+
     const trimmedEmail = email.trim().toLowerCase();
     const [existing] = await db.select().from(usersTable).where(eq(usersTable.email, trimmedEmail));
     if (existing) {
@@ -71,7 +75,10 @@ router.post("/admin/users", async (req: Request, res: Response) => {
 router.put("/admin/users/:id", async (req: Request, res: Response) => {
   try {
     const { role, isActive } = req.body;
-    const updates: Record<string, any> = {};
+    if (role !== undefined && !["admin", "user"].includes(role)) {
+      return res.status(400).json({ error: "Role must be 'admin' or 'user'" });
+    }
+    const updates: Record<string, string | boolean> = {};
     if (role !== undefined) updates.role = role;
     if (isActive !== undefined) updates.isActive = isActive;
 
