@@ -25,6 +25,7 @@ const TYPE_COLORS: Record<string, string> = {
   note: Colors.accent,
   call: "#34C759",
   meeting: "#AF52DE",
+  status_change: "#FF9500",
 };
 
 export default function ActivityList({
@@ -58,7 +59,7 @@ export default function ActivityList({
           />
           <View style={styles.content}>
             <Text style={styles.type}>
-              {a.type}
+              {a.type === "status_change" ? "Status Change" : a.type}
               {a.direction ? ` (${a.direction})` : ""}
             </Text>
             <Text style={styles.note} numberOfLines={2}>

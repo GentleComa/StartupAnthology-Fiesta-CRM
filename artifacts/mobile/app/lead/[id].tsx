@@ -84,7 +84,7 @@ export default function LeadDetailScreen() {
   });
   const statusMut = useMutation({
     mutationFn: (status: string) => api.updateLeadStatus(leadId, status),
-    onSuccess: () => { invalidateLead(); qc.invalidateQueries({ queryKey: ["dashboard"] }); },
+    onSuccess: () => { invalidateLead(); qc.invalidateQueries({ queryKey: ["dashboard"] }); qc.invalidateQueries({ queryKey: ["activities", "lead", id] }); },
     onError: (err: Error) => Alert.alert("Status update failed", err.message),
   });
   const deleteMut = useMutation({

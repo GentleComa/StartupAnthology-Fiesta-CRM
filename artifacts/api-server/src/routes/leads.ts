@@ -1,8 +1,8 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
-import { leadsTable, triggerRulesTable, dripEnrollmentsTable } from "@workspace/db";
+import { leadsTable, triggerRulesTable, dripEnrollmentsTable, activitiesTable } from "@workspace/db";
 import { eq, sql, and } from "drizzle-orm";
-import { fireAndForgetLeadSync } from "../lib/notionSync";
+import { fireAndForgetLeadSync, fireAndForgetActivitySync } from "../lib/notionSync";
 import { logAudit } from "../lib/audit";
 import { parseIntParam } from "../lib/errors";
 import { findOwned } from "../lib/crud";
@@ -84,6 +84,15 @@ router.patch("/leads/:id/status", async (req: Request, res: Response, next: Next
     const before = await findOwned(leadsTable, leadId, userId);
     const [lead] = await db.update(leadsTable).set({ status, updatedAt: new Date() }).where(and(eq(leadsTable.id, leadId), eq(leadsTable.userId, userId))).returning();
     logAudit("lead", leadId, "update", userId, before as Record<string, unknown>, lead as Record<string, unknown>);
+
+    const oldStatus = (before.status as string) || "unknown";
+    const [activity] = await db.insert(activitiesTable).values({
+      leadId,
+      type: "status_change",
+      note: `Status changed from ${oldStatus} to ${status}`,
+      userId,
+    }).returning();
+    fireAndForgetActivitySync(activity);
 
     fireAndForgetLeadSync(lead);
 

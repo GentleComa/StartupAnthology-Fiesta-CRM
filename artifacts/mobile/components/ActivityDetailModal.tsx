@@ -33,7 +33,7 @@ interface ActivityDetailModalProps {
   isSaving: boolean;
 }
 
-const TYPE_OPTIONS = ["email", "linkedin", "note", "call", "meeting", "other"];
+const TYPE_OPTIONS = ["email", "linkedin", "note", "call", "meeting", "status_change", "other"];
 
 const TYPE_COLORS: Record<string, string> = {
   email: Colors.info,
@@ -41,8 +41,17 @@ const TYPE_COLORS: Record<string, string> = {
   note: Colors.accent,
   call: "#34C759",
   meeting: "#AF52DE",
+  status_change: "#FF9500",
   other: Colors.textTertiary,
 };
+
+const TYPE_LABELS: Record<string, string> = {
+  status_change: "Status Change",
+};
+
+function getTypeLabel(type: string): string {
+  return TYPE_LABELS[type] || type;
+}
 
 export default function ActivityDetailModal({
   visible,
@@ -116,7 +125,7 @@ export default function ActivityDetailModal({
           <View style={styles.metaRow}>
             <View style={[styles.typeBadge, { backgroundColor: typeColor + "20" }]}>
               <Text style={[styles.typeBadgeText, { color: typeColor }]}>
-                {activity.type}
+                {getTypeLabel(activity.type)}
                 {activity.direction ? ` · ${activity.direction}` : ""}
               </Text>
             </View>
