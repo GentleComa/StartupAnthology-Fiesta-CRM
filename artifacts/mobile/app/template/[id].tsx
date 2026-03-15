@@ -76,7 +76,7 @@ export default function TemplateDetailScreen() {
 
   const save = () => {
     if (!name || !subject || !body) return;
-    isNew ? createMut.mutate() : updateMut.mutate();
+    if (isNew) { createMut.mutate(); } else { updateMut.mutate(); }
   };
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;

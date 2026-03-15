@@ -97,7 +97,7 @@ export default function SequenceDetailScreen() {
           <Text style={styles.cancelText}>Back</Text>
         </Pressable>
         <Text style={styles.title}>{isNew ? "New Sequence" : "Sequence"}</Text>
-        <Pressable onPress={() => { isNew ? createMut.mutate() : updateMut.mutate(); }} disabled={!name}>
+        <Pressable onPress={() => { if (isNew) { createMut.mutate(); } else { updateMut.mutate(); } }} disabled={!name}>
           <Text style={[styles.saveText, !name && { opacity: 0.4 }]}>Save</Text>
         </Pressable>
       </View>
