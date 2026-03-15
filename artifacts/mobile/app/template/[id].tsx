@@ -86,9 +86,9 @@ export default function TemplateDetailScreen() {
       </View>
 
       {!isNew && (
-        <Pressable style={styles.deleteBtn} onPress={() => Alert.alert("Delete Template", "Are you sure?", [{ text: "Cancel" }, { text: "Delete", style: "destructive", onPress: () => deleteMut.mutate() }])}>
+        <Pressable style={styles.deleteBtn} onPress={() => Alert.alert("Delete this template?", "This can't be undone.", [{ text: "Keep", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => deleteMut.mutate() }])}>
           <Feather name="trash-2" size={16} color={Colors.error} />
-          <Text style={styles.deleteText}>Delete Template</Text>
+          <Text style={styles.deleteText}>Delete</Text>
         </Pressable>
       )}
 
@@ -119,7 +119,7 @@ export default function TemplateDetailScreen() {
           style={[styles.input, styles.bodyInput]}
           value={body}
           onChangeText={setBody}
-          placeholder="Email body... Use {{first_name}}, {{company_name}}, {{founder_name}} for merge tags"
+          placeholder="Write your email. Merge tags work here."
           placeholderTextColor={Colors.textTertiary}
           multiline
           textAlignVertical="top"
@@ -128,7 +128,7 @@ export default function TemplateDetailScreen() {
 
       <View style={styles.mergeTagInfo}>
         <Feather name="info" size={14} color={Colors.textTertiary} />
-        <Text style={styles.mergeTagText}>Available tags: {"{{first_name}}"}, {"{{company_name}}"}, {"{{founder_name}}"}</Text>
+        <Text style={styles.mergeTagText}>Tags you can use: {"{{first_name}}"}, {"{{company_name}}"}, {"{{founder_name}}"}</Text>
       </View>
 
       <View style={{ height: 40 }} />

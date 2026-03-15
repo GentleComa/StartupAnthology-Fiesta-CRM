@@ -94,7 +94,7 @@ export default function SequenceDetailScreen() {
       </View>
 
       {!isNew && (
-        <Pressable style={styles.deleteBtn} onPress={() => Alert.alert("Delete Sequence", "Are you sure?", [{ text: "Cancel" }, { text: "Delete", style: "destructive", onPress: () => deleteMut.mutate() }])}>
+        <Pressable style={styles.deleteBtn} onPress={() => Alert.alert("Delete this sequence?", "This can't be undone.", [{ text: "Keep", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => deleteMut.mutate() }])}>
           <Feather name="trash-2" size={16} color={Colors.error} />
           <Text style={styles.deleteText}>Delete</Text>
         </Pressable>
@@ -106,7 +106,7 @@ export default function SequenceDetailScreen() {
       </View>
 
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Target Audience</Text>
+        <Text style={styles.label}>Audience</Text>
         <View style={styles.chipRow}>
           {AUDIENCES.map((a) => (
             <Pressable key={a} style={[styles.chip, audience === a && styles.chipActive]} onPress={() => setAudience(a)}>
@@ -168,7 +168,7 @@ export default function SequenceDetailScreen() {
 
           {(sequence.enrollments || []).length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Enrollments ({sequence.enrollments.length})</Text>
+              <Text style={styles.sectionTitle}>Enrolled ({sequence.enrollments.length})</Text>
               {sequence.enrollments.map((e: any) => (
                 <View key={e.id} style={styles.enrollCard}>
                   <Feather name="user" size={16} color={Colors.textSecondary} />

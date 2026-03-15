@@ -42,7 +42,7 @@ export default function CommsScreen() {
   return (
     <View style={[styles.container, { paddingTop: topPad }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Communications</Text>
+        <Text style={styles.title}>Comms</Text>
         <Pressable style={styles.settingsBtn} onPress={() => router.push("/settings")}>
           <Feather name="settings" size={20} color={Colors.textSecondary} />
         </Pressable>

@@ -75,7 +75,7 @@ export default function LeadDetailScreen() {
           <Feather name="arrow-left" size={22} color={Colors.text} />
         </Pressable>
         <View style={{ flex: 1 }} />
-        <Pressable onPress={() => { Alert.alert("Delete Lead", "Are you sure?", [{ text: "Cancel" }, { text: "Delete", style: "destructive", onPress: () => deleteMut.mutate() }]); }}>
+        <Pressable onPress={() => { Alert.alert("Delete this lead?", "This can't be undone.", [{ text: "Keep", style: "cancel" }, { text: "Delete", style: "destructive", onPress: () => deleteMut.mutate() }]); }}>
           <Feather name="trash-2" size={20} color={Colors.error} />
         </Pressable>
       </View>
@@ -140,7 +140,7 @@ export default function LeadDetailScreen() {
 
       {sequences.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Enroll in Sequence</Text>
+          <Text style={styles.sectionTitle}>Add to Sequence</Text>
           {sequences.map((seq: any) => (
             <Pressable key={seq.id} style={styles.seqCard} onPress={() => enrollMut.mutate(seq.id)}>
               <Feather name="repeat" size={16} color={Colors.info} />

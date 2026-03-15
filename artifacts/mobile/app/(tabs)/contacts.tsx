@@ -177,7 +177,7 @@ export default function ContactsScreen() {
             <TextInput style={styles.input} value={newCompany} onChangeText={setNewCompany} placeholder="Company name" placeholderTextColor={Colors.textTertiary} />
           </View>
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Relationship Type</Text>
+            <Text style={styles.formLabel}>Relationship</Text>
             <View style={styles.chipRow}>
               {REL_TYPES.map((t) => (
                 <Pressable key={t} style={[styles.chip, newType === t && styles.chipActive]} onPress={() => setNewType(t)}>

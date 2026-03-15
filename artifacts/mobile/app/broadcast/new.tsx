@@ -53,9 +53,9 @@ export default function BroadcastNewScreen() {
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       qc.invalidateQueries({ queryKey: ["broadcasts"] });
-      Alert.alert("Sent", "Broadcast sent successfully", [{ text: "OK", onPress: () => router.back() }]);
+      Alert.alert("Done", "Broadcast sent.", [{ text: "OK", onPress: () => router.back() }]);
     },
-    onError: (err: any) => Alert.alert("Error", err.message || "Failed to send"),
+    onError: (err: any) => Alert.alert("Couldn't send", err.message || "Something went wrong. Try again."),
   });
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -79,7 +79,7 @@ export default function BroadcastNewScreen() {
 
       {step === 0 && (
         <View>
-          <Text style={styles.stepTitle}>Choose Segment</Text>
+          <Text style={styles.stepTitle}>Who's getting this?</Text>
           {SEGMENTS.map((seg) => (
             <View key={seg.type}>
               <Text style={styles.segLabel}>{seg.label}</Text>
@@ -108,14 +108,14 @@ export default function BroadcastNewScreen() {
 
       {step === 1 && (
         <View>
-          <Text style={styles.stepTitle}>Choose Template</Text>
+          <Text style={styles.stepTitle}>What are you sending?</Text>
           {templates.map((t: any) => (
             <Pressable key={t.id} style={[styles.templateCard, templateId === t.id && styles.templateCardActive]} onPress={() => setTemplateId(t.id)}>
               <Text style={[styles.templateName, templateId === t.id && { color: "#fff" }]}>{t.name}</Text>
               <Text style={[styles.templateSubject, templateId === t.id && { color: "rgba(255,255,255,0.8)" }]}>{t.subject}</Text>
             </Pressable>
           ))}
-          {templates.length === 0 && <Text style={styles.noTemplates}>Create a template first</Text>}
+          {templates.length === 0 && <Text style={styles.noTemplates}>You'll need a template first.</Text>}
           <Pressable
             style={[styles.nextBtn, !templateId && { opacity: 0.4 }]}
             onPress={() => templateId && setStep(2)}
@@ -128,7 +128,7 @@ export default function BroadcastNewScreen() {
 
       {step === 2 && (
         <View>
-          <Text style={styles.stepTitle}>Preview Recipients</Text>
+          <Text style={styles.stepTitle}>Who's on the list</Text>
           <View style={styles.previewInfo}>
             <Text style={styles.previewLabel}>Segment: {segmentType.replace("_", " ")} = {segmentValue}</Text>
             <Text style={styles.previewLabel}>Template: {selectedTemplate?.name}</Text>
@@ -155,7 +155,7 @@ export default function BroadcastNewScreen() {
 
       {step === 3 && (
         <View>
-          <Text style={styles.stepTitle}>Confirm & Send</Text>
+          <Text style={styles.stepTitle}>Ready to send</Text>
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Segment</Text>

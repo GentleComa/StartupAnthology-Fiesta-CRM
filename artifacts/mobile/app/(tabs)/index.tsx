@@ -82,12 +82,12 @@ export default function DashboardScreen() {
       </View>
 
       <View style={styles.statsGrid}>
-        <StatCard label="Total Leads" value={d.totalLeads || 0} icon="target" color={Colors.statusNew} />
-        <StatCard label="This Week" value={d.leadsThisWeek || 0} icon="trending-up" color={Colors.info} />
+        <StatCard label="Leads" value={d.totalLeads || 0} icon="target" color={Colors.statusNew} />
+        <StatCard label="New this week" value={d.leadsThisWeek || 0} icon="trending-up" color={Colors.info} />
         <StatCard label="Contacts" value={d.totalContacts || 0} icon="users" color={Colors.primary} />
-        <StatCard label="Emails Sent" value={d.emailsSentThisWeek || 0} icon="send" color={Colors.success} />
+        <StatCard label="Emails sent" value={d.emailsSentThisWeek || 0} icon="send" color={Colors.success} />
         <StatCard label="Follow-ups" value={d.followUpsDueToday || 0} icon="clock" color={Colors.warning} />
-        <StatCard label="Beta Filled" value={d.betaSlotsFilled || 0} icon="star" color={Colors.accent} />
+        <StatCard label="Beta filled" value={d.betaSlotsFilled || 0} icon="star" color={Colors.accent} />
       </View>
 
       {(d.followUps?.length ?? 0) > 0 && (

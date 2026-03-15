@@ -151,7 +151,7 @@ export default function SettingsScreen() {
                 When lead → <Text style={{ fontFamily: "LeagueSpartan_600SemiBold" }}>{t.triggerStatus}</Text>
               </Text>
               <Text style={styles.triggerAction}>
-                {t.actionType === "enroll_sequence" ? `Enroll in sequence #${t.sequenceId}` : `Schedule follow-up in ${t.followUpDays} days`}
+                {t.actionType === "enroll_sequence" ? `Start sequence #${t.sequenceId}` : `Follow up in ${t.followUpDays} days`}
               </Text>
             </View>
             <Pressable onPress={() => deleteTriggerMut.mutate(t.id)}>
@@ -194,7 +194,7 @@ export default function SettingsScreen() {
           )}
           {newTriggerAction === "schedule_followup" && (
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Follow-up in (days)</Text>
+              <Text style={styles.label}>Days until follow-up</Text>
               <TextInput style={styles.settingInput} value={newTriggerDays} onChangeText={setNewTriggerDays} keyboardType="numeric" />
             </View>
           )}
@@ -239,8 +239,8 @@ export default function SettingsScreen() {
         <Pressable
           style={[styles.addBtn, { backgroundColor: Colors.error, marginTop: 12 }]}
           onPress={() => {
-            Alert.alert("Log Out", "Are you sure you want to log out?", [
-              { text: "Cancel", style: "cancel" },
+            Alert.alert("Log out?", "You'll need to sign in again.", [
+              { text: "Stay", style: "cancel" },
               { text: "Log Out", style: "destructive", onPress: () => logout() },
             ]);
           }}

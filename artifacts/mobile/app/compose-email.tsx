@@ -44,9 +44,9 @@ export default function ComposeEmailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       qc.invalidateQueries({ queryKey: ["activities"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      Alert.alert("Sent", "Email sent successfully", [{ text: "OK", onPress: () => router.back() }]);
+      Alert.alert("Done", "Email sent.", [{ text: "OK", onPress: () => router.back() }]);
     },
-    onError: (err: any) => Alert.alert("Error", err.message || "Failed to send email"),
+    onError: (err: any) => Alert.alert("Couldn't send", err.message || "Something went wrong. Try again."),
   });
 
   const applyTemplate = (template: any) => {
@@ -87,7 +87,7 @@ export default function ComposeEmailScreen() {
       <ScrollView style={styles.form} keyboardShouldPersistTaps="handled">
         <View style={styles.fieldRow}>
           <Text style={styles.fieldLabel}>To</Text>
-          <Text style={styles.fieldValue}>{to || "No recipient"}</Text>
+          <Text style={styles.fieldValue}>{to || "None"}</Text>
         </View>
 
         <Pressable style={styles.templateBtn} onPress={() => setShowTemplates(!showTemplates)}>
@@ -103,7 +103,7 @@ export default function ComposeEmailScreen() {
                 <Text style={styles.templateAudience}>{t.audience}</Text>
               </Pressable>
             ))}
-            {templates.length === 0 && <Text style={styles.noTemplates}>No templates available</Text>}
+            {templates.length === 0 && <Text style={styles.noTemplates}>No templates yet.</Text>}
           </View>
         )}
 
