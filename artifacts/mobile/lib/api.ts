@@ -42,6 +42,44 @@ async function request(path: string, options?: RequestInit) {
   return res.json();
 }
 
+async function uploadFile(path: string, uri: string, fileName: string, mimeType: string) {
+  const url = `${BASE}${path}`;
+  const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+
+  const formData = new FormData();
+  formData.append("file", {
+    uri,
+    name: fileName,
+    type: mimeType,
+  } as any);
+
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  if (res.status === 401) {
+    await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+    throw new Error("SESSION_EXPIRED");
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    let errorMsg = `API error ${res.status}`;
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed.error) errorMsg = parsed.error;
+    } catch {
+      if (text) errorMsg = text;
+    }
+    throw new Error(errorMsg);
+  }
+  return res.json();
+}
+
 export const api = {
   getDashboard: () => request("/dashboard"),
 
@@ -134,7 +172,7 @@ export const api = {
   updateSettings: (data: Record<string, string>) =>
     request("/settings", { method: "PUT", body: JSON.stringify(data) }),
 
-  sendEmail: (data: { to: string; subject: string; body: string; leadId?: number; contactId?: number }) =>
+  sendEmail: (data: { to: string; subject: string; body: string; leadId?: number; contactId?: number; attachmentFileIds?: number[] }) =>
     request("/email/send", { method: "POST", body: JSON.stringify(data) }),
 
   getCalendarEvents: (params?: { startDate?: string; endDate?: string; leadId?: number; contactId?: number }) => {
@@ -178,4 +216,25 @@ export const api = {
   },
   rollback: (entityType: string, entityId: number, revisionId: number) =>
     request(`/history/${entityType}/${entityId}/rollback/${revisionId}`, { method: "POST" }),
+  getFiles: () => request("/files"),
+  uploadFile: (uri: string, fileName: string, mimeType: string) =>
+    uploadFile("/files/upload", uri, fileName, mimeType),
+  deleteFile: (id: number) =>
+    request(`/files/${id}`, { method: "DELETE" }),
+
+  getLeadFiles: (leadId: number) => request(`/leads/${leadId}/files`),
+  uploadLeadFile: (leadId: number, uri: string, fileName: string, mimeType: string) =>
+    uploadFile(`/leads/${leadId}/files`, uri, fileName, mimeType),
+  attachFileToLead: (leadId: number, fileId: number) =>
+    request(`/leads/${leadId}/files`, { method: "POST", body: JSON.stringify({ fileId }) }),
+  removeLeadFile: (leadId: number, fileId: number) =>
+    request(`/leads/${leadId}/files/${fileId}`, { method: "DELETE" }),
+
+  getContactFiles: (contactId: number) => request(`/contacts/${contactId}/files`),
+  uploadContactFile: (contactId: number, uri: string, fileName: string, mimeType: string) =>
+    uploadFile(`/contacts/${contactId}/files`, uri, fileName, mimeType),
+  attachFileToContact: (contactId: number, fileId: number) =>
+    request(`/contacts/${contactId}/files`, { method: "POST", body: JSON.stringify({ fileId }) }),
+  removeContactFile: (contactId: number, fileId: number) =>
+    request(`/contacts/${contactId}/files/${fileId}`, { method: "DELETE" }),
 };

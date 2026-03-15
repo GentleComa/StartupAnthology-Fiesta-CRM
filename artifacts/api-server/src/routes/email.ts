@@ -1,16 +1,19 @@
 import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { activitiesTable, calendarEventsTable } from "@workspace/db";
-import { sendGmailEmail } from "../lib/gmail";
+import { activitiesTable, calendarEventsTable, filesTable } from "@workspace/db";
+import { sendGmailEmail, type EmailAttachment } from "../lib/gmail";
 import { fireAndForgetActivitySync } from "../lib/notionSync";
 import { createCalendarEvent } from "../lib/calendar";
+import { ObjectStorageService } from "../lib/objectStorage";
+import { inArray, eq, and } from "drizzle-orm";
 
 const router = Router();
+const objectStorageService = new ObjectStorageService();
 
 router.post("/email/send", async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { to, subject, body, leadId, contactId, addToCalendar } = req.body;
+    const { to, subject, body, leadId, contactId, addToCalendar, attachmentFileIds } = req.body;
 
     if (!to || !subject || !body) {
       return res.status(400).json({ error: "to, subject, and body are required" });
@@ -21,8 +24,28 @@ router.post("/email/send", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid email address" });
     }
 
+    let attachments: EmailAttachment[] = [];
+    if (attachmentFileIds && attachmentFileIds.length > 0) {
+      const files = await db.select().from(filesTable).where(and(inArray(filesTable.id, attachmentFileIds), eq(filesTable.userId, userId)));
+      for (const file of files) {
+        try {
+          const objectFile = await objectStorageService.getObjectEntityFile(file.storageKey);
+          const response = await objectStorageService.downloadObject(objectFile);
+          const arrayBuffer = await response.arrayBuffer();
+          attachments.push({
+            filename: file.name,
+            mimeType: file.mimeType,
+            content: Buffer.from(arrayBuffer),
+          });
+        } catch (err: any) {
+          console.error(`Failed to load attachment ${file.name}:`, err.message);
+        }
+      }
+    }
+
+    let sendResult;
     try {
-      await sendGmailEmail(to, subject, body);
+      sendResult = await sendGmailEmail(to, subject, body, attachments);
     } catch (gmailErr: any) {
       const msg = gmailErr.message || "";
       if (msg.includes("access") || msg.includes("token") || msg.includes("credentials") || msg.includes("refresh")) {
@@ -38,6 +61,9 @@ router.post("/email/send", async (req: Request, res: Response) => {
       direction: "sent",
       subject,
       body,
+      gmailMessageId: sendResult.messageId,
+      gmailThreadId: sendResult.threadId,
+      gmailLink: sendResult.gmailLink,
       userId,
     }).returning();
 
@@ -70,7 +96,7 @@ router.post("/email/send", async (req: Request, res: Response) => {
       });
     }
 
-    res.json({ success: true });
+    res.json({ success: true, gmailLink: sendResult.gmailLink });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

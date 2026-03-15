@@ -70,14 +70,18 @@ artifacts-monorepo/
 - Stages: new → contacted → interested → engaged → converted
 - Swipe gestures to advance/retreat status (PanResponder + haptics)
 - Beta tag (boolean) with counter showing filled/total (configurable in Settings)
-- Lead detail: status changes, beta toggle, notes, email composer, LinkedIn logging, sequence enrollment
+- Lead detail: status changes, beta toggle, notes (with activity logging), inline field editing, email composer, LinkedIn message form, file attachments, profile pictures, LinkedIn URL, Gmail deep links on activities, sequence enrollment
 
 ### Business Connections (Contacts)
 - All contacts + follow-up queue tabs
 - Relationship types: investor, partner, advisor, vendor, press, other
 - Priority levels: high, medium, low
 - Mark as contacted (auto-schedules 7-day follow-up)
-- Contact detail: call, email, LinkedIn, activity history, sequence enrollment
+- Contact detail: call, email, LinkedIn, activity history, inline field editing, LinkedIn message form, file attachments, profile pictures, notes activity logging, Gmail deep links, sequence enrollment
+- **File Library**: Upload, view, and manage reusable files (pitch decks, one-pagers). Files can be attached to leads/contacts and used as email attachments.
+- **Email attachments**: Attach files from library or recipient's files when composing emails. Sent as standard MIME attachments via Gmail.
+- **Email tracking**: Gmail message/thread IDs captured on sent emails. Gmail push notification webhook for reply detection on tracked threads. Deep links to open emails directly in Gmail.
+- **Object Storage**: Replit object storage (GCS-backed) for file uploads and profile pictures
 
 ### Communications Hub
 - **Templates**: Reusable email templates with merge tags ({{first_name}}, {{company_name}}, {{founder_name}})
@@ -148,7 +152,7 @@ All CRM data is scoped by `userId` column:
 
 ## Database Schema
 
-Tables: leads (with is_beta, userId), contacts (userId), activities (userId), email_templates (userId), drip_sequences (userId), drip_sequence_steps, drip_enrollments, broadcasts (userId), trigger_rules (userId), app_settings (key+userId), sessions, users (passwordHash, role, isActive, needsPasswordReset), calendar_events (userId), audit_log
+Tables: leads (with is_beta, linkedinUrl, profilePictureUrl, userId), contacts (profilePictureUrl, userId), activities (gmailMessageId, gmailThreadId, gmailLink, userId), email_templates (userId), drip_sequences (userId), drip_sequence_steps, drip_enrollments, broadcasts (userId), trigger_rules (userId), app_settings (key+userId), sessions, users (passwordHash, role, isActive, needsPasswordReset), calendar_events (userId), files (name, mimeType, size, storageKey, userId), lead_files (leadId, fileId), contact_files (contactId, fileId), audit_log
 
 ## Design
 
@@ -157,7 +161,7 @@ Tables: leads (with is_beta, userId), contacts (userId), activities (userId), em
 - **Brand Voice**: Founder-to-founder, direct, no fluff. Earned empathy, clarity over polish, confidence without arrogance, functional optimism. Peer register (we/you). NOT corporate, NOT startup-bro hype, NOT patronizing. One-liner: "Straight-talking, founder-built confidence — for the people doing the actual work."
 - **Navigation**: NativeTabs with liquid glass on iOS 26+, classic blur tabs fallback
 - **Icons**: SF Symbols on iOS, Feather icons on web/Android
-- **Tab bar**: 5 tabs — Dashboard, Funnel, Contacts, Calendar, Comms
+- **Tab bar**: 6 tabs — Dashboard, Funnel, Contacts, Calendar, Files, Comms
 
 ## API Endpoints
 
@@ -171,7 +175,11 @@ All mounted at `/api`, all CRM endpoints require auth and scope by userId:
 - `GET/POST/DELETE /triggers`
 - `GET/PUT /settings`
 - `GET /dashboard`
-- `POST /email/send`
+- `POST /email/send` (supports attachmentFileIds)
+- `GET/POST/DELETE /files`, `POST /files/upload`
+- `GET/POST/DELETE /leads/:id/files`, `GET/POST/DELETE /contacts/:id/files`
+- `POST /storage/uploads/request-url`, `GET /storage/objects/*`, `GET /storage/public-objects/*`
+- `POST /gmail/webhook`, `POST /gmail/watch`, `GET /gmail/profile`
 - `GET/POST /calendar/events`, `DELETE /calendar/events/:id`
 - Auth: `POST /auth/register`, `POST /auth/login`, `PUT /auth/profile`, `PUT /auth/password`
 - Admin: `GET/POST /admin/users`, `PUT /admin/users/:id`
@@ -184,6 +192,9 @@ All mounted at `/api`, all CRM endpoints require auth and scope by userId:
 
 Connection ID: `conn_google-mail_01KKQYC5ZK0BWADJWDAWCZDHM0`
 Uses `getUncachableGmailClient()` pattern — never cache the OAuth client.
+Supports multipart MIME attachments, returns message/thread IDs.
+Gmail push notifications via Pub/Sub watch for tracking replies on app-initiated threads.
+Watch renewal needed every 7 days.
 
 ## Google Calendar Integration
 

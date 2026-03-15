@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -27,12 +28,27 @@ export default function ComposeEmailScreen() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(false);
+  const [selectedFileIds, setSelectedFileIds] = useState<number[]>([]);
 
   const { data: templates = [] } = useQuery({
     queryKey: ["templates"],
     queryFn: () => api.getTemplates(),
   });
   const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: api.getSettings });
+  const { data: libraryFiles = [] } = useQuery({
+    queryKey: ["files"],
+    queryFn: () => api.getFiles(),
+  });
+  const { data: recipientFiles = [] } = useQuery({
+    queryKey: leadId ? ["leadFiles", leadId] : contactId ? ["contactFiles", contactId] : ["noFiles"],
+    queryFn: () => {
+      if (leadId) return api.getLeadFiles(Number(leadId));
+      if (contactId) return api.getContactFiles(Number(contactId));
+      return Promise.resolve([]);
+    },
+    enabled: !!(leadId || contactId),
+  });
 
   const sendMut = useMutation({
     mutationFn: () => api.sendEmail({
@@ -41,6 +57,7 @@ export default function ComposeEmailScreen() {
       body,
       leadId: leadId ? Number(leadId) : undefined,
       contactId: contactId ? Number(contactId) : undefined,
+      attachmentFileIds: selectedFileIds.length > 0 ? selectedFileIds : undefined,
     }),
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -62,6 +79,17 @@ export default function ComposeEmailScreen() {
     setBody(bod);
     setShowTemplates(false);
   };
+
+  const toggleFile = (fileId: number) => {
+    setSelectedFileIds((prev) =>
+      prev.includes(fileId) ? prev.filter((id) => id !== fileId) : [...prev, fileId]
+    );
+  };
+
+  const allFiles = [...libraryFiles];
+  for (const rf of recipientFiles) {
+    if (!allFiles.find((f: any) => f.id === rf.id)) allFiles.push(rf);
+  }
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -99,10 +127,18 @@ export default function ComposeEmailScreen() {
           </View>
         </View>
 
-        <Pressable style={styles.templateBtn} onPress={() => setShowTemplates(!showTemplates)}>
-          <Feather name="file-text" size={16} color={Colors.info} />
-          <Text style={styles.templateBtnText}>Use Template</Text>
-        </Pressable>
+        <View style={styles.actionBtnRow}>
+          <Pressable style={styles.templateBtn} onPress={() => setShowTemplates(!showTemplates)}>
+            <Feather name="file-text" size={16} color={Colors.info} />
+            <Text style={styles.templateBtnText}>Use Template</Text>
+          </Pressable>
+          <Pressable style={styles.templateBtn} onPress={() => setShowAttachments(!showAttachments)}>
+            <Feather name="paperclip" size={16} color={Colors.info} />
+            <Text style={styles.templateBtnText}>
+              Attach{selectedFileIds.length > 0 ? ` (${selectedFileIds.length})` : ""}
+            </Text>
+          </Pressable>
+        </View>
 
         {showTemplates && (
           <View style={styles.templateList}>
@@ -113,6 +149,41 @@ export default function ComposeEmailScreen() {
               </Pressable>
             ))}
             {templates.length === 0 && <Text style={styles.noTemplates}>No templates yet.</Text>}
+          </View>
+        )}
+
+        {showAttachments && (
+          <View style={styles.templateList}>
+            {allFiles.length === 0 ? (
+              <Text style={styles.noTemplates}>No files in library.</Text>
+            ) : (
+              allFiles.map((f: any) => (
+                <Pressable key={f.id} style={styles.templateItem} onPress={() => toggleFile(f.id)}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                    <Feather
+                      name={selectedFileIds.includes(f.id) ? "check-square" : "square"}
+                      size={18}
+                      color={selectedFileIds.includes(f.id) ? Colors.info : Colors.textTertiary}
+                    />
+                    <Text style={styles.templateName} numberOfLines={1}>{f.name}</Text>
+                  </View>
+                </Pressable>
+              ))
+            )}
+          </View>
+        )}
+
+        {selectedFileIds.length > 0 && (
+          <View style={styles.attachedList}>
+            {allFiles.filter((f: any) => selectedFileIds.includes(f.id)).map((f: any) => (
+              <View key={f.id} style={styles.attachedChip}>
+                <Feather name="paperclip" size={12} color={Colors.info} />
+                <Text style={styles.attachedName} numberOfLines={1}>{f.name}</Text>
+                <Pressable onPress={() => toggleFile(f.id)} hitSlop={6}>
+                  <Feather name="x" size={14} color={Colors.textTertiary} />
+                </Pressable>
+              </View>
+            ))}
           </View>
         )}
 
@@ -154,12 +225,16 @@ const styles = StyleSheet.create({
   toValue: { flex: 1, backgroundColor: Colors.surfaceSecondary, borderRadius: Layout.badgeRadius, paddingHorizontal: 10, paddingVertical: 6 },
   toText: { fontSize: 15, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
   subjectInput: { flex: 1, fontSize: 15, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text },
-  templateBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  actionBtnRow: { flexDirection: "row", gap: 12, paddingVertical: Layout.cardPadding, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  templateBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   templateBtnText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.info },
   templateList: { backgroundColor: Colors.surface, borderRadius: Layout.inputRadius, marginBottom: 14 },
   templateItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: Layout.cardPadding, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
   templateName: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium", color: Colors.text },
   templateAudience: { fontSize: 12, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary, textTransform: "capitalize" },
   noTemplates: { padding: Layout.cardPadding, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: Colors.textTertiary },
+  attachedList: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingVertical: 8 },
+  attachedChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: Colors.info + "15", paddingHorizontal: 10, paddingVertical: 6, borderRadius: Layout.badgeRadius },
+  attachedName: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: Colors.info, maxWidth: 120 },
   bodyInput: { fontSize: 16, fontFamily: "SpaceGrotesk_400Regular", color: Colors.text, minHeight: 200, paddingTop: 18, lineHeight: 24 },
 });

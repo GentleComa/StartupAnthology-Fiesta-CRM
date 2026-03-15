@@ -11,6 +11,7 @@ export const contactsTable = pgTable("contacts", {
   relationshipType: text("relationship_type").notNull().default("other"),
   priority: text("priority").notNull().default("medium"),
   linkedinUrl: text("linkedin_url"),
+  profilePictureUrl: text("profile_picture_url"),
   email: text("email"),
   phone: text("phone"),
   notes: text("notes"),

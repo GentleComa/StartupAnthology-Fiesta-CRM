@@ -10,6 +10,8 @@ export const leadsTable = pgTable("leads", {
   source: text("source").notNull().default("other"),
   status: text("status").notNull().default("new"),
   notes: text("notes"),
+  linkedinUrl: text("linkedin_url"),
+  profilePictureUrl: text("profile_picture_url"),
   isBeta: boolean("is_beta").notNull().default(false),
   notionPageId: text("notion_page_id"),
   userId: varchar("user_id").references(() => usersTable.id),

@@ -15,11 +15,15 @@ import dashboardRouter from "./dashboard";
 import emailRouter from "./email";
 import calendarRouter from "./calendar";
 import auditRouter from "./audit";
+import storageRouter from "./storage";
+import filesRouter from "./files";
+import gmailWebhookRouter from "./gmailWebhook";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+router.use(gmailWebhookRouter);
 
 router.use(requireAuth);
 
@@ -36,5 +40,7 @@ router.use(dashboardRouter);
 router.use(emailRouter);
 router.use(calendarRouter);
 router.use(auditRouter);
+router.use(storageRouter);
+router.use(filesRouter);
 
 export default router;
