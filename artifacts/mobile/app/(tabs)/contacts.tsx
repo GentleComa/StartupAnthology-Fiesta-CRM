@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { HamburgerMenu } from "@/components/HamburgerMenu";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Modal,
   Platform,
@@ -61,6 +62,20 @@ export default function ContactsScreen() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
+  const horizonSyncMut = useMutation({
+    mutationFn: () => api.syncFromHorizon(),
+    onSuccess: (data: any) => {
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["contacts"] });
+      qc.invalidateQueries({ queryKey: ["followUps"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      const parts = [];
+      if (data.leads) parts.push(`Leads: ${data.leads.created} new, ${data.leads.updated} updated`);
+      if (data.contacts) parts.push(`Contacts: ${data.contacts.created} new, ${data.contacts.updated} updated`);
+      Alert.alert("Horizon Sync Complete", parts.join("\n") || "Sync finished.");
+    },
+    onError: () => Alert.alert("Sync Failed", "Could not connect to Horizon. Check your API keys in Settings."),
+  });
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const listData = tab === "all" ? contacts : followUps;
@@ -77,7 +92,28 @@ export default function ContactsScreen() {
     <View style={[styles.container, { paddingTop: topPad, backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Contacts</Text>
-        <HamburgerMenu />
+        <View style={styles.headerRight}>
+          <Pressable
+            onPress={() => {
+              Alert.alert("Sync from Horizon", "Pull latest leads and contacts from Horizon?", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Sync Now", onPress: () => horizonSyncMut.mutate() },
+              ]);
+            }}
+            style={[styles.syncBtn, { backgroundColor: colors.accent }]}
+            disabled={horizonSyncMut.isPending}
+          >
+            {horizonSyncMut.isPending ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Feather name="refresh-cw" size={13} color="#fff" />
+                <Text style={styles.syncBtnText}>Sync</Text>
+              </>
+            )}
+          </Pressable>
+          <HamburgerMenu />
+        </View>
       </View>
 
       <View style={styles.tabs}>
@@ -220,6 +256,9 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: Layout.screenPadding, paddingTop: 14, paddingBottom: 6 },
   title: { fontSize: 24, fontFamily: "Lato_700Bold" },
+  headerRight: { flexDirection: "row", alignItems: "center", gap: 10 },
+  syncBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  syncBtnText: { fontSize: 12, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
   tabs: { flexDirection: "row", paddingHorizontal: Layout.screenPadding, gap: 8, marginBottom: 12, marginTop: 10 },
   tab: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: Layout.chipRadius },
   tabText: { fontSize: 14, fontFamily: "SpaceGrotesk_500Medium" },

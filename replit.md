@@ -74,7 +74,7 @@ artifacts-monorepo/
 │   ├── api-client-react/      # Generated React Query hooks
 │   ├── api-zod/               # Generated Zod schemas
 │   └── db/                    # Drizzle ORM schema + DB
-│       └── src/schema/        # leads, contacts, activities, emailTemplates, dripSequences, broadcasts, triggerRules, settings, calendarEvents, auth (users+sessions)
+│       └── src/schema/        # leads, contacts, activities, emailTemplates, dripSequences, broadcasts, triggerRules, settings, calendarEvents, auth (users+sessions), agentRegistry, aiInsights, conversations, messages, onboardingProgress
 ├── scripts/
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json

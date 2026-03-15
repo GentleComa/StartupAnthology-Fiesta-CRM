@@ -6,6 +6,7 @@ import React, { useState, useRef } from "react";
 import { HamburgerMenu } from "@/components/HamburgerMenu";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Dimensions,
   FlatList,
@@ -93,6 +94,19 @@ export default function FunnelScreen() {
     queryKey: ["leads"],
     queryFn: () => api.getLeads(),
   });
+  const horizonSyncMut = useMutation({
+    mutationFn: () => api.syncFromHorizon(),
+    onSuccess: (data: any) => {
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["contacts"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      const parts = [];
+      if (data.leads) parts.push(`Leads: ${data.leads.created} new, ${data.leads.updated} updated`);
+      if (data.contacts) parts.push(`Contacts: ${data.contacts.created} new, ${data.contacts.updated} updated`);
+      Alert.alert("Horizon Sync Complete", parts.join("\n") || "Sync finished.");
+    },
+    onError: () => Alert.alert("Sync Failed", "Could not connect to Horizon. Check your API keys in Settings."),
+  });
   const { data: settings } = useQuery({
     queryKey: ["settings"],
     queryFn: api.getSettings,
@@ -144,6 +158,25 @@ export default function FunnelScreen() {
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Your Funnel</Text>
         <View style={styles.headerRight}>
+          <Pressable
+            onPress={() => {
+              Alert.alert("Sync from Horizon", "Pull latest leads and contacts from Horizon?", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Sync Now", onPress: () => horizonSyncMut.mutate() },
+              ]);
+            }}
+            style={[styles.syncBtn, { backgroundColor: colors.accent }]}
+            disabled={horizonSyncMut.isPending}
+          >
+            {horizonSyncMut.isPending ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Feather name="refresh-cw" size={13} color="#fff" />
+                <Text style={styles.syncBtnText}>Sync</Text>
+              </>
+            )}
+          </Pressable>
           <View style={[styles.betaCounter, { backgroundColor: colors.primary + "10" }]}>
             <Feather name="zap" size={14} color={colors.accent} />
             <Text style={[styles.betaCountText, { color: colors.primary }]}>{betaCount}/{betaTotal}</Text>
@@ -344,7 +377,9 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: Layout.screenPadding, paddingVertical: 14 },
   title: { fontSize: 24, fontFamily: "Lato_700Bold" },
-  headerRight: { flexDirection: "row", alignItems: "center", gap: 12 },
+  headerRight: { flexDirection: "row", alignItems: "center", gap: 10 },
+  syncBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  syncBtnText: { fontSize: 12, fontFamily: "LeagueSpartan_600SemiBold", color: "#fff" },
   betaCounter: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: Layout.inputRadius },
   betaCountText: { fontSize: 13, fontFamily: "LeagueSpartan_600SemiBold" },
   viewToggle: { padding: 6, borderRadius: Layout.badgeRadius },
