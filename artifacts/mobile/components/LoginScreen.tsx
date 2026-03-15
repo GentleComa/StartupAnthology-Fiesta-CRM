@@ -53,7 +53,7 @@ export function LoginScreen() {
           activeOpacity={0.8}
         >
           {isLoggingIn ? (
-            <ActivityIndicator color={colors.primary} />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={styles.loginButtonText}>Log In</Text>
           )}
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   loginButtonText: {
     fontSize: 17,
     fontWeight: "600",
-    color: colors.primary,
+    color: "#FFFFFF",
     fontFamily: "LeagueSpartan_600SemiBold",
   },
   footerText: {

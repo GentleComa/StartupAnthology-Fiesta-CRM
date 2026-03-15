@@ -109,7 +109,7 @@ Tables: leads (with is_beta), contacts, activities, email_templates, drip_sequen
 
 ## Design
 
-- **Colors**: Navy primary (#1B2B4B), gold accent (#D4A843), light background (#F8F9FB)
+- **Colors**: Black primary (#000000), SA Gold accent (#BB935B), White background (#FFFFFF), Grey (#999999)
 - **Typography**: Multi-font brand system — Lato (titles), League Spartan (headings/buttons), Montserrat (subtitles/captions), Space Grotesk (body text)
 - **Navigation**: NativeTabs with liquid glass on iOS 26+, classic blur tabs fallback
 - **Icons**: SF Symbols on iOS, Feather icons on web/Android
