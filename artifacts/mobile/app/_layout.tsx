@@ -29,6 +29,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { LoginScreen } from "@/components/LoginScreen";
+import { TwoFactorScreen } from "@/components/TwoFactorScreen";
 import { ThemeProvider } from "@/lib/theme";
 
 SplashScreen.preventAutoHideAsync();
@@ -36,10 +37,11 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated, isAdmin, is2faVerified } = useAuth();
 
   if (isLoading) return null;
   if (!isAuthenticated) return <LoginScreen />;
+  if (isAdmin && !is2faVerified) return <TwoFactorScreen />;
 
   return <>{children}</>;
 }
@@ -55,6 +57,7 @@ function RootLayoutNav() {
       <Stack.Screen name="sequence/[id]" options={{ presentation: "modal" }} />
       <Stack.Screen name="broadcast/new" options={{ presentation: "modal" }} />
       <Stack.Screen name="settings" />
+      <Stack.Screen name="admin" />
     </Stack>
   );
 }

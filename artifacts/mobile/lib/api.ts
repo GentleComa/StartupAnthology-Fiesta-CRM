@@ -267,11 +267,8 @@ export const api = {
 
   updateProfile: (data: { firstName?: string; lastName?: string; profileImageUrl?: string }) =>
     request("/auth/profile", { method: "PUT", body: JSON.stringify(data) }),
-  changePassword: (data: { currentPassword?: string; newPassword: string }) =>
-    request("/auth/password", { method: "PUT", body: JSON.stringify(data) }),
-
   getAdminUsers: () => request("/admin/users"),
-  createAdminUser: (data: { email: string; password: string; firstName?: string; lastName?: string; role?: string }) =>
+  createAdminUser: (data: { email: string; firstName?: string; lastName?: string; role?: string }) =>
     request("/admin/users", { method: "POST", body: JSON.stringify(data) }),
   updateAdminUser: (id: string, data: { role?: string; isActive?: boolean }) =>
     request(`/admin/users/${id}`, { method: "PUT", body: JSON.stringify(data) }),

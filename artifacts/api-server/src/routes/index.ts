@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { requireAuth } from "../middlewares/requireAuth";
 import healthRouter from "./health";
 import authRouter from "./auth";
+import twoFactorRouter from "./twoFactor";
 import adminRouter from "./admin";
 import leadsRouter from "./leads";
 import contactsRouter from "./contacts";
@@ -32,6 +33,7 @@ router.use(horizonWebhookRouter);
 
 router.use(requireAuth);
 
+router.use(twoFactorRouter);
 router.use(adminRouter);
 router.use(leadsRouter);
 router.use(contactsRouter);

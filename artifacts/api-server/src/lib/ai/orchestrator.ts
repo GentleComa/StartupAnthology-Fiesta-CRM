@@ -378,7 +378,7 @@ async function detectAndTrackOnboarding(userId: string, userMessage: string, res
       messages: [
         {
           role: "system",
-          content: `Given this conversation about Anthology CRM, which of these app sections were substantively discussed or explained? Only include sections where the user received a meaningful explanation or walkthrough. Respond with ONLY a comma-separated list of matching section names, or "none".
+          content: `Given this conversation about Fiesta, which of these app sections were substantively discussed or explained? Only include sections where the user received a meaningful explanation or walkthrough. Respond with ONLY a comma-separated list of matching section names, or "none".
 Available sections: ${remainingTopics.join(", ")}`,
         },
         {
@@ -470,7 +470,7 @@ export async function getOnboardingGreeting(userId: string): Promise<string> {
     return "";
   }
 
-  return `Hey there — I'm Coach, your business development advisor. I work with a small team behind the scenes to help you get the most out of Anthology CRM.
+  return `Hey there — I'm Coach, your business development advisor. I work with a small team behind the scenes to help you get the most out of Fiesta.
 
 Here's who's on the team:
 

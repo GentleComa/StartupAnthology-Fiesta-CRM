@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Modal,
   Platform,
@@ -11,8 +11,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/lib/theme";
+import { useAuth } from "@/lib/auth";
 
-const MENU_ITEMS = [
+const BASE_MENU_ITEMS = [
   { label: "Workflows", icon: "send" as const, route: "/comms" },
   { label: "Files", icon: "folder" as const, route: "/files" },
   { label: "Settings", icon: "settings" as const, route: "/settings" },
@@ -23,6 +24,15 @@ export function HamburgerMenu() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 12 : insets.top + 4;
+  const { isAdmin, is2faVerified } = useAuth();
+
+  const menuItems = useMemo(() => {
+    const items = [...BASE_MENU_ITEMS];
+    if (isAdmin && is2faVerified) {
+      items.push({ label: "Admin", icon: "shield" as const, route: "/admin" });
+    }
+    return items;
+  }, [isAdmin, is2faVerified]);
 
   return (
     <>
@@ -38,12 +48,12 @@ export function HamburgerMenu() {
       >
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <View style={[styles.menuContainer, { top: topPad, backgroundColor: colors.surface, shadowColor: colors.text }]}>
-            {MENU_ITEMS.map((item, idx) => (
+            {menuItems.map((item, idx) => (
               <Pressable
                 key={item.label}
                 style={[
                   styles.menuItem,
-                  idx < MENU_ITEMS.length - 1 && [styles.menuItemBorder, { borderBottomColor: colors.border }],
+                  idx < menuItems.length - 1 && [styles.menuItemBorder, { borderBottomColor: colors.border }],
                 ]}
                 onPress={() => {
                   setOpen(false);

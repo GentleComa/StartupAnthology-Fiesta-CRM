@@ -70,13 +70,8 @@ export default function SettingsScreen() {
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
   const [editProfileImage, setEditProfileImage] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState("");
-  const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserFirstName, setNewUserFirstName] = useState("");
   const [newUserLastName, setNewUserLastName] = useState("");
   const [newUserRole, setNewUserRole] = useState("user");
@@ -89,7 +84,7 @@ export default function SettingsScreen() {
     if (settings) {
       setBetaTotal(settings.beta_slots_total || "100");
       setFounderName(settings.founder_name || "");
-      setAppName(settings.app_name || "Anthology CRM");
+      setAppName(settings.app_name || "Fiesta");
       setNotionLeadsDb(settings.notion_leads_db || "");
       setNotionContactsDb(settings.notion_contacts_db || "");
       setNotionActivitiesDb(settings.notion_activities_db || "");
@@ -135,18 +130,6 @@ export default function SettingsScreen() {
     onError: (err: Error) => Alert.alert("Error", err.message),
   });
 
-  const changePasswordMut = useMutation({
-    mutationFn: (data: { currentPassword?: string; newPassword: string }) => api.changePassword(data),
-    onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      Alert.alert("Done", "Password changed successfully.");
-    },
-    onError: (err: Error) => Alert.alert("Error", err.message),
-  });
-
   const createTriggerMut = useMutation({
     mutationFn: () => api.createTriggerRule({
       triggerStatus: newTriggerStatus,
@@ -169,7 +152,6 @@ export default function SettingsScreen() {
   const createUserMut = useMutation({
     mutationFn: () => api.createAdminUser({
       email: newUserEmail.trim().toLowerCase(),
-      password: newUserPassword,
       firstName: newUserFirstName.trim() || undefined,
       lastName: newUserLastName.trim() || undefined,
       role: newUserRole,
@@ -178,7 +160,6 @@ export default function SettingsScreen() {
       refetchAdminUsers();
       setShowAddUser(false);
       setNewUserEmail("");
-      setNewUserPassword("");
       setNewUserFirstName("");
       setNewUserLastName("");
       setNewUserRole("user");
@@ -242,25 +223,6 @@ export default function SettingsScreen() {
       firstName: editFirstName.trim() || undefined,
       lastName: editLastName.trim() || undefined,
       profileImageUrl: editProfileImage.trim() || undefined,
-    });
-  };
-
-  const handleChangePassword = () => {
-    if (!newPassword) {
-      Alert.alert("Required", "Please enter a new password.");
-      return;
-    }
-    if (newPassword.length < 6) {
-      Alert.alert("Too short", "Password must be at least 6 characters.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      Alert.alert("Mismatch", "Passwords do not match.");
-      return;
-    }
-    changePasswordMut.mutate({
-      currentPassword: currentPassword || undefined,
-      newPassword,
     });
   };
 
@@ -350,48 +312,6 @@ export default function SettingsScreen() {
             thumbColor="#FFFFFF"
           />
         </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Change Password</Text>
-        <TextInput
-          style={styles.passwordInput}
-          placeholder="Current password"
-          placeholderTextColor={colors.textTertiary}
-          value={currentPassword}
-          onChangeText={setCurrentPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={styles.passwordInput}
-          placeholder="New password (min 6 characters)"
-          placeholderTextColor={colors.textTertiary}
-          value={newPassword}
-          onChangeText={setNewPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={styles.passwordInput}
-          placeholder="Confirm new password"
-          placeholderTextColor={colors.textTertiary}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
-        <Pressable
-          style={[styles.saveBtn, changePasswordMut.isPending && { opacity: 0.6 }]}
-          onPress={handleChangePassword}
-          disabled={changePasswordMut.isPending}
-        >
-          {changePasswordMut.isPending ? (
-            <ActivityIndicator color={colors.onPrimary} size="small" />
-          ) : (
-            <Text style={styles.saveBtnText}>Update Password</Text>
-          )}
-        </Pressable>
       </View>
 
       <View style={styles.section}>
@@ -932,14 +852,6 @@ export default function SettingsScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Password (min 6 characters)"
-              placeholderTextColor={colors.textTertiary}
-              value={newUserPassword}
-              onChangeText={setNewUserPassword}
-              secureTextEntry
-            />
             <View style={styles.formGroup}>
               <Text style={styles.label}>Role</Text>
               <View style={styles.chipRow}>
@@ -953,8 +865,8 @@ export default function SettingsScreen() {
             <Pressable
               style={[styles.addBtn, createUserMut.isPending && { opacity: 0.6 }]}
               onPress={() => {
-                if (!newUserEmail.trim() || !newUserPassword) {
-                  Alert.alert("Required", "Email and password are required.");
+                if (!newUserEmail.trim()) {
+                  Alert.alert("Required", "Email is required.");
                   return;
                 }
                 createUserMut.mutate();
@@ -1057,7 +969,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   notionDbRow: { backgroundColor: colors.surface, borderRadius: Layout.cardRadius, padding: Layout.cardPadding, marginTop: Layout.cardGap },
   notionDbLabel: { fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: colors.textSecondary, marginBottom: 8, textTransform: "uppercase" },
   notionDbInput: { fontSize: 13, fontFamily: "SpaceGrotesk_400Regular", color: colors.text, backgroundColor: colors.surfaceSecondary, borderRadius: Layout.badgeRadius, paddingHorizontal: 10, paddingVertical: 8 },
-  passwordInput: { backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: "SpaceGrotesk_400Regular", color: colors.text, marginTop: 8 },
   roleBadge: { backgroundColor: colors.surfaceSecondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   roleBadgeAdmin: { backgroundColor: colors.accent + "20" },
   roleBadgeText: { fontSize: 12, fontFamily: "SpaceGrotesk_500Medium", color: colors.textSecondary, textTransform: "capitalize" },

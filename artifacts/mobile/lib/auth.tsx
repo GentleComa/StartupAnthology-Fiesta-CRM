@@ -1,7 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import * as AuthSession from "expo-auth-session";
+import * as WebBrowser from "expo-web-browser";
 import * as SecureStore from "expo-secure-store";
 
+WebBrowser.maybeCompleteAuthSession();
+
 const AUTH_TOKEN_KEY = "auth_session_token";
+const ISSUER_URL = process.env.EXPO_PUBLIC_ISSUER_URL ?? "https://replit.com/oidc";
 
 interface User {
   id: string;
@@ -12,14 +17,24 @@ interface User {
   role: string;
 }
 
+interface TwoFactorStatus {
+  enrolled: boolean;
+  method: string | null;
+  totpVerified: boolean;
+  twoFactorVerified: boolean;
+}
+
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, firstName?: string, lastName?: string) => Promise<void>;
+  login: () => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  twoFactorStatus: TwoFactorStatus | null;
+  refreshTwoFactorStatus: () => Promise<void>;
+  isAdmin: boolean;
+  is2faVerified: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -27,9 +42,12 @@ const AuthContext = createContext<AuthContextValue>({
   isLoading: true,
   isAuthenticated: false,
   login: async () => {},
-  register: async () => {},
   logout: async () => {},
   refreshUser: async () => {},
+  twoFactorStatus: null,
+  refreshTwoFactorStatus: async () => {},
+  isAdmin: false,
+  is2faVerified: false,
 });
 
 function getApiBaseUrl(): string {
@@ -39,9 +57,27 @@ function getApiBaseUrl(): string {
   return "";
 }
 
+function getClientId(): string {
+  return process.env.EXPO_PUBLIC_REPL_ID || "";
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [twoFactorStatus, setTwoFactorStatus] = useState<TwoFactorStatus | null>(null);
+
+  const discovery = AuthSession.useAutoDiscovery(ISSUER_URL);
+  const redirectUri = AuthSession.makeRedirectUri();
+
+  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: getClientId(),
+      scopes: ["openid", "email", "profile", "offline_access"],
+      redirectUri,
+      prompt: AuthSession.Prompt.Login,
+    },
+    discovery,
+  );
 
   const fetchUser = useCallback(async () => {
     try {
@@ -71,67 +107,89 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const refreshTwoFactorStatus = useCallback(async () => {
+    try {
+      const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+      if (!token) return;
+
+      const apiBase = getApiBaseUrl();
+      const res = await fetch(`${apiBase}/api/2fa/status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTwoFactorStatus(data);
+      }
+    } catch {
+    }
+  }, []);
+
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const apiBase = getApiBaseUrl();
-    if (!apiBase) {
-      throw new Error("API base URL is not configured.");
+  useEffect(() => {
+    if (user?.role === "admin") {
+      refreshTwoFactorStatus();
     }
+  }, [user, refreshTwoFactorStatus]);
 
-    const res = await fetch(`${apiBase}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+  useEffect(() => {
+    if (response?.type !== "success" || !request?.codeVerifier) return;
 
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || "Login failed");
-    }
+    const { code, state } = response.params;
 
-    const data = await res.json();
-    if (data.token) {
-      await SecureStore.setItemAsync(AUTH_TOKEN_KEY, data.token);
-      if (data.user) {
-        setUser(data.user);
-      } else {
-        setIsLoading(true);
-        await fetchUser();
+    (async () => {
+      try {
+        const apiBase = getApiBaseUrl();
+        if (!apiBase) {
+          console.error("API base URL is not configured.");
+          return;
+        }
+
+        const exchangeRes = await fetch(`${apiBase}/api/mobile-auth/token-exchange`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code,
+            code_verifier: request.codeVerifier,
+            redirect_uri: redirectUri,
+            state,
+            nonce: request.nonce,
+          }),
+        });
+
+        if (!exchangeRes.ok) {
+          console.error("Token exchange failed:", exchangeRes.status);
+          setIsLoading(false);
+          return;
+        }
+
+        const data = await exchangeRes.json();
+        if (data.token) {
+          await SecureStore.setItemAsync(AUTH_TOKEN_KEY, data.token);
+          if (data.user) {
+            setUser(data.user);
+            setIsLoading(false);
+          } else {
+            setIsLoading(true);
+            await fetchUser();
+          }
+        }
+      } catch (err) {
+        console.error("Token exchange error:", err);
+        setIsLoading(false);
       }
-    }
-  }, [fetchUser]);
+    })();
+  }, [response, request, redirectUri, fetchUser]);
 
-  const register = useCallback(async (email: string, password: string, firstName?: string, lastName?: string) => {
-    const apiBase = getApiBaseUrl();
-    if (!apiBase) {
-      throw new Error("API base URL is not configured.");
+  const login = useCallback(async () => {
+    try {
+      await promptAsync();
+    } catch (err) {
+      console.error("Login error:", err);
     }
-
-    const res = await fetch(`${apiBase}/api/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, firstName, lastName }),
-    });
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData.error || "Registration failed");
-    }
-
-    const data = await res.json();
-    if (data.token) {
-      await SecureStore.setItemAsync(AUTH_TOKEN_KEY, data.token);
-      if (data.user) {
-        setUser(data.user);
-      } else {
-        setIsLoading(true);
-        await fetchUser();
-      }
-    }
-  }, [fetchUser]);
+  }, [promptAsync]);
 
   const logout = useCallback(async () => {
     try {
@@ -147,12 +205,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
       setUser(null);
+      setTwoFactorStatus(null);
     }
   }, []);
 
   const refreshUser = useCallback(async () => {
     await fetchUser();
   }, [fetchUser]);
+
+  const isAdmin = user?.role === "admin";
+  const is2faVerified = twoFactorStatus?.twoFactorVerified === true;
 
   return (
     <AuthContext.Provider
@@ -161,9 +223,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         login,
-        register,
         logout,
         refreshUser,
+        twoFactorStatus,
+        refreshTwoFactorStatus,
+        isAdmin,
+        is2faVerified,
       }}
     >
       {children}
@@ -173,4 +238,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth(): AuthContextValue {
   return useContext(AuthContext);
+}
+
+export function getAuthToken(): Promise<string | null> {
+  return SecureStore.getItemAsync(AUTH_TOKEN_KEY);
 }

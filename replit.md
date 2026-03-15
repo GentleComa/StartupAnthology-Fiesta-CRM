@@ -1,8 +1,8 @@
-# Anthology CRM
+# Fiesta
 
 ## Overview
 
-Mobile-first CRM app for a solo founder/small team. Built with Expo (React Native) for iOS, Express API server with PostgreSQL, integrated with Gmail (sending) and Notion (one-way sync). Multi-user support with password authentication, role-based access, and admin user management.
+Mobile-first CRM app for a solo founder/small team. Built with Expo (React Native) for iOS, Express API server with PostgreSQL, integrated with Gmail (sending) and Notion (one-way sync). Multi-user support with Replit OAuth (OpenID Connect with PKCE), role-based access, admin 2FA (TOTP or email), and admin panel with user management and data export/import.
 
 ## Stack
 
@@ -17,7 +17,7 @@ Mobile-first CRM app for a solo founder/small team. Built with Expo (React Nativ
 - **API codegen**: Orval (from OpenAPI spec)
 - **State management**: TanStack React Query
 - **Integrations**: Gmail (via googleapis), Notion (via @replit/connectors-sdk), Google Calendar (via googleapis), OpenAI (via Replit AI proxy)
-- **Auth**: bcryptjs for password hashing, session-based auth with Bearer tokens
+- **Auth**: Replit OAuth (OIDC with PKCE via openid-client v6), session-based auth with Bearer tokens, admin 2FA via otpauth (TOTP) or email codes
 
 ## Structure
 

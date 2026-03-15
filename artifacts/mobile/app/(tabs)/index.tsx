@@ -68,7 +68,7 @@ export default function DashboardScreen() {
           <Image source={saIconWhite} style={styles.headerLogoImage} resizeMode="contain" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.greeting, { color: colors.text }]}>Startup Anthology</Text>
+          <Text style={[styles.greeting, { color: colors.text }]}>Fiesta</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Your week at a glance.</Text>
         </View>
         <HamburgerMenu />
