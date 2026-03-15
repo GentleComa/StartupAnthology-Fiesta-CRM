@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import React, { useMemo } from "react";
+import { HamburgerMenu } from "@/components/HamburgerMenu";
 import {
   ActivityIndicator,
   Image,
@@ -70,9 +71,7 @@ export default function DashboardScreen() {
           <Text style={[styles.greeting, { color: colors.text }]}>Startup Anthology</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Your week at a glance.</Text>
         </View>
-        <Pressable onPress={() => router.push("/settings")} hitSlop={10}>
-          <Feather name="settings" size={22} color={colors.text} />
-        </Pressable>
+        <HamburgerMenu />
       </View>
 
       <View style={[styles.betaCard, { backgroundColor: colors.primary }]}>

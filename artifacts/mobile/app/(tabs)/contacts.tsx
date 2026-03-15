@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useState } from "react";
+import { HamburgerMenu } from "@/components/HamburgerMenu";
 import {
   ActivityIndicator,
   FlatList,
@@ -76,9 +77,7 @@ export default function ContactsScreen() {
     <View style={[styles.container, { paddingTop: topPad, backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Contacts</Text>
-        <Pressable onPress={() => router.push("/settings")} hitSlop={10}>
-          <Feather name="settings" size={22} color={colors.text} />
-        </Pressable>
+        <HamburgerMenu />
       </View>
 
       <View style={styles.tabs}>

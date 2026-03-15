@@ -1,0 +1,93 @@
+import { Feather } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React, { useState } from "react";
+import {
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "@/lib/theme";
+
+const MENU_ITEMS = [
+  { label: "Workflows", icon: "send" as const, route: "/(tabs)/comms" },
+  { label: "Files", icon: "folder" as const, route: "/files" },
+  { label: "Settings", icon: "settings" as const, route: "/settings" },
+];
+
+export function HamburgerMenu() {
+  const [open, setOpen] = useState(false);
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === "web" ? 12 : insets.top + 4;
+
+  return (
+    <>
+      <Pressable onPress={() => setOpen(true)} hitSlop={10}>
+        <Feather name="menu" size={22} color={colors.text} />
+      </Pressable>
+
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
+          <View style={[styles.menuContainer, { top: topPad, backgroundColor: colors.surface, shadowColor: colors.text }]}>
+            {MENU_ITEMS.map((item, idx) => (
+              <Pressable
+                key={item.label}
+                style={[
+                  styles.menuItem,
+                  idx < MENU_ITEMS.length - 1 && [styles.menuItemBorder, { borderBottomColor: colors.border }],
+                ]}
+                onPress={() => {
+                  setOpen(false);
+                  router.push(item.route as any);
+                }}
+              >
+                <Feather name={item.icon} size={18} color={colors.accent} />
+                <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+  },
+  menuContainer: {
+    position: "absolute",
+    right: 16,
+    minWidth: 200,
+    borderRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    overflow: "hidden",
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  menuItemBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  menuLabel: {
+    fontSize: 15,
+    fontFamily: "SpaceGrotesk_500Medium",
+  },
+});

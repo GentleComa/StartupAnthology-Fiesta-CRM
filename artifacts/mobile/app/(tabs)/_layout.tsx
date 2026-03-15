@@ -18,7 +18,7 @@ function NativeTabLayout() {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="funnel">
         <Icon sf={{ default: "target", selected: "target" }} />
-        <Label>Funnel</Label>
+        <Label>Leads</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="contacts">
         <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
@@ -28,15 +28,15 @@ function NativeTabLayout() {
         <Icon sf={{ default: "calendar", selected: "calendar" }} />
         <Label>Calendar</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="more">
-        <Icon sf={{ default: "ellipsis.circle", selected: "ellipsis.circle.fill" }} />
-        <Label>More</Label>
+      <NativeTabs.Trigger name="ai">
+        <Icon sf={{ default: "bubble.left.and.text.bubble.right", selected: "bubble.left.and.text.bubble.right.fill" }} />
+        <Label>AI</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="comms" hidden>
-        <Label>Comms</Label>
+        <Label>Workflows</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="ai" hidden>
-        <Label>AI</Label>
+      <NativeTabs.Trigger name="more" hidden>
+        <Label>More</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -94,7 +94,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="funnel"
         options={{
-          title: "Funnel",
+          title: "Leads",
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="target" tintColor={color} size={22} />
@@ -128,28 +128,24 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
-        name="more"
+        name="ai"
         options={{
-          title: "More",
+          title: "AI",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="ellipsis.circle" tintColor={color} size={22} />
+              <SymbolView name="bubble.left.and.text.bubble.right" tintColor={color} size={22} />
             ) : (
-              <Feather name="more-horizontal" size={22} color={color} />
+              <Feather name="cpu" size={22} color={color} />
             ),
         }}
       />
       <Tabs.Screen
         name="comms"
-        options={{
-          href: null,
-        }}
+        options={{ href: null }}
       />
       <Tabs.Screen
-        name="ai"
-        options={{
-          href: null,
-        }}
+        name="more"
+        options={{ href: null }}
       />
     </Tabs>
   );

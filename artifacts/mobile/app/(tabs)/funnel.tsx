@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useState, useRef } from "react";
+import { HamburgerMenu } from "@/components/HamburgerMenu";
 import {
   ActivityIndicator,
   Animated,
@@ -154,6 +155,7 @@ export default function FunnelScreen() {
           >
             <Feather name={viewMode === "kanban" ? "list" : "columns"} size={20} color={colors.primary} />
           </Pressable>
+          <HamburgerMenu />
         </View>
       </View>
 

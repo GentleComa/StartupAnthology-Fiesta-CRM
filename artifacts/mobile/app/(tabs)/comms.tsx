@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import React, { useState } from "react";
+import { HamburgerMenu } from "@/components/HamburgerMenu";
 import {
   ActivityIndicator,
   FlatList,
@@ -44,10 +45,8 @@ export default function CommsScreen() {
   return (
     <View style={[styles.container, { paddingTop: topPad, backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Comms</Text>
-        <Pressable style={[styles.settingsBtn, { backgroundColor: colors.surfaceSecondary }]} onPress={() => router.push("/settings")} hitSlop={8}>
-          <Feather name="settings" size={20} color={colors.textSecondary} />
-        </Pressable>
+        <Text style={[styles.title, { color: colors.text }]}>Workflows</Text>
+        <HamburgerMenu />
       </View>
 
       <View style={styles.tabs}>
