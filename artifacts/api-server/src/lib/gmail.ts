@@ -1,21 +1,48 @@
 import { google } from "googleapis";
 
-const CONN_ID = "conn_google-mail_01KKQYC5ZK0BWADJWDAWCZDHM0";
+// Replit Google Mail integration — fetches credentials at runtime via connector API
+let connectionSettings: any;
 
-function getUncachableGmailClient() {
-  const credentialsJson = process.env[`CONNECTION_${CONN_ID}_CREDENTIALS`] || "{}";
-  let credentials: any;
-  try {
-    credentials = JSON.parse(credentialsJson);
-  } catch {
-    throw new Error("Gmail credentials not configured");
+async function getAccessToken() {
+  if (connectionSettings && connectionSettings.settings.expires_at && new Date(connectionSettings.settings.expires_at).getTime() > Date.now()) {
+    return connectionSettings.settings.access_token;
   }
+
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY
+    ? "repl " + process.env.REPL_IDENTITY
+    : process.env.WEB_REPL_RENEWAL
+    ? "depl " + process.env.WEB_REPL_RENEWAL
+    : null;
+
+  if (!xReplitToken) {
+    throw new Error("Gmail credentials not available");
+  }
+
+  connectionSettings = await fetch(
+    "https://" + hostname + "/api/v2/connection?include_secrets=true&connector_names=google-mail",
+    {
+      headers: {
+        "Accept": "application/json",
+        "X-Replit-Token": xReplitToken,
+      },
+    },
+  ).then(res => res.json()).then(data => data.items?.[0]);
+
+  const accessToken = connectionSettings?.settings?.access_token || connectionSettings?.settings?.oauth?.credentials?.access_token;
+
+  if (!connectionSettings || !accessToken) {
+    throw new Error("Gmail not connected");
+  }
+  return accessToken;
+}
+
+async function getUncachableGmailClient() {
+  const accessToken = await getAccessToken();
 
   const oauth2Client = new google.auth.OAuth2();
   oauth2Client.setCredentials({
-    access_token: credentials.access_token,
-    refresh_token: credentials.refresh_token,
-    expiry_date: credentials.expiry_date,
+    access_token: accessToken,
   });
 
   return google.gmail({ version: "v1", auth: oauth2Client });
@@ -55,7 +82,7 @@ export async function sendGmailEmail(
   body: string,
   attachments?: EmailAttachment[]
 ): Promise<SendEmailResult> {
-  const gmail = getUncachableGmailClient();
+  const gmail = await getUncachableGmailClient();
 
   const safeTo = sanitizeHeader(to);
   const safeSubject = sanitizeHeader(subject);
@@ -94,7 +121,7 @@ export async function sendGmailEmail(
 }
 
 export async function getGmailHistory(startHistoryId: string) {
-  const gmail = getUncachableGmailClient();
+  const gmail = await getUncachableGmailClient();
   try {
     const res = await gmail.users.history.list({
       userId: "me",
@@ -109,7 +136,7 @@ export async function getGmailHistory(startHistoryId: string) {
 }
 
 export async function getGmailMessage(messageId: string) {
-  const gmail = getUncachableGmailClient();
+  const gmail = await getUncachableGmailClient();
   const res = await gmail.users.messages.get({
     userId: "me",
     id: messageId,
@@ -120,7 +147,7 @@ export async function getGmailMessage(messageId: string) {
 }
 
 export async function setupGmailWatch(topicName: string) {
-  const gmail = getUncachableGmailClient();
+  const gmail = await getUncachableGmailClient();
   const res = await gmail.users.watch({
     userId: "me",
     requestBody: {
@@ -132,7 +159,7 @@ export async function setupGmailWatch(topicName: string) {
 }
 
 export async function getGmailProfile() {
-  const gmail = getUncachableGmailClient();
+  const gmail = await getUncachableGmailClient();
   const res = await gmail.users.getProfile({ userId: "me" });
   return res.data;
 }
